@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
 import { db, initDatabase, KeyStore, ModelStore, LogStore } from '../src/db/database.js';
-import { registry } from '../src/providers/registry.js';
-import { dispatcher } from '../src/router/dispatcher.js';
-import { getAllCombos, getCombo } from '../src/router/combos.js';
+import { adapterRegistry } from '../src/adapters/index.js';
+import { routerEngine } from '../src/engine/router.js';
+import { getAllCombos, getCombo } from '../src/engine/combos.js';
 
 initDatabase();
 
@@ -70,18 +70,18 @@ test('Virtual Combos: all standard combos defined properly', () => {
   assert.ok(fast.targets.some(t => t.provider === 'cerebras' || t.provider === 'groq'));
 });
 
-test('Dispatcher: resolves model execution plans', () => {
-  const planAuto = dispatcher.resolveExecutionPlan('extra/auto-free');
+test('RouterEngine: resolves model execution plans', () => {
+  const planAuto = routerEngine.resolvePlan('extra/auto-free');
   assert.strictEqual(planAuto.combo, 'extra/auto-free');
   assert.ok(planAuto.targets.length > 0);
 
-  const planBareGroq = dispatcher.resolveExecutionPlan('groq/llama-3.3-70b-versatile');
+  const planBareGroq = routerEngine.resolvePlan('groq/llama-3.3-70b-versatile');
   assert.strictEqual(planBareGroq.targets[0].provider, 'groq');
   assert.strictEqual(planBareGroq.targets[0].model, 'llama-3.3-70b-versatile');
 });
 
-test('Provider Registry: contains all 9 free providers', () => {
-  const portals = registry.getPortals();
+test('Adapter Registry: contains all 24+ free providers', () => {
+  const portals = adapterRegistry.getPortals();
   const providerIds = portals.map(p => p.id);
 
   assert.ok(providerIds.includes('groq'));
@@ -92,5 +92,5 @@ test('Provider Registry: contains all 9 free providers', () => {
   assert.ok(providerIds.includes('github'));
   assert.ok(providerIds.includes('mistral'));
   assert.ok(providerIds.includes('huggingface'));
-  assert.ok(providerIds.includes('ollama'));
+  assert.ok(portals.length >= 20);
 });

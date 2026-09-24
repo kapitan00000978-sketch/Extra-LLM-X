@@ -1,6 +1,6 @@
-# ⚡ EXTRA LLM X — 100% Free AI Model Gateway & Provider Server
+# ⚡ EXTRA LLM X — 100% Free AI Model Gateway & API Key Provider
 
-> **Next-Gen Free-Model Aggregator, Dynamic Discovery, and API Key Provider purpose-built for Universal Agent HP, Cursor, Cline, Claude Code, and Autonomous AI Frameworks.**
+> **Next-Generation 100% Free LLM Aggregator, Dynamic Discovery Engine, and API Key Provider purpose-built for Universal Agent HP, Cursor, Cline, Claude Code, and Autonomous Agents.**
 
 ---
 
@@ -9,11 +9,12 @@
 Oddiy AI gateway'lar (masalan, OmniRoute yoki LiteLLM) barcha modellarni aralashtirib yuboradi va foydalanuvchi bilmasdan pullik modellarga so'rov yuborib mablag' sarflab qo'yishi mumkin.
 
 **Extra LLM X** esa **faqat va faqat 100% BEPUL modellar va bepul kvotalar (Free Tiers)** ustiga qurilgan:
-1. **100% Kafolatlangan Bepul Modellar:** Barcha provayderlardagi (Groq, Google Gemini, OpenRouter, SambaNova, Cerebras, GitHub Models, Mistral, HuggingFace, Ollama) narxi $0 bo'lgan modellar avtomatik kashf etiladi va filtrlanadi.
+1. **100% Kafolatlangan Bepul Modellar:** Barcha 16+ provayderlardagi (Groq, Google Gemini, OpenRouter, SambaNova, Cerebras, GitHub Models, Mistral, HuggingFace, Together, Cloudflare, Fireworks, DeepInfra, Novita, Cohere, Ollama, LM Studio) narxi $0 bo'lgan modellar avtomatik kashf etiladi va filtrlanadi.
 2. **O'zining API Kalitlarini Yaratish:** Server o'zining `elx-live-...` formatidagi mijoz API kalitlarini yaratadi, tezlikni cheklaydi (rate limit) va foydalanish statistikasini yuritadi.
 3. **Aqlli Avto-Fallback (Kutilmagan Limitlarni Yengish):** Agar biror bepul provayderda 429 Rate Limit uchrasa, tizim uzilishsiz boshqa zaxira kalitga yoki boshqa provayderdagi muqobil bepul modelga ulanadi.
 4. **Universal Agent HP ga To'liq Moslashgan:** Universal Agent HP ning CEO, DAG to'lqinlari va 29 mutaxassis agentlari 24/7 uzluksiz, bir tiyin ham to'lamasdan ishlashi uchun barcha virtual kombolar (`extra/auto-free`, `extra/free-coding`, `extra/free-fast`, `extra/free-reasoning`) tayyorlangan.
 5. **Futuristik Cyberpunk Web Boshqaruv Paneli:** Real-vaqtda tejangan mablag' hisoblagichi, jonli streaming Playground, provayderlarni bir klikda test qilish.
+6. **Zero-Key Demo Rejim:** Agar sizda hali bitta ham API kalit bo'lmasa, server built-in simulyatsiya orqali to'liq ishlaydi, streaming uzatadi va barcha endpointlar 100% javob beradi.
 
 ---
 
@@ -64,7 +65,7 @@ universal --dag "Katta loyihani ishlab chiq va test qil"
 
 ---
 
-## 🔌 Qo'llab-quvvatlanadigan Bepul Provayderlar
+## 🔌 Qo'llab-quvvatlanadigan 16+ Bepul Provayderlar
 
 Boshqaruv panelida har bir provayder uchun bepul kalit olish havolasi mavjud:
 
@@ -78,7 +79,15 @@ Boshqaruv panelida har bir provayder uchun bepul kalit olish havolasi mavjud:
 | **GitHub Models** | `gpt-4o`, `gpt-4o-mini`, `Phi-4`, `Llama-3.3-70B` | Bepul GitHub Personal Access Token orqali |
 | **Mistral AI** | `codestral-latest`, `mistral-small-latest` | Bepul dasturlash uchun eksperimental kvota |
 | **Hugging Face** | `Qwen2.5-Coder-32B`, `DeepSeek-R1-Qwen-32B` | Bepul User Token orqali serverless inferens |
-| **Ollama** | Sizning kompyuteringizdagi barcha modellar | 100% Oflayn va Bepul |
+| **Together AI** | `Llama-3.3-70B-Turbo` | Bepul kredit tieri |
+| **Cloudflare AI** | `llama-3.3-70b-instruct`, `deepseek-r1-32b` | 10,000 kunlik bepul neyronlar |
+| **Fireworks AI** | `llama-v3p3-70b`, `deepseek-r1` | Bepul developer trial kreditlari |
+| **DeepInfra** | `Llama-3.3-70B`, `DeepSeek-R1` | Bepul trial starter krediti |
+| **Novita AI** | `llama-3.3-70b`, `deepseek-r1` | Bepul trial tieri |
+| **Cohere** | `command-r-plus`, `command-r` | Bepul oylik developer trial |
+| **Ollama** | Sizning kompyuteringizdagi barcha modellar | 100% Oflayn va Bepul (`localhost:11434`) |
+| **LM Studio** | Mahalliy yuklangan modellar | 100% Oflayn va Bepul (`localhost:1234`) |
+| **Built-in Demo** | `extra-demo-model`, `extra-demo-coder` | Kalitsiz darhol sinovdan o'tkazish |
 
 ---
 
@@ -125,7 +134,7 @@ Tizim ishonchliligini tekshirish:
 ```bash
 npm test
 ```
-Barcha 13 ta test to'liq yashil o'tadi (13 passed, 0 failed).
+Barcha 15 ta test to'liq yashil o'tadi (`15 passed, 0 failed`).
 
 ---
 

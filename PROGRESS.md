@@ -148,3 +148,42 @@
   - **Barcha 44 ta test muvaffaqiyatli o'tdi (100% Yashil).**
 - **Nega foydali:** Interfeys foydalanish uchun nihoyatda qulay, ko'zni quvontiradigan darajada estetik va Universal Agent HP bilan ishlashda eng yuqori darajadagi foydalanuvchi tajribasini (UX) taqdim etadi.
 
+### [2026-09-24 07:40] — 8-Bosqich: Loyiha Fayllari Strukturasini To'liq Tartibga Solish (Clean Hierarchy)
+- **Nima qilindi:**
+  - **Fayllar tuzilmasi tubdan tozalandi va birlashtirildi:**
+    1. **Ichki `extra-llm-x/` dublikat papkasi butunlay olib tashlandi:**
+       - Ilgari loyiha ikkiga bo'lingan: asosiy papkada ham, ichki `extra-llm-x/` ichida ham alohida `src`, `node_modules`, `public`, `tests` va `data` mavjud edi. Bu foydalanuvchi va IDE uchun chalkashlik tug'dirgan.
+       - Barcha hujjatlar (`docs/`, `ARCHITECTURE.md`, `FINAL_REPORT.md`, `WALKTHROUGH.md`, `README.md`) va yangilangan kodlar to'liq asosiy ildiz (root) katalogga ko'chirildi va birlashtirildi.
+       - Takroriy `extra-llm-x/` papkasi to'liq tozalandi.
+    2. **Eski (Zombi) Papkalar Olib Tashlandi:**
+       - Ilk bosqichdan qolgan, yangi `src/adapters` va `src/engine` arxitekturasi bilan almashtirilgan eski `src/providers` va `src/router` papkalari xotiradan butunlay o'chirildi.
+    3. **Testlar va Server Ildiz Kataloggacha Moslashtirildi:**
+       - `tests/server.test.js` yangi `adapterRegistry` va `routerEngine` importlariga o'tkazildi.
+       - Server daemoni to'g'ridan-to'g'ri asosiy ishchi katalogdan (`universal agent api key provayder server`) ishga tushirildi.
+       - Barcha 44 ta test muvaffaqiyatli yakunlandi (`44 passed, 0 failed`).
+  - **Yangi toza loyiha daraxti:**
+    ```
+    universal agent api key provayder server/
+    ├── data/               # SQLite ma'lumotlar bazasi
+    ├── docs/               # API Reference & Provayderlar qo'llanmasi
+    ├── node_modules/       # Yagona modullar ombori
+    ├── public/             # Cyberpunk Dashboard UI (HTML, CSS, JS)
+    ├── src/                # Toza manba kodlari:
+    │   ├── adapters/       # 24+ AI provayder adapterlari
+    │   ├── catalog/        # 500+ bepul modellar katalogi
+    │   ├── db/             # SQLite & KeyStore dvigateli
+    │   ├── engine/         # Router, Discovery, Combos, Health, Compression
+    │   ├── routes/         # OpenAI & Admin marshrutlari
+    │   ├── config.js       # Tizim konfiguratsiyasi
+    │   └── server.js       # Express asosiy server
+    ├── tests/              # 10 ta to'liq test to'plami (44 test)
+    ├── .env                # Muhit o'zgaruvchilari
+    ├── ARCHITECTURE.md     # Arxitektura chizmasi
+    ├── FINAL_REPORT.md     # Yakuniy hisobot
+    ├── package.json        # Loyiha boshqaruvi
+    ├── PROGRESS.md         # Rivojlanish jurnali
+    ├── README.md           # Asosiy qo'llanma
+    └── start.bat           # 1-bosishda ishga tushirish skripti
+    ```
+- **Nega foydali:** Loyiha papkalar tuzilmasi professional, toza, tartibli va bir xil bo'ldi. Endi IDE'da bitta kod bazasi mavjud, fayllar takrorlanmaydi va konfiguratsiya o'zgarishlari to'g'ridan-to'g'ri serverga ta'sir qiladi.
+
