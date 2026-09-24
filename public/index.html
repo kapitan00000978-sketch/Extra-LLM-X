@@ -3,31 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Extra LLM X — Next-Gen 100% Free AI Provider Gateway</title>
-  <meta name="description" content="Ultimate 100% free AI model aggregator and API key provider server for Universal Agent HP, Cursor, Cline, and autonomous agents.">
+  <title>Extra LLM X — 100% Free AI Provider Gateway</title>
+  <meta name="description" content="Next-Gen 100% Free AI Model Gateway & API Key Provider for Universal Agent HP, Cursor, Cline, Claude Code, and Python.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <!-- Background Glow FX -->
   <div class="glow-bg-top"></div>
   <div class="glow-bg-bottom"></div>
 
-  <!-- Header & Navigation -->
+  <!-- Header -->
   <header class="app-header">
     <div class="header-left">
       <div class="brand-logo">
         <span class="logo-icon">⚡</span>
         <div class="brand-text">
           <span class="brand-title">EXTRA <span class="highlight-cyan">LLM</span> <span class="highlight-neon">X</span></span>
-          <span class="brand-badge">FREE MODEL GATEWAY</span>
+          <span class="brand-badge">100% FREE AI GATEWAY</span>
         </div>
       </div>
       <div class="server-pill">
         <span class="pulse-dot"></span>
-        <span id="server-status-text">ONLINE • 100% FREE TIER ACTIVE</span>
+        <span id="server-status-text">ONLINE • 16+ FREE PROVIDERS</span>
       </div>
     </div>
 
@@ -37,7 +36,7 @@
           <span class="icon">📊</span> Cockpit
         </button>
         <button class="nav-btn" data-tab="tab-providers" id="btn-nav-providers">
-          <span class="icon">🔌</span> Free Providers
+          <span class="icon">🔌</span> Free Providers <span class="badge-count" id="badge-providers-count">16</span>
         </button>
         <button class="nav-btn" data-tab="tab-models" id="btn-nav-models">
           <span class="icon">🧠</span> Free Models <span class="badge-count" id="badge-models-count">0</span>
@@ -51,6 +50,9 @@
         <button class="nav-btn" data-tab="tab-playground" id="btn-nav-playground">
           <span class="icon">💬</span> Playground
         </button>
+        <button class="nav-btn" data-tab="tab-rankings" id="btn-nav-rankings">
+          <span class="icon">🏆</span> Rankings
+        </button>
         <button class="nav-btn" data-tab="tab-logs" id="btn-nav-logs">
           <span class="icon">📜</span> Telemetry
         </button>
@@ -58,7 +60,8 @@
     </div>
 
     <div class="header-right">
-      <div class="quick-endpoint-box" id="quick-endpoint-box">
+      <button class="theme-toggle-btn" id="btn-theme-toggle" title="Switch Theme">⚡ Neon</button>
+      <div class="quick-endpoint-box">
         <span class="endpoint-label">Base URL:</span>
         <code class="endpoint-code" id="display-base-url">http://localhost:3000/v1</code>
         <button class="btn-copy-small" id="btn-copy-base-url" title="Copy Base URL">📋</button>
@@ -66,17 +69,17 @@
     </div>
   </header>
 
-  <!-- Main Content Container -->
+  <!-- Main Content -->
   <main class="app-main">
 
-    <!-- TAB 1: COCKPIT / OVERVIEW -->
+    <!-- TAB 1: COCKPIT -->
     <section class="tab-pane active" id="tab-cockpit">
       <div class="hero-banner">
         <div class="hero-content">
-          <div class="hero-badge">⚡ OMNIROUTE-GRADE RESILIENCE • 100% ZERO-COST INTELLIGENCE</div>
-          <h1 class="hero-title">Unified Free Model Aggregator for <span class="gradient-text">Universal Agent HP</span></h1>
+          <div class="hero-badge">⚡ ZERO-COST INTELLIGENCE • SELF-HEALING FALLBACK</div>
+          <h1 class="hero-title">100% Free AI Provider Hub for <span class="gradient-text">Universal Agent HP</span></h1>
           <p class="hero-desc">
-            Extra LLM X automatically scans, verifies, and routes requests across all top free AI models from Google Gemini, Groq, OpenRouter, SambaNova, Cerebras, and GitHub Models. Zero credit card required, instant multi-key rotation, and self-healing rate limit failover.
+            Extra LLM X bridges 16+ free AI platforms including Google Gemini, Groq, OpenRouter, SambaNova, Cerebras, GitHub Models, and HuggingFace into a single OpenAI-compatible endpoint. Continuous, resilient, zero-subscription intelligence with automatic failover.
           </p>
           <div class="hero-actions">
             <button class="btn-primary" id="btn-hero-add-provider">
@@ -107,7 +110,7 @@
               <span class="metric-icon">💰</span>
             </div>
             <div class="metric-val" id="stat-saved-usd">$0.0000</div>
-            <div class="metric-sub">Compared to standard OpenAI rates</div>
+            <div class="metric-sub">Saved vs OpenAI commercial rates</div>
           </div>
 
           <div class="metric-card highlight-cyan">
@@ -116,7 +119,7 @@
               <span class="metric-icon">🧠</span>
             </div>
             <div class="metric-val" id="stat-active-models">0</div>
-            <div class="metric-sub">Auto-detected & active for routing</div>
+            <div class="metric-sub">Discovered & active for routing</div>
           </div>
 
           <div class="metric-card highlight-purple">
@@ -125,32 +128,58 @@
               <span class="metric-icon">🛡️</span>
             </div>
             <div class="metric-val" id="stat-resilience">100%</div>
-            <div class="metric-sub"><span id="stat-total-fallbacks">0</span> rate-limit auto-recoveries</div>
+            <div class="metric-sub"><span id="stat-total-fallbacks">0</span> auto-failovers recorded</div>
           </div>
         </div>
       </div>
 
-      <!-- Virtual Combos Grid -->
+      <!-- Real-Time Activity & Analytics -->
+      <div class="section-container mt-4">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">📈 Real-Time Activity & Throughput</h2>
+            <p class="section-subtitle">Live request volume, token throughput, and provider load distribution</p>
+          </div>
+          <span class="badge-live-stream"><span class="pulse-dot"></span> LIVE TELEMETRY</span>
+        </div>
+        <div class="analytics-charts-grid">
+          <div class="glass-card chart-card">
+            <div class="chart-header">
+              <span class="chart-title">REQUEST VOLUME & TOKENS (HOURLY)</span>
+              <span class="chart-metric-tag" id="chart-hourly-total">Live Stream</span>
+            </div>
+            <div class="chart-canvas-wrapper" id="chart-requests-canvas">
+              <div class="chart-placeholder">Loading real-time throughput metrics...</div>
+            </div>
+          </div>
+          <div class="glass-card chart-card">
+            <div class="chart-header">
+              <span class="chart-title">PROVIDER LOAD BREAKDOWN</span>
+              <span class="chart-metric-tag" id="chart-providers-count">Active Distribution</span>
+            </div>
+            <div class="provider-bars-wrapper" id="chart-provider-bars">
+              <div class="chart-placeholder">Analyzing provider distribution...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Virtual Combos -->
       <div class="section-container">
         <div class="section-header">
-          <div>
-            <h2 class="section-title">⚡ Smart Virtual Combos</h2>
-            <p class="section-subtitle">Use these combo aliases as your model in Universal Agent HP for automatic failover across free providers</p>
-          </div>
+          <h2 class="section-title">⚡ Virtual Combos (Smart Auto-Fallback Chains)</h2>
+          <p class="section-subtitle">Use these model aliases in Universal Agent HP or Cursor for guaranteed continuous uptime</p>
         </div>
-
-        <div class="combos-grid" id="combos-grid">
-          <!-- Rendered dynamically by app.js -->
-        </div>
+        <div class="combos-grid" id="combos-grid"></div>
       </div>
 
-      <!-- Quick Setup Card -->
+      <!-- Quick Connect Banner -->
       <div class="section-container">
         <div class="glass-card banner-quick-guide">
           <div class="banner-guide-info">
             <div class="guide-tag">QUICK CONNECT</div>
-            <h3>How to use Extra LLM X with Universal Agent HP</h3>
-            <p>Paste the following in your Universal Agent HP <code>.env</code> file or use with any OpenAI-compatible client:</p>
+            <h3>Connect Universal Agent HP in 30 Seconds</h3>
+            <p>Paste the following in your <code>Universal-Agent-HP/.env</code> file:</p>
             <div class="code-snippet-box">
               <pre><code id="snippet-quick-env">OPENAI_API_BASE=http://localhost:3000/v1
 OPENAI_API_KEY=elx-live-universal-agent-free-hub
@@ -165,31 +194,40 @@ TITAN_MODEL=extra/auto-free</code></pre>
 
     <!-- TAB 2: FREE PROVIDERS HUB -->
     <section class="tab-pane" id="tab-providers">
+      <!-- Health Monitor Panel -->
       <div class="section-container">
         <div class="section-header flex-between">
           <div>
-            <h2 class="section-title">🔌 Free AI Provider Portals</h2>
-            <p class="section-subtitle">Add your free API keys below. Extra LLM X will auto-rotate between multiple keys and failover if limits are hit.</p>
+            <h2 class="section-title">🏥 Provider Health & Diagnostic Ping</h2>
+            <p class="section-subtitle">Real-time endpoint availability, ping latency, and rate-limit cooldown status</p>
           </div>
-          <div class="header-actions">
-            <button class="btn-secondary" id="btn-scan-all-providers">
-              <span class="spin-icon">🔄</span> Scan & Refresh Models
-            </button>
-          </div>
+          <button class="btn-primary" id="btn-run-health-check">
+            <span class="btn-icon">⚡</span> Run Full Diagnostics
+          </button>
         </div>
-
-        <div class="providers-grid" id="providers-grid">
-          <!-- Rendered dynamically by app.js -->
-        </div>
+        <div class="health-monitor-grid" id="health-monitor-grid"></div>
       </div>
 
-      <!-- Configured Keys Table -->
+      <div class="section-container mt-4">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">🔌 24+ Free Provider Portals</h2>
+            <p class="section-subtitle">Add your free API keys below. Supports multiple keys per provider for automatic load balancing.</p>
+          </div>
+          <button class="btn-secondary" id="btn-scan-all-providers">
+            <span>🔄 Scan & Refresh Models</span>
+          </button>
+        </div>
+        <div class="providers-grid" id="providers-grid"></div>
+      </div>
+
+      <!-- Stored Keys Table -->
       <div class="section-container mt-4">
         <div class="section-header">
-          <h3 class="section-title">Active Provider Keys Stored Locally</h3>
+          <h3 class="section-title">Stored Provider Keys</h3>
         </div>
         <div class="glass-table-wrapper">
-          <table class="glass-table" id="table-provider-keys">
+          <table class="glass-table">
             <thead>
               <tr>
                 <th>Provider</th>
@@ -200,9 +238,7 @@ TITAN_MODEL=extra/auto-free</code></pre>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="tbody-provider-keys">
-              <!-- Rendered by app.js -->
-            </tbody>
+            <tbody id="tbody-provider-keys"></tbody>
           </table>
         </div>
       </div>
@@ -214,22 +250,40 @@ TITAN_MODEL=extra/auto-free</code></pre>
         <div class="section-header flex-between">
           <div>
             <h2 class="section-title">🧠 100% Free Models Catalog</h2>
-            <p class="section-subtitle">Guaranteed zero-cost models currently discovered and ready for your agents</p>
+            <p class="section-subtitle">Real-time discovered zero-cost models ready for your agents</p>
           </div>
           <div class="filter-controls">
-            <input type="text" class="input-search" id="input-model-search" placeholder="🔍 Search free models (e.g. Llama, R1, Flash, Codestral)...">
+            <div class="view-mode-toggle">
+              <button class="view-toggle-btn active" id="btn-view-cards" title="Cards View">🎴 Cards</button>
+              <button class="view-toggle-btn" id="btn-view-matrix" title="Comparison Matrix View">📊 Matrix</button>
+            </div>
+            <input type="text" class="input-search" id="input-model-search" placeholder="🔍 Search free models...">
             <div class="filter-pills" id="model-filter-pills">
-              <button class="filter-pill active" data-filter="all">All Free</button>
+              <button class="filter-pill active" data-filter="all">All</button>
               <button class="filter-pill" data-filter="code">Coding</button>
               <button class="filter-pill" data-filter="reasoning">Reasoning</button>
-              <button class="filter-pill" data-filter="fast">Fast (LPU)</button>
+              <button class="filter-pill" data-filter="fast">Fast</button>
               <button class="filter-pill" data-filter="vision">Vision</button>
             </div>
           </div>
         </div>
-
-        <div class="models-grid" id="models-grid">
-          <!-- Rendered dynamically by app.js -->
+        <div class="models-grid" id="models-grid"></div>
+        <div class="models-matrix-wrapper" id="models-matrix-wrapper" style="display: none;">
+          <div class="glass-table-wrapper">
+            <table class="glass-table matrix-table">
+              <thead>
+                <tr>
+                  <th>Model Name</th>
+                  <th>Provider</th>
+                  <th>Context Window</th>
+                  <th>Capabilities</th>
+                  <th>Free Tier Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-models-matrix"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -239,90 +293,83 @@ TITAN_MODEL=extra/auto-free</code></pre>
       <div class="section-container">
         <div class="section-header flex-between">
           <div>
-            <h2 class="section-title">🔑 Extra LLM X Client API Keys</h2>
-            <p class="section-subtitle">Generate custom OpenAI-compatible API keys to connect Universal Agent HP, Cursor, Claude Code, or Python</p>
+            <h2 class="section-title">🔑 Client API Key Management</h2>
+            <p class="section-subtitle">Generate custom OpenAI-compatible API keys for Universal Agent HP, Cursor, and Python</p>
           </div>
           <button class="btn-primary" id="btn-open-create-key-modal">
             <span>+ Create New Client Key</span>
           </button>
         </div>
-
         <div class="glass-table-wrapper mt-3">
-          <table class="glass-table" id="table-system-keys">
+          <table class="glass-table">
             <thead>
               <tr>
                 <th>Key Name</th>
                 <th>API Key Token</th>
-                <th>Rate Limit (RPM)</th>
+                <th>Rate Limit</th>
                 <th>Requests</th>
                 <th>Total Tokens</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="tbody-system-keys">
-              <!-- Rendered by app.js -->
-            </tbody>
+            <tbody id="tbody-system-keys"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- TAB 5: UNIVERSAL AGENT HP GUIDE -->
+    <!-- TAB 5: UNIVERSAL AGENT HP INTEGRATION -->
     <section class="tab-pane" id="tab-universal">
       <div class="section-container">
         <div class="universal-hero">
-          <div class="universal-badge">100% NATIVE INTEGRATION</div>
+          <div class="universal-badge">NATIVE INTEGRATION</div>
           <h2>⚡ Connecting Extra LLM X with Universal Agent HP</h2>
           <p>
-            Universal Agent HP is a 10-layer cognitive AI Operating System featuring a CEO Meta-Orchestrator, 4 Department Leads, and 29 Worker Specialists executing concurrent DAG waves. Extra LLM X provides the continuous free intelligence backend it needs to operate 24/7 without paid subscription limits.
+            Universal Agent HP is a 10-layer cognitive AI Operating System featuring a CEO Meta-Orchestrator, 4 Department Leads, and 29 Worker Specialists executing concurrent DAG waves. Extra LLM X provides the zero-cost intelligence backend it needs to operate 24/7 without paid subscription limits.
           </p>
         </div>
 
         <div class="integration-cards-grid">
-          <!-- Step 1: .env config -->
           <div class="glass-card guide-step-card">
             <div class="step-num">01</div>
-            <h3>Configure Universal Agent HP (.env)</h3>
-            <p>Open <code>Universal-Agent-HP/.env</code> and configure Extra LLM X as your primary provider:</p>
+            <h3>Universal Agent HP (.env)</h3>
+            <p>Paste into <code>Universal-Agent-HP/.env</code>:</p>
             <div class="code-snippet-box">
-              <pre><code id="guide-code-env"># Universal Agent HP Provider Configuration
-TITAN_PROVIDER=omni
+              <pre><code id="guide-code-env">TITAN_PROVIDER=omni
 TITAN_MODEL=extra/auto-free
 OPENAI_API_BASE=http://localhost:3000/v1
 OPENAI_API_KEY=elx-live-universal-agent-free-hub
 
-# Fast & Deep Reasoning Modes
 FAST_MODEL=extra/free-fast
 CODING_MODEL=extra/free-coding
-REASONING_MODEL=extra/free-reasoning</code></pre>
+REASONING_MODEL=extra/free-reasoning
+VISION_MODEL=extra/free-vision</code></pre>
               <button class="btn-copy-code" id="btn-copy-guide-env">Copy .env</button>
             </div>
           </div>
 
-          <!-- Step 2: Global CLI Command -->
           <div class="glass-card guide-step-card">
             <div class="step-num">02</div>
-            <h3>Run Universal Agent via Terminal CLI</h3>
-            <p>Launch Universal Agent HP connected to Extra LLM X:</p>
+            <h3>Terminal CLI Execution</h3>
+            <p>Run Universal Agent HP via global command:</p>
             <div class="code-snippet-box">
-              <pre><code id="guide-code-cli"># Run interactive CLI with Extra LLM X:
+              <pre><code id="guide-code-cli"># Run interactive CLI:
 universal --provider omni --model extra/auto-free
 
-# Or execute complex parallel DAG waves:
-universal --dag "Build and test full REST API with SQLite"
+# Execute DAG parallel waves:
+universal --dag "Build and test authenticated REST API"
 
-# Deep reasoning mode with DeepSeek-R1:
+# Deep reasoning mode:
 universal --provider omni --model extra/free-reasoning --mode deep</code></pre>
               <button class="btn-copy-code" id="btn-copy-guide-cli">Copy Commands</button>
             </div>
           </div>
 
-          <!-- Step 3: Python SDK Example -->
           <div class="glass-card guide-step-card">
             <div class="step-num">03</div>
             <h3>Python OpenAI SDK Client</h3>
-            <p>Use standard OpenAI Python client to query Extra LLM X:</p>
+            <p>Use standard OpenAI Python library:</p>
             <div class="code-snippet-box">
               <pre><code id="guide-code-python">from openai import OpenAI
 
@@ -333,23 +380,21 @@ client = OpenAI(
 
 response = client.chat.completions.create(
     model="extra/auto-free",
-    messages=[{"role": "user", "content": "Explain quantum entanglement"}]
+    messages=[{"role": "user", "content": "Explain quantum computing"}]
 )
-
 print(response.choices[0].message.content)</code></pre>
               <button class="btn-copy-code" id="btn-copy-guide-python">Copy Python</button>
             </div>
           </div>
 
-          <!-- Step 4: Cursor / Cline / Claude Code -->
           <div class="glass-card guide-step-card">
             <div class="step-num">04</div>
-            <h3>Cursor, Cline, Roo Code & Claude Code</h3>
+            <h3>Cursor, Cline, Roo Code, Claude Code</h3>
             <p>Connect your favorite AI coding editors:</p>
             <div class="code-snippet-box">
               <pre><code id="guide-code-cursor">Endpoint URL: http://localhost:3000/v1
 API Key:      elx-live-universal-agent-free-hub
-Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
+Model Name:   extra/free-coding</code></pre>
               <button class="btn-copy-code" id="btn-copy-guide-cursor">Copy Settings</button>
             </div>
           </div>
@@ -365,12 +410,8 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
           <div class="form-group">
             <label for="select-play-model">Model / Combo:</label>
             <select class="input-select" id="select-play-model">
-              <optgroup label="Virtual Combos (Auto-Failover)" id="optgroup-combos">
-                <!-- Combos populated by app.js -->
-              </optgroup>
-              <optgroup label="Discovered Free Models" id="optgroup-models">
-                <!-- Models populated by app.js -->
-              </optgroup>
+              <optgroup label="Virtual Combos (Auto-Failover)" id="optgroup-combos"></optgroup>
+              <optgroup label="Discovered Free Models" id="optgroup-models"></optgroup>
             </select>
           </div>
 
@@ -384,7 +425,7 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
             <input type="number" class="input-text" id="input-play-tokens" value="512" min="64" max="8192">
           </div>
 
-          <div class="telemetry-box mt-3" id="play-telemetry">
+          <div class="telemetry-box mt-3">
             <h4>Inference Telemetry</h4>
             <div class="telemetry-item">Provider: <span class="telemetry-val" id="tele-provider">-</span></div>
             <div class="telemetry-item">Actual Model: <span class="telemetry-val" id="tele-model">-</span></div>
@@ -413,7 +454,58 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
       </div>
     </section>
 
-    <!-- TAB 7: TELEMETRY / LOGS -->
+    <!-- TAB 7: FREE PROVIDER RANKINGS -->
+    <section class="tab-pane" id="tab-rankings">
+      <div class="section-container">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">🏆 OmniRoute Free Provider Intelligence Rankings</h2>
+            <p class="section-subtitle">Real-time benchmark ELO, throughput, and 100% free quota limits across providers</p>
+          </div>
+          <button class="btn-secondary" id="btn-refresh-rankings">
+            <span>🔄 Refresh Rankings</span>
+          </button>
+        </div>
+
+        <div class="free-tier-banner mt-3">
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-total-free-models">523+</span>
+            <span class="banner-stat-lbl">Curated Free Models</span>
+          </div>
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-active-free-models">0</span>
+            <span class="banner-stat-lbl">Active & Configured</span>
+          </div>
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-zero-key-providers">2</span>
+            <span class="banner-stat-lbl">Zero-Key NoAuth Providers</span>
+          </div>
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-monthly-capacity">1.5B+</span>
+            <span class="banner-stat-lbl">Monthly Free Token Pool</span>
+          </div>
+        </div>
+
+        <div class="glass-table-wrapper mt-3">
+          <table class="glass-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Provider</th>
+                <th>Benchmark ELO</th>
+                <th>Speed (tok/s)</th>
+                <th>Free Tier Quota</th>
+                <th>Top Free Models</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-rankings"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 8: TELEMETRY LOGS -->
     <section class="tab-pane" id="tab-logs">
       <div class="section-container">
         <div class="section-header flex-between">
@@ -425,9 +517,8 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
             <span>🔄 Refresh Logs</span>
           </button>
         </div>
-
         <div class="glass-table-wrapper mt-3">
-          <table class="glass-table" id="table-logs">
+          <table class="glass-table">
             <thead>
               <tr>
                 <th>Timestamp</th>
@@ -440,9 +531,7 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
                 <th>Failover</th>
               </tr>
             </thead>
-            <tbody id="tbody-logs">
-              <!-- Rendered by app.js -->
-            </tbody>
+            <tbody id="tbody-logs"></tbody>
           </table>
         </div>
       </div>
@@ -450,7 +539,7 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
 
   </main>
 
-  <!-- MODAL: ADD PROVIDER KEY -->
+  <!-- MODALS -->
   <div class="modal-overlay" id="modal-add-key">
     <div class="modal-box">
       <div class="modal-header">
@@ -463,18 +552,15 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
           <label>Provider:</label>
           <div class="provider-pill-display" id="modal-provider-badge">Groq Cloud</div>
         </div>
-
         <div class="form-group">
           <label for="modal-input-label">Key Label (Optional):</label>
           <input type="text" class="input-text" id="modal-input-label" placeholder="e.g. My Groq Personal Key">
         </div>
-
         <div class="form-group">
           <label for="modal-input-key">API Key:</label>
           <input type="password" class="input-text" id="modal-input-key" placeholder="Paste your API key here...">
           <div class="field-help" id="modal-field-help">Sign up and get key for free.</div>
         </div>
-
         <div class="modal-test-output hidden" id="modal-test-output"></div>
       </div>
       <div class="modal-footer">
@@ -484,7 +570,6 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
     </div>
   </div>
 
-  <!-- MODAL: CREATE SYSTEM KEY -->
   <div class="modal-overlay" id="modal-create-sys-key">
     <div class="modal-box">
       <div class="modal-header">
@@ -496,7 +581,6 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
           <label for="input-sys-key-name">Key Name / Client:</label>
           <input type="text" class="input-text" id="input-sys-key-name" placeholder="e.g. Universal Agent Production">
         </div>
-
         <div class="form-group">
           <label for="input-sys-key-rate">Rate Limit (Requests / Min):</label>
           <input type="number" class="input-text" id="input-sys-key-rate" value="120" min="10" max="1000">
@@ -509,9 +593,7 @@ Model Name:   extra/free-coding (or extra/auto-free)</code></pre>
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION CONTAINER -->
   <div class="toast-container" id="toast-container"></div>
-
   <script src="/js/app.js"></script>
 </body>
 </html>

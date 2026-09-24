@@ -2,41 +2,41 @@
 
 const API_BASE = window.location.origin;
 
-// State
 let allModels = [];
 let allCombos = [];
 let activeFilter = 'all';
 let currentChatHistory = [];
 let isGenerating = false;
 
-// DOM Elements
 const navTabs = document.querySelectorAll('.nav-btn');
 const tabPanes = document.querySelectorAll('.tab-pane');
 const toastContainer = document.getElementById('toast-container');
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   initTabs();
   initCopyButtons();
   initModals();
   initFilters();
   initPlayground();
+  initMatrixView();
+  initHealthCheck();
 
-  // Load initial data
   loadStats();
+  loadCharts();
   loadProviders();
+  loadHealth();
   loadModels();
   loadSystemKeys();
+  loadRankings();
   loadLogs();
 
-  // Polling intervals for real-time live telemetry
   setInterval(loadStats, 4000);
+  setInterval(loadCharts, 10000);
+  setInterval(loadHealth, 30000);
   setInterval(loadLogs, 6000);
 });
 
-/* ==========================================================================
-   NAVIGATION & TABS
-   ========================================================================== */
 function initTabs() {
   navTabs.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -51,21 +51,19 @@ function initTabs() {
       if (targetId === 'tab-models') loadModels();
       if (targetId === 'tab-providers') loadProviders();
       if (targetId === 'tab-keys') loadSystemKeys();
+      if (targetId === 'tab-rankings') loadRankings();
       if (targetId === 'tab-logs') loadLogs();
     });
   });
 
-  // Hero Quick Buttons
-  document.getElementById('btn-hero-add-provider')?.addEventListener('click', () => {
-    switchTab('tab-providers');
-  });
+  document.getElementById('btn-refresh-rankings')?.addEventListener('click', loadRankings);
+
+  document.getElementById('btn-hero-add-provider')?.addEventListener('click', () => switchTab('tab-providers'));
   document.getElementById('btn-hero-gen-key')?.addEventListener('click', () => {
     switchTab('tab-keys');
     openSysKeyModal();
   });
-  document.getElementById('btn-hero-open-universal')?.addEventListener('click', () => {
-    switchTab('tab-universal');
-  });
+  document.getElementById('btn-hero-open-universal')?.addEventListener('click', () => switchTab('tab-universal'));
 }
 
 function switchTab(tabId) {
@@ -73,9 +71,6 @@ function switchTab(tabId) {
   if (btn) btn.click();
 }
 
-/* ==========================================================================
-   STATS & TELEMETRY POLLING
-   ========================================================================== */
 async function loadStats() {
   try {
     const res = await fetch(`${API_BASE}/api/stats`);
@@ -93,13 +88,10 @@ async function loadStats() {
       : 100;
     document.getElementById('stat-resilience').textContent = `${resilienceRate}%`;
   } catch (err) {
-    console.warn('Failed to load stats:', err.message);
+    console.warn('Stats error:', err.message);
   }
 }
 
-/* ==========================================================================
-   PROVIDERS & KEYS MANAGEMENT
-   ========================================================================== */
 async function loadProviders() {
   try {
     const [portalsRes, keysRes] = await Promise.all([
@@ -110,10 +102,11 @@ async function loadProviders() {
     const portals = await portalsRes.json();
     const keys = await keysRes.json();
 
+    document.getElementById('badge-providers-count').textContent = portals.length;
     renderProvidersGrid(portals);
     renderProviderKeysTable(keys);
   } catch (err) {
-    showToast('Failed to load provider portals: ' + err.message, 'error');
+    showToast('Failed to load providers: ' + err.message, 'error');
   }
 }
 
@@ -122,18 +115,23 @@ function renderProvidersGrid(portals) {
   if (!container) return;
 
   container.innerHTML = portals.map(p => {
-    const isActive = p.activeKeysCount > 0 || p.id === 'ollama';
-    const statusText = p.id === 'ollama' ? '🟢 Local AI Ready' : (isActive ? `🟢 ${p.activeKeysCount} Key(s) Active` : '⚪ No Key Configured');
+    const isReady = p.status === 'ready';
+    const isActive = p.status === 'active';
+    let statusText = '⚪ No Key Added';
+    if (isReady) statusText = '🟢 Ready (Local / Demo)';
+    else if (isActive) statusText = `🟢 ${p.activeKeysCount} Key(s) Active`;
+
+    const isLocalOrMock = p.id === 'ollama' || p.id === 'lmstudio' || p.id === 'mock';
 
     return `
-      <div class="provider-card ${isActive ? 'status-active' : ''}">
+      <div class="provider-card ${isActive || isReady ? 'status-active' : ''}">
         <div>
           <div class="provider-card-header">
             <h3 class="provider-name">${p.name}</h3>
             <span class="provider-badge-pill">${p.badge}</span>
           </div>
-          <div class="provider-limits">⚡ ${p.freeLimits}</div>
-          <div class="provider-popular">Popular: ${p.popularModels}</div>
+          <div class="provider-limits">⚡ ${p.freeTierInfo}</div>
+          <div class="provider-popular">Models: ${p.popularModels}</div>
         </div>
 
         <div>
@@ -143,18 +141,20 @@ function renderProvidersGrid(portals) {
           </div>
 
           <div class="provider-card-actions">
-            ${p.id !== 'ollama' ? `
-              <button class="btn-primary" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;" onclick="openAddKeyModal('${p.id}', '${p.name}', '${p.helpText}')">
+            ${!isLocalOrMock ? `
+              <button class="btn-primary" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;" onclick="openAddKeyModal('${p.id}', '${p.name}', '${p.guide}')">
                 + Add Key
               </button>
             ` : `
               <button class="btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;" onclick="scanProviders()">
-                🔄 Scan Ollama
+                🔄 Scan
               </button>
             `}
-            <a href="${p.getKeyUrl}" target="_blank" rel="noopener noreferrer" class="btn-get-free-key">
-              Get Free Key ↗
-            </a>
+            ${p.getKeyUrl !== '#' ? `
+              <a href="${p.getKeyUrl}" target="_blank" rel="noopener noreferrer" class="btn-get-free-key">
+                Get Free Key ↗
+              </a>
+            ` : `<span style="font-size: 0.78rem; color: var(--accent-cyan);">Zero-Key Ready</span>`}
           </div>
         </div>
       </div>
@@ -170,7 +170,7 @@ function renderProviderKeysTable(keys) {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-          No provider keys added yet. Add a free key from Groq, Google AI Studio, or OpenRouter above to start!
+          No external provider keys added yet. System is currently running in Zero-Key Demo mode with full route simulation.
         </td>
       </tr>
     `;
@@ -206,7 +206,7 @@ function renderProviderKeysTable(keys) {
 }
 
 window.deleteProviderKey = async function(id) {
-  if (!confirm('Are you sure you want to remove this provider key?')) return;
+  if (!confirm('Are you sure you want to delete this provider key?')) return;
   try {
     const res = await fetch(`${API_BASE}/api/providers/keys/${id}`, { method: 'DELETE' });
     if (res.ok) {
@@ -225,17 +225,12 @@ window.toggleProviderKey = async function(id, active) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ active: active === 1 })
     });
-    if (res.ok) {
-      loadProviders();
-    }
+    if (res.ok) loadProviders();
   } catch (err) {
     showToast('Failed to toggle key: ' + err.message, 'error');
   }
 };
 
-/* ==========================================================================
-   MODELS CATALOG & COMBOS
-   ========================================================================== */
 async function loadModels() {
   try {
     const res = await fetch(`${API_BASE}/api/models`);
@@ -296,8 +291,8 @@ function renderModels(models) {
 
   const filtered = models.filter(m => {
     const matchesFilter = activeFilter === 'all' || (m.capabilities && m.capabilities.includes(activeFilter));
-    const matchesSearch = !search || 
-      m.display_name.toLowerCase().includes(search) || 
+    const matchesSearch = !search ||
+      m.display_name.toLowerCase().includes(search) ||
       m.model_id.toLowerCase().includes(search) ||
       m.provider.toLowerCase().includes(search);
     return matchesFilter && matchesSearch;
@@ -337,6 +332,8 @@ function renderModels(models) {
       </div>
     </div>
   `).join('');
+
+  renderModelsMatrix(filtered);
 }
 
 function initFilters() {
@@ -359,7 +356,7 @@ function initFilters() {
 
 async function scanProviders() {
   const btn = document.getElementById('btn-scan-all-providers');
-  if (btn) btn.innerHTML = '🔄 Scanning Providers...';
+  if (btn) btn.innerHTML = '🔄 Scanning...';
 
   try {
     const res = await fetch(`${API_BASE}/api/models/scan`, { method: 'POST' });
@@ -374,16 +371,13 @@ async function scanProviders() {
   }
 }
 
-/* ==========================================================================
-   SYSTEM CLIENT API KEYS GENERATION
-   ========================================================================== */
 async function loadSystemKeys() {
   try {
     const res = await fetch(`${API_BASE}/api/system-keys`);
     const keys = await res.json();
     renderSystemKeysTable(keys);
   } catch (err) {
-    showToast('Failed to load client API keys: ' + err.message, 'error');
+    showToast('Failed to load client keys: ' + err.message, 'error');
   }
 }
 
@@ -430,9 +424,6 @@ window.deleteSystemKey = async function(key) {
   }
 };
 
-/* ==========================================================================
-   PLAYGROUND CHAT & STREAMING SSE
-   ========================================================================== */
 function initPlayground() {
   const tempSlider = document.getElementById('range-play-temp');
   const tempVal = document.getElementById('val-play-temp');
@@ -485,12 +476,10 @@ async function sendPlaygroundMessage() {
   const temperature = parseFloat(document.getElementById('range-play-temp').value || '0.7');
   const maxTokens = parseInt(document.getElementById('input-play-tokens').value || '512', 10);
 
-  // Append user bubble
   appendChatBubble('user', 'You', text);
   input.value = '';
   isGenerating = true;
 
-  // Append empty assistant bubble
   const assistantBubble = appendChatBubble('assistant', `⚡ Extra LLM X (${model})`, 'Thinking...');
   const contentEl = assistantBubble.querySelector('.bubble-content');
 
@@ -518,7 +507,6 @@ async function sendPlaygroundMessage() {
       throw new Error(errJson.error?.message || `HTTP ${res.status}`);
     }
 
-    // Telemetry headers
     const prov = res.headers.get('X-ExtraLLMX-Provider') || 'auto';
     const actualModel = res.headers.get('X-ExtraLLMX-Actual-Model') || model;
     const fallback = res.headers.get('X-ExtraLLMX-Fallback') === 'true';
@@ -575,9 +563,6 @@ function appendChatBubble(role, sender, text) {
   return bubble;
 }
 
-/* ==========================================================================
-   LOGS & TELEMETRY TABLE
-   ========================================================================== */
 async function loadLogs() {
   try {
     const res = await fetch(`${API_BASE}/api/logs?limit=50`);
@@ -585,7 +570,7 @@ async function loadLogs() {
     const logs = await res.json();
     renderLogsTable(logs);
   } catch (err) {
-    console.warn('Failed to load logs:', err.message);
+    console.warn('Logs error:', err.message);
   }
 }
 
@@ -629,30 +614,16 @@ function renderLogsTable(logs) {
   }).join('');
 }
 
-/* ==========================================================================
-   MODALS CONTROLLER
-   ========================================================================== */
 function initModals() {
-  // Provider Key Modal
   const modalAddKey = document.getElementById('modal-add-key');
-  document.getElementById('btn-close-key-modal')?.addEventListener('click', () => {
-    modalAddKey.classList.remove('active');
-  });
-
+  document.getElementById('btn-close-key-modal')?.addEventListener('click', () => modalAddKey.classList.remove('active'));
   document.getElementById('btn-modal-save-key')?.addEventListener('click', saveModalProviderKey);
   document.getElementById('btn-modal-test-key')?.addEventListener('click', testModalProviderKey);
 
-  // System Key Modal
   const modalSysKey = document.getElementById('modal-create-sys-key');
-  document.getElementById('btn-open-create-key-modal')?.addEventListener('click', () => {
-    modalSysKey.classList.add('active');
-  });
-  document.getElementById('btn-close-sys-key-modal')?.addEventListener('click', () => {
-    modalSysKey.classList.remove('active');
-  });
-  document.getElementById('btn-cancel-sys-key')?.addEventListener('click', () => {
-    modalSysKey.classList.remove('active');
-  });
+  document.getElementById('btn-open-create-key-modal')?.addEventListener('click', () => modalSysKey.classList.add('active'));
+  document.getElementById('btn-close-sys-key-modal')?.addEventListener('click', () => modalSysKey.classList.remove('active'));
+  document.getElementById('btn-cancel-sys-key')?.addEventListener('click', () => modalSysKey.classList.remove('active'));
   document.getElementById('btn-save-sys-key')?.addEventListener('click', createSystemKey);
 
   document.getElementById('btn-refresh-logs')?.addEventListener('click', () => {
@@ -661,11 +632,11 @@ function initModals() {
   });
 }
 
-window.openAddKeyModal = function(providerId, providerName, helpText) {
+window.openAddKeyModal = function(providerId, providerName, guide) {
   const modal = document.getElementById('modal-add-key');
   document.getElementById('modal-key-provider').value = providerId;
   document.getElementById('modal-provider-badge').textContent = providerName;
-  document.getElementById('modal-field-help').textContent = helpText;
+  document.getElementById('modal-field-help').textContent = guide;
   document.getElementById('modal-input-key').value = '';
   document.getElementById('modal-input-label').value = '';
   document.getElementById('modal-test-output').classList.add('hidden');
@@ -764,44 +735,19 @@ async function createSystemKey() {
   }
 }
 
-/* ==========================================================================
-   CLIPBOARD & HELPERS
-   ========================================================================== */
 function initCopyButtons() {
-  document.getElementById('btn-copy-base-url')?.addEventListener('click', () => {
-    copyText('http://localhost:3000/v1');
-  });
-
-  document.getElementById('btn-copy-quick-env')?.addEventListener('click', () => {
-    const text = document.getElementById('snippet-quick-env')?.textContent;
-    copyText(text);
-  });
-
-  document.getElementById('btn-copy-guide-env')?.addEventListener('click', () => {
-    const text = document.getElementById('guide-code-env')?.textContent;
-    copyText(text);
-  });
-
-  document.getElementById('btn-copy-guide-cli')?.addEventListener('click', () => {
-    const text = document.getElementById('guide-code-cli')?.textContent;
-    copyText(text);
-  });
-
-  document.getElementById('btn-copy-guide-python')?.addEventListener('click', () => {
-    const text = document.getElementById('guide-code-python')?.textContent;
-    copyText(text);
-  });
-
-  document.getElementById('btn-copy-guide-cursor')?.addEventListener('click', () => {
-    const text = document.getElementById('guide-code-cursor')?.textContent;
-    copyText(text);
-  });
+  document.getElementById('btn-copy-base-url')?.addEventListener('click', () => copyText('http://localhost:3000/v1'));
+  document.getElementById('btn-copy-quick-env')?.addEventListener('click', () => copyText(document.getElementById('snippet-quick-env')?.textContent));
+  document.getElementById('btn-copy-guide-env')?.addEventListener('click', () => copyText(document.getElementById('guide-code-env')?.textContent));
+  document.getElementById('btn-copy-guide-cli')?.addEventListener('click', () => copyText(document.getElementById('guide-code-cli')?.textContent));
+  document.getElementById('btn-copy-guide-python')?.addEventListener('click', () => copyText(document.getElementById('guide-code-python')?.textContent));
+  document.getElementById('btn-copy-guide-cursor')?.addEventListener('click', () => copyText(document.getElementById('guide-code-cursor')?.textContent));
 }
 
 window.copyText = function(text) {
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
-    showToast(`Copied to clipboard: ${text.slice(0, 32)}...`, 'success');
+    showToast(`Copied: ${text.slice(0, 32)}...`, 'success');
   }).catch(() => {
     showToast('Failed to copy', 'error');
   });
@@ -832,3 +778,300 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// Theme Manager
+function initTheme() {
+  const currentTheme = localStorage.getItem('elx_theme') || 'neon';
+  applyTheme(currentTheme);
+
+  document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
+    const cur = localStorage.getItem('elx_theme') || 'neon';
+    let next = 'midnight';
+    if (cur === 'midnight') next = 'light';
+    else if (cur === 'light') next = 'neon';
+    applyTheme(next);
+  });
+}
+
+function applyTheme(theme) {
+  document.body.classList.remove('theme-midnight', 'theme-light');
+  const btn = document.getElementById('btn-theme-toggle');
+
+  if (theme === 'midnight') {
+    document.body.classList.add('theme-midnight');
+    if (btn) btn.innerHTML = '🌙 Midnight';
+  } else if (theme === 'light') {
+    document.body.classList.add('theme-light');
+    if (btn) btn.innerHTML = '☀️ Light';
+  } else {
+    if (btn) btn.innerHTML = '⚡ Neon';
+  }
+  localStorage.setItem('elx_theme', theme);
+}
+
+// Analytics & Charts
+async function loadCharts() {
+  try {
+    const res = await fetch(`${API_BASE}/api/analytics/charts`);
+    if (!res.ok) return;
+    const { timeSeries, distribution } = await res.json();
+
+    renderTimeSeriesChart(timeSeries);
+    renderDistributionBars(distribution);
+  } catch (err) {
+    console.warn('Charts load error:', err.message);
+  }
+}
+
+function renderTimeSeriesChart(data) {
+  const container = document.getElementById('chart-requests-canvas');
+  if (!container) return;
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `
+      <div style="width: 100%; text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 2rem 0;">
+        Awaiting live requests... Telemetry activates on prompt execution.
+      </div>
+    `;
+    return;
+  }
+
+  const maxReq = Math.max(...data.map(d => d.request_count || 1), 1);
+  let totalReqs = 0;
+
+  const barsHtml = data.map(d => {
+    totalReqs += d.request_count || 0;
+    const heightPercent = Math.max(12, Math.round(((d.request_count || 0) / maxReq) * 100));
+    return `
+      <div class="chart-bar-group" title="${d.time_label}: ${d.request_count} reqs, ${d.token_count || 0} tokens">
+        <span class="chart-bar-val">${d.request_count || 0}</span>
+        <div class="chart-bar-column" style="height: ${heightPercent}%;"></div>
+        <span class="chart-bar-label">${d.time_label || ''}</span>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = barsHtml;
+  const tag = document.getElementById('chart-hourly-total');
+  if (tag) tag.textContent = `${totalReqs} reqs recorded`;
+}
+
+function renderDistributionBars(dist) {
+  const container = document.getElementById('chart-provider-bars');
+  if (!container) return;
+
+  if (!dist || dist.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 2rem 0;">
+        No requests dispatched yet. Try sending a prompt in the Playground!
+      </div>
+    `;
+    return;
+  }
+
+  const maxCount = Math.max(...dist.map(d => d.count || 1), 1);
+  const rowsHtml = dist.map(d => {
+    const pct = Math.round(((d.count || 0) / maxCount) * 100);
+    return `
+      <div class="provider-bar-row">
+        <div class="provider-bar-meta">
+          <span class="provider-bar-name">${escapeHtml(d.provider)}</span>
+          <span class="provider-bar-count">${d.count} calls</span>
+        </div>
+        <div class="provider-bar-track">
+          <div class="provider-bar-fill" style="width: ${pct}%;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = rowsHtml;
+  const tag = document.getElementById('chart-providers-count');
+  if (tag) tag.textContent = `${dist.length} active providers`;
+}
+
+// Health Monitor
+function initHealthCheck() {
+  document.getElementById('btn-run-health-check')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-run-health-check');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Probing endpoints...';
+    }
+    showToast('Probing all 24 connected AI providers...', 'success');
+    try {
+      await fetch(`${API_BASE}/api/health-check/run`, { method: 'POST' });
+      showToast('Health diagnostics completed!', 'success');
+      loadHealth();
+    } catch (err) {
+      showToast('Diagnostics failed: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">⚡</span> Run Full Diagnostics';
+      }
+    }
+  });
+}
+
+async function loadHealth() {
+  try {
+    const res = await fetch(`${API_BASE}/api/health-check/status`);
+    if (!res.ok) return;
+    const records = await res.json();
+    renderHealthGrid(records);
+  } catch (err) {
+    console.warn('Health load error:', err.message);
+  }
+}
+
+function renderHealthGrid(records) {
+  const container = document.getElementById('health-monitor-grid');
+  if (!container) return;
+
+  if (!records || records.length === 0) {
+    container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 1rem 0;">Click 'Run Full Diagnostics' to probe connected providers.</div>`;
+    return;
+  }
+
+  container.innerHTML = records.map(r => {
+    let statusClass = 'offline';
+    let statusLabel = 'Offline';
+
+    if (r.status === 'healthy') {
+      statusClass = 'healthy';
+      statusLabel = `${r.latency_ms || 10}ms`;
+    } else if (r.status === 'degraded') {
+      statusClass = 'degraded';
+      statusLabel = 'Cooldown';
+    } else if (r.status === 'unconfigured') {
+      statusClass = 'unconfigured';
+      statusLabel = 'No Key';
+    }
+
+    return `
+      <div class="health-card" title="${escapeHtml(r.error_message || '')}">
+        <div class="health-card-left">
+          <span class="health-status-dot ${statusClass}"></span>
+          <span class="health-name">${escapeHtml(r.provider)}</span>
+        </div>
+        <span class="health-latency">${statusLabel}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// Matrix View for Models
+function initMatrixView() {
+  const btnCards = document.getElementById('btn-view-cards');
+  const btnMatrix = document.getElementById('btn-view-matrix');
+  const cardsWrapper = document.getElementById('models-grid');
+  const matrixWrapper = document.getElementById('models-matrix-wrapper');
+
+  btnCards?.addEventListener('click', () => {
+    btnCards.classList.add('active');
+    btnMatrix?.classList.remove('active');
+    cardsWrapper.style.display = 'grid';
+    matrixWrapper.style.display = 'none';
+  });
+
+  btnMatrix?.addEventListener('click', () => {
+    btnMatrix.classList.add('active');
+    btnCards?.classList.remove('active');
+    cardsWrapper.style.display = 'none';
+    matrixWrapper.style.display = 'block';
+  });
+}
+
+function renderModelsMatrix(modelsToRender) {
+  const tbody = document.getElementById('tbody-models-matrix');
+  if (!tbody) return;
+
+  const list = modelsToRender || allModels;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">No models match this filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(m => {
+    const contextFormatted = m.context_window >= 1000000
+      ? `${(m.context_window / 1000000).toFixed(1)}M tokens`
+      : `${Math.round((m.context_window || 8192) / 1024)}k tokens`;
+
+    const capsBadges = (m.capabilities || 'chat').split(',').map(c => 
+      `<span class="model-tag">${c.trim()}</span>`
+    ).join(' ');
+
+    return `
+      <tr>
+        <td style="font-weight: 600; color: var(--text-primary);">${escapeHtml(m.display_name)}</td>
+        <td style="text-transform: capitalize;"><span class="provider-badge-pill">${escapeHtml(m.provider)}</span></td>
+        <td><code style="font-family: var(--font-mono); color: var(--accent-cyan);">${contextFormatted}</code></td>
+        <td>${capsBadges}</td>
+        <td><span class="model-tag free-tag">100% FREE</span></td>
+        <td>
+          <button class="btn-copy-code" onclick="copyText('${escapeHtml(m.id)}')" title="Copy model ID">Copy ID</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function loadRankings() {
+  try {
+    const [rankRes, sumRes] = await Promise.all([
+      fetch(`${API_BASE}/api/free-provider-rankings`),
+      fetch(`${API_BASE}/api/free-tier/summary`)
+    ]);
+
+    if (sumRes.ok) {
+      const summary = await sumRes.json();
+      const elTotal = document.getElementById('summary-total-free-models');
+      const elActive = document.getElementById('summary-active-free-models');
+      const elZero = document.getElementById('summary-zero-key-providers');
+      const elCap = document.getElementById('summary-monthly-capacity');
+
+      if (elTotal) elTotal.textContent = summary.totalCuratedFreeModels ? `${summary.totalCuratedFreeModels}+` : '523+';
+      if (elActive) elActive.textContent = summary.activeFreeModels ?? '0';
+      if (elZero) elZero.textContent = summary.zeroKeyProviders ?? '2';
+      if (elCap) elCap.textContent = summary.monthlyCapacityPool || '1.5B+';
+    }
+
+    if (rankRes.ok) {
+      const data = await rankRes.json();
+      const tbody = document.getElementById('tbody-rankings');
+      if (!tbody) return;
+
+      const rankings = data.rankings || [];
+      tbody.innerHTML = rankings.map(r => {
+        const rankMedal = r.rank === 1 ? '🥇 #1' : r.rank === 2 ? '🥈 #2' : r.rank === 3 ? '🥉 #3' : `#${r.rank}`;
+        const statusBadge = r.isConfigured
+          ? `<span class="tag-status live">● Active</span>`
+          : r.isNoAuth
+            ? `<span class="tag-status live" style="background:rgba(0,245,212,0.2);color:var(--accent-cyan);border-color:var(--accent-cyan);">⚡ Zero-Key Live</span>`
+            : `<span class="tag-status standby">○ Key Needed</span>`;
+
+        const topModels = (r.topFreeModels || []).map(m => `<span class="model-tag">${escapeHtml(m)}</span>`).join(' ');
+
+        return `
+          <tr>
+            <td><strong style="color: var(--accent-cyan);">${rankMedal}</strong></td>
+            <td>
+              <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(r.name)}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(r.category || 'General LLM')}</div>
+            </td>
+            <td><span class="elo-badge">${r.benchmarkScore}</span></td>
+            <td><span class="tok-speed">${r.speedTokPerSec} tok/s</span></td>
+            <td><span style="font-size: 0.82rem; color: var(--text-secondary);">${escapeHtml(r.freeQuota)}</span></td>
+            <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${topModels}</div></td>
+            <td>${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    console.warn('Rankings load error:', err.message);
+  }
+}
+

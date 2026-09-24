@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadHealth();
   loadModels();
   loadSystemKeys();
+  loadRankings();
   loadLogs();
 
   setInterval(loadStats, 4000);
@@ -50,9 +51,12 @@ function initTabs() {
       if (targetId === 'tab-models') loadModels();
       if (targetId === 'tab-providers') loadProviders();
       if (targetId === 'tab-keys') loadSystemKeys();
+      if (targetId === 'tab-rankings') loadRankings();
       if (targetId === 'tab-logs') loadLogs();
     });
   });
+
+  document.getElementById('btn-refresh-rankings')?.addEventListener('click', loadRankings);
 
   document.getElementById('btn-hero-add-provider')?.addEventListener('click', () => switchTab('tab-providers'));
   document.getElementById('btn-hero-gen-key')?.addEventListener('click', () => {
@@ -1012,5 +1016,62 @@ function renderModelsMatrix(modelsToRender) {
       </tr>
     `;
   }).join('');
+}
+
+async function loadRankings() {
+  try {
+    const [rankRes, sumRes] = await Promise.all([
+      fetch(`${API_BASE}/api/free-provider-rankings`),
+      fetch(`${API_BASE}/api/free-tier/summary`)
+    ]);
+
+    if (sumRes.ok) {
+      const summary = await sumRes.json();
+      const elTotal = document.getElementById('summary-total-free-models');
+      const elActive = document.getElementById('summary-active-free-models');
+      const elZero = document.getElementById('summary-zero-key-providers');
+      const elCap = document.getElementById('summary-monthly-capacity');
+
+      if (elTotal) elTotal.textContent = summary.totalCuratedFreeModels ? `${summary.totalCuratedFreeModels}+` : '523+';
+      if (elActive) elActive.textContent = summary.activeFreeModels ?? '0';
+      if (elZero) elZero.textContent = summary.zeroKeyProviders ?? '2';
+      if (elCap) elCap.textContent = summary.monthlyCapacityPool || '1.5B+';
+    }
+
+    if (rankRes.ok) {
+      const data = await rankRes.json();
+      const tbody = document.getElementById('tbody-rankings');
+      if (!tbody) return;
+
+      const rankings = data.rankings || [];
+      tbody.innerHTML = rankings.map(r => {
+        const rankMedal = r.rank === 1 ? '🥇 #1' : r.rank === 2 ? '🥈 #2' : r.rank === 3 ? '🥉 #3' : `#${r.rank}`;
+        const statusBadge = r.isConfigured
+          ? `<span class="tag-status live">● Active</span>`
+          : r.isNoAuth
+            ? `<span class="tag-status live" style="background:rgba(0,245,212,0.2);color:var(--accent-cyan);border-color:var(--accent-cyan);">⚡ Zero-Key Live</span>`
+            : `<span class="tag-status standby">○ Key Needed</span>`;
+
+        const topModels = (r.topFreeModels || []).map(m => `<span class="model-tag">${escapeHtml(m)}</span>`).join(' ');
+
+        return `
+          <tr>
+            <td><strong style="color: var(--accent-cyan);">${rankMedal}</strong></td>
+            <td>
+              <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(r.name)}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(r.category || 'General LLM')}</div>
+            </td>
+            <td><span class="elo-badge">${r.benchmarkScore}</span></td>
+            <td><span class="tok-speed">${r.speedTokPerSec} tok/s</span></td>
+            <td><span style="font-size: 0.82rem; color: var(--text-secondary);">${escapeHtml(r.freeQuota)}</span></td>
+            <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${topModels}</div></td>
+            <td>${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    console.warn('Rankings load error:', err.message);
+  }
 }
 

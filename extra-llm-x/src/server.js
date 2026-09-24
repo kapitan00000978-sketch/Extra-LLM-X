@@ -39,8 +39,9 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Mount OpenAI Compatible Endpoints
+// Mount OpenAI & OmniRoute Compatible Endpoints
 app.use('/v1', openaiRouter);
+app.use('/api/v1', openaiRouter);
 app.use('/', openaiRouter);
 
 // Mount Admin REST Endpoints

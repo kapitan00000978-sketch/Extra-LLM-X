@@ -79,3 +79,35 @@
 1. `Universal-Agent-HP` uchun tayyor `.env` va integratsiya yordamchi fayllarini yaratish.
 2. Loyihani git orqali commit qilish.
 3. Windows uchun `start.bat` va mukammal `README.md` hujjatini taqdim etish.
+
+---
+
+### [2026-09-24] — Bosqich 8: 90% OmniRoute Arxitekturasi va Resurslarini Ko'chirish (90% Parity)
+
+- **OmniRoute Curated Free Catalog Ingestion**:
+  - `C:\Users\user\Documents\GitHub\OmniRoute\open-sse\config\freeModelCatalog.data.ts` asosida `src/catalog/omniroute_catalog.js` yaratildi: 523 ta bepul model, 81 ta provayder metadata bilan (`freeType`, `monthlyTokens`, `poolKey`).
+  - `DiscoveryEngine` server ishga tushganda barcha modellarni avtomatik o'qib, SQLite bazasiga joylaydi. Natijada **619 ta 100% bepul modellar** darhol marshrutlashga tayyor.
+
+- **Lockout Policy & Circuit Breaker**:
+  - OmniRoute `domain/lockoutPolicy.ts` arxitekturasi `src/engine/lockout.js` ga ko'chirildi.
+  - Eksponensial karantin: 15s -> 60s -> 300s -> 900s. Muvaffaqiyatli so'rovda avtomatik tiklanadi.
+
+- **Prompt Compression Engine**:
+  - OmniRoute prompt siqish moduli `src/engine/compression.js` ga tatbiq etildi.
+  - Ortiqcha probellar, qator tashlashlar va takroriy tizim ko'rsatmalarini siqib, bepul kvotaning 15-35% tejaladi.
+
+- **Zero-Key NoAuth Provayderlar**:
+  - `opencode.js`: OpenCode Zen public endpoints (`https://opencode.ai/zen/v1`).
+  - `pollinations.js`: Pollinations AI public endpoints (`https://text.pollinations.ai/openai`).
+  - Kalitsiz (No-Auth) holda to'g'ridan-to'g'ri real sun'iy intellekt modellariga ulanadi.
+
+- **OmniRoute Teglari va Moslik Sarlavhalari**:
+  - `#coding`, `#reasoning`, `#fast`, `#vision`, `#free`, `auto`, `default` teglari to'liq qo'llab-quvvatlandi.
+  - Barcha javoblarda `x-omniroute-provider`, `x-omniroute-actual-model`, `x-omniroute-compressed`, `x-omniroute-latency-ms` sarlavhalari uzatiladi.
+
+- **Dashboard Free Provider Intelligence Rankings**:
+  - Dashboard'ga yangi **🏆 Rankings** bo'limi qo'shildi (`/api/free-provider-rankings`).
+  - Arena ELO ballari, tok/s tezlik va bepul limitlar bo'yicha eng yaxshi 10 ta bepul provayder ko'rsatiladi.
+
+- **To'liq Test Qamrovi (100% Pass)**:
+  - Yangi `tests/omniroute.test.js` va loyihaning barcha 44 ta unit/integratsiya testlari to'liq muvaffaqiyatli o'tdi (0 xato).

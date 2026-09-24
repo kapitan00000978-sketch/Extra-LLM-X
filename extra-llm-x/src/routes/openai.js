@@ -133,6 +133,16 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
     res.setHeader('X-ExtraLLMX-Fallback', result.fallbackOccurred ? 'true' : 'false');
     res.setHeader('X-ExtraLLMX-Latency-Ms', latencyMs.toString());
 
+    // OmniRoute Compatibility Headers
+    res.setHeader('x-omniroute-provider', result.provider);
+    res.setHeader('x-omniroute-actual-model', result.model);
+    res.setHeader('x-omniroute-fallback', result.fallbackOccurred ? 'true' : 'false');
+    res.setHeader('x-omniroute-latency-ms', latencyMs.toString());
+    if (result.compression) {
+      res.setHeader('x-omniroute-compressed', result.compression.compressed ? 'true' : 'false');
+      res.setHeader('x-omniroute-tokens-saved', (result.compression.tokensSaved || 0).toString());
+    }
+
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');

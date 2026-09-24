@@ -4,7 +4,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { initDatabase, KeyStore, ModelStore } from './db/database.js';
-import { registry } from './providers/registry.js';
+import { discoveryEngine } from './engine/discovery.js';
+import { healthCheckEngine } from './engine/health_check.js';
 import { openaiRouter } from './routes/openai.js';
 import { adminRouter } from './routes/admin.js';
 
@@ -17,15 +18,14 @@ initDatabase();
 
 const app = express();
 
-// Middlewares
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Static files (Web UI Dashboard)
+// Static Web Dashboard
 app.use(express.static(publicDir));
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
   const freeModels = ModelStore.getFreeModels();
   const providerKeys = KeyStore.getAllProviderKeys();
@@ -39,14 +39,15 @@ app.get('/health', (req, res) => {
   });
 });
 
-// OpenAI compatibility routes (both /v1 and root)
+// Mount OpenAI & OmniRoute Compatible Endpoints
 app.use('/v1', openaiRouter);
+app.use('/api/v1', openaiRouter);
 app.use('/', openaiRouter);
 
-// Admin and management API
+// Mount Admin REST Endpoints
 app.use('/api', adminRouter);
 
-// Fallback to index.html for SPA routes
+// SPA fallback
 app.get('*', (req, res) => {
   if (req.path.startsWith('/v1') || req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Endpoint not found' });
@@ -54,7 +55,7 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));
 });
 
-// Start Server
+// Launch Server
 app.listen(config.port, config.host, async () => {
   console.log(`
   ==============================================================
@@ -65,19 +66,19 @@ app.listen(config.port, config.host, async () => {
    ███████╗██╔╝ ██╗   ██║   ██║  ██║██║  ██║    ███████╗███████╗██║ ╚═╝ ██║    ██╔╝ ██╗
    ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝    ╚══════╝╚══════╝╚═╝     ╚═╝    ╚═╝  ╚═╝
   ==============================================================
-   ⚡ NEXT-GEN 100% FREE AI GATEWAY & UNIVERSAL AGENT PROVIDER ⚡
+   ⚡ EXTRA LLM X — 100% FREE AI GATEWAY FOR UNIVERSAL AGENT HP ⚡
   ==============================================================
-   🚀 Dashboard & Web UI : http://localhost:${config.port}
+   🚀 Dashboard UI       : http://localhost:${config.port}
    🔌 OpenAI API BaseURL : http://localhost:${config.port}/v1
    🔑 Default Client Key : elx-live-universal-agent-free-hub
    🤖 Universal Agent HP : Ready out-of-the-box!
   ==============================================================
   `);
 
-  // Initial auto-scan for free models in the background
   try {
-    await registry.scanAllProviders();
+    await discoveryEngine.scanAll();
+    healthCheckEngine.startPeriodic(600000);
   } catch (err) {
-    console.warn(`[Server] Initial scan error: ${err.message}`);
+    console.warn(`[Server] Initial scan warning: ${err.message}`);
   }
 });

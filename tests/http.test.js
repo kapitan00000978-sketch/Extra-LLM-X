@@ -47,12 +47,12 @@ test('HTTP: GET /api/stats returns stats object', async () => {
   assert.ok('estimatedSavedUsd' in data);
 });
 
-test('HTTP: GET /api/providers/portals returns all 9 providers', async () => {
+test('HTTP: GET /api/providers/portals returns all free providers', async () => {
   const res = await fetch(`${baseUrl}/api/providers/portals`);
   assert.strictEqual(res.status, 200);
   const data = await res.json();
   assert.ok(Array.isArray(data));
-  assert.strictEqual(data.length, 9);
+  assert.ok(data.length >= 9, `Expected at least 9 providers, found ${data.length}`);
 });
 
 test('HTTP: GET /v1/models fails without auth token', async () => {

@@ -4,17 +4,21 @@ import path from 'path';
 import crypto from 'crypto';
 import { config } from '../config.js';
 
-// Ensure data directory exists
 if (!fs.existsSync(config.dataDir)) {
   fs.mkdirSync(config.dataDir, { recursive: true });
 }
 
 export const db = new DatabaseSync(config.dbPath);
 
-// Initialize database schema
+// Enable WAL mode and busy timeout for concurrent access
+try {
+  db.exec('PRAGMA journal_mode = WAL;');
+  db.exec('PRAGMA busy_timeout = 5000;');
+} catch (e) {}
+
 export function initDatabase() {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS provider_keys (
+    CREATE TABLE IF NOT EXISTS providers (
       id TEXT PRIMARY KEY,
       provider TEXT NOT NULL,
       api_key TEXT NOT NULL,
@@ -30,7 +34,7 @@ export function initDatabase() {
       key TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       active INTEGER DEFAULT 1,
-      rate_limit_rpm INTEGER DEFAULT 60,
+      rate_limit_rpm INTEGER DEFAULT 120,
       request_count INTEGER DEFAULT 0,
       total_tokens INTEGER DEFAULT 0,
       created_at INTEGER,
@@ -66,34 +70,40 @@ export function initDatabase() {
       error_message TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS provider_health (
+      provider TEXT PRIMARY KEY,
+      status TEXT DEFAULT 'unknown',
+      latency_ms INTEGER DEFAULT 0,
+      last_checked_at INTEGER DEFAULT 0,
+      error_message TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
     );
   `);
 
-  // Ensure default ExtraLLMX Key exists so user can use it right away!
+  // Ensure default key exists for immediate out-of-the-box use
   const existingKey = db.prepare('SELECT key FROM system_api_keys LIMIT 1').get();
   if (!existingKey) {
     const defaultKey = 'elx-live-universal-agent-free-hub';
-    const stmt = db.prepare(`
+    const now = Date.now();
+    db.prepare(`
       INSERT INTO system_api_keys (key, name, active, rate_limit_rpm, request_count, total_tokens, created_at, last_used_at)
       VALUES (?, ?, 1, 120, 0, 0, ?, ?)
-    `);
-    const now = Date.now();
-    stmt.run(defaultKey, 'Default Universal Agent Key', now, now);
+    `).run(defaultKey, 'Universal Agent Default Key', now, now);
     console.log(`[DB] Created default client API Key: ${defaultKey}`);
   }
 }
 
-// Key Management Helpers
 export const KeyStore = {
-  // System client API keys
+  // Client system keys
   getAllSystemKeys() {
     return db.prepare('SELECT * FROM system_api_keys ORDER BY created_at DESC').all();
   },
-  
-  createSystemKey(name = 'New Agent Key', rateLimit = 100) {
+
+  createSystemKey(name = 'New Agent Key', rateLimit = 120) {
     const raw = crypto.randomBytes(16).toString('hex');
     const key = `elx-live-${raw}`;
     const now = Date.now();
@@ -106,10 +116,10 @@ export const KeyStore = {
 
   verifySystemKey(key) {
     if (!key) return null;
-    if (key === config.masterKey) {
+    const cleanKey = key.replace(/^Bearer\s+/i, '').trim();
+    if (cleanKey === config.masterKey) {
       return { key: config.masterKey, name: 'Master Admin Key', active: 1, isMaster: true };
     }
-    const cleanKey = key.replace(/^Bearer\s+/i, '').trim();
     const row = db.prepare('SELECT * FROM system_api_keys WHERE key = ? AND active = 1').get(cleanKey);
     return row || null;
   },
@@ -132,57 +142,54 @@ export const KeyStore = {
     `).run(tokens, Date.now(), cleanKey);
   },
 
-  // External Provider Keys
+  // Provider keys
   getAllProviderKeys() {
-    return db.prepare('SELECT id, provider, api_key, label, active, error_count, cooldown_until, created_at, last_used_at FROM provider_keys ORDER BY provider, created_at DESC').all();
+    return db.prepare('SELECT * FROM providers ORDER BY provider, created_at DESC').all();
   },
 
   getAvailableProviderKey(providerName) {
     const now = Date.now();
-    // Select active keys where cooldown has expired, order by least recently used
     const keys = db.prepare(`
-      SELECT * FROM provider_keys 
+      SELECT * FROM providers 
       WHERE provider = ? AND active = 1 AND (cooldown_until IS NULL OR cooldown_until < ?)
       ORDER BY last_used_at ASC, error_count ASC
     `).all(providerName, now);
 
-    if (!keys || keys.length === 0) return null;
-    return keys[0];
+    return (keys && keys.length > 0) ? keys[0] : null;
   },
 
   addProviderKey(provider, apiKey, label = '') {
     const id = crypto.randomUUID();
     const now = Date.now();
     db.prepare(`
-      INSERT INTO provider_keys (id, provider, api_key, label, active, error_count, cooldown_until, created_at, last_used_at)
+      INSERT INTO providers (id, provider, api_key, label, active, error_count, cooldown_until, created_at, last_used_at)
       VALUES (?, ?, ?, ?, 1, 0, 0, ?, ?)
     `).run(id, provider.toLowerCase().trim(), apiKey.trim(), label, now, 0);
     return { id, provider, active: 1, label };
   },
 
   deleteProviderKey(id) {
-    return db.prepare('DELETE FROM provider_keys WHERE id = ?').run(id);
+    return db.prepare('DELETE FROM providers WHERE id = ?').run(id);
   },
 
   toggleProviderKey(id, active) {
-    return db.prepare('UPDATE provider_keys SET active = ? WHERE id = ?').run(active ? 1 : 0, id);
+    return db.prepare('UPDATE providers SET active = ? WHERE id = ?').run(active ? 1 : 0, id);
   },
 
   markKeyCooldown(id, cooldownSeconds = 60) {
     const until = Date.now() + (cooldownSeconds * 1000);
     db.prepare(`
-      UPDATE provider_keys 
+      UPDATE providers 
       SET error_count = error_count + 1, cooldown_until = ?
       WHERE id = ?
     `).run(until, id);
   },
 
   touchProviderKey(id) {
-    db.prepare('UPDATE provider_keys SET last_used_at = ?, error_count = 0 WHERE id = ?').run(Date.now(), id);
+    db.prepare('UPDATE providers SET last_used_at = ?, error_count = 0 WHERE id = ?').run(Date.now(), id);
   }
 };
 
-// Model Store Helpers
 export const ModelStore = {
   getAllModels() {
     return db.prepare('SELECT * FROM cached_models WHERE is_active = 1 ORDER BY provider, display_name').all();
@@ -190,10 +197,6 @@ export const ModelStore = {
 
   getFreeModels() {
     return db.prepare('SELECT * FROM cached_models WHERE is_active = 1 AND is_free = 1 ORDER BY provider, display_name').all();
-  },
-
-  getModelById(id) {
-    return db.prepare('SELECT * FROM cached_models WHERE id = ?').get(id);
   },
 
   upsertModel(model) {
@@ -220,14 +223,9 @@ export const ModelStore = {
       model.latency_ms || 0,
       Date.now()
     );
-  },
-
-  deleteProviderModels(provider) {
-    return db.prepare('DELETE FROM cached_models WHERE provider = ?').run(provider);
   }
 };
 
-// Request Logging & Telemetry
 export const LogStore = {
   record({
     clientKey,
@@ -278,7 +276,6 @@ export const LogStore = {
     `).get();
 
     const totalTokens = (stats.total_prompt_tokens || 0) + (stats.total_completion_tokens || 0);
-    // Estimated USD savings assuming standard commercial API costs (~$5 per 1M tokens avg)
     const estimatedSavedUsd = ((totalTokens / 1000000) * 5.0).toFixed(4);
 
     return {
@@ -289,7 +286,64 @@ export const LogStore = {
       totalFallbacks: stats.total_fallbacks || 0,
       estimatedSavedUsd,
       activeModelsCount: (db.prepare('SELECT COUNT(*) as c FROM cached_models WHERE is_active = 1 AND is_free = 1').get()).c,
-      activeKeysCount: (db.prepare('SELECT COUNT(*) as c FROM provider_keys WHERE active = 1').get()).c
+      activeKeysCount: (db.prepare('SELECT COUNT(*) as c FROM providers WHERE active = 1').get()).c
     };
+  },
+
+  getTimeSeries() {
+    try {
+      const rows = db.prepare(`
+        SELECT 
+          strftime('%H:00', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as time_label,
+          COUNT(*) as request_count,
+          SUM(prompt_tokens + completion_tokens) as token_count,
+          ROUND(AVG(latency_ms), 1) as avg_latency
+        FROM request_logs
+        GROUP BY time_label
+        ORDER BY timestamp DESC
+        LIMIT 10
+      `).all();
+      return rows.reverse();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  getProviderDistribution() {
+    try {
+      return db.prepare(`
+        SELECT provider, COUNT(*) as count
+        FROM request_logs
+        WHERE provider IS NOT NULL AND provider != 'none'
+        GROUP BY provider
+        ORDER BY count DESC
+        LIMIT 8
+      `).all();
+    } catch (e) {
+      return [];
+    }
   }
 };
+
+export const HealthStore = {
+  upsertHealth(provider, status, latencyMs = 0, errorMessage = null) {
+    db.prepare(`
+      INSERT INTO provider_health (provider, status, latency_ms, last_checked_at, error_message)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(provider) DO UPDATE SET
+        status = excluded.status,
+        latency_ms = excluded.latency_ms,
+        last_checked_at = excluded.last_checked_at,
+        error_message = excluded.error_message
+    `).run(provider, status, latencyMs, Date.now(), errorMessage || null);
+  },
+
+  getAllHealth() {
+    return db.prepare('SELECT * FROM provider_health ORDER BY provider ASC').all();
+  },
+
+  getHealth(provider) {
+    return db.prepare('SELECT * FROM provider_health WHERE provider = ?').get(provider) || null;
+  }
+};
+

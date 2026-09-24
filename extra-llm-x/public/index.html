@@ -50,6 +50,9 @@
         <button class="nav-btn" data-tab="tab-playground" id="btn-nav-playground">
           <span class="icon">💬</span> Playground
         </button>
+        <button class="nav-btn" data-tab="tab-rankings" id="btn-nav-rankings">
+          <span class="icon">🏆</span> Rankings
+        </button>
         <button class="nav-btn" data-tab="tab-logs" id="btn-nav-logs">
           <span class="icon">📜</span> Telemetry
         </button>
@@ -451,7 +454,58 @@ Model Name:   extra/free-coding</code></pre>
       </div>
     </section>
 
-    <!-- TAB 7: TELEMETRY LOGS -->
+    <!-- TAB 7: FREE PROVIDER RANKINGS -->
+    <section class="tab-pane" id="tab-rankings">
+      <div class="section-container">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">🏆 OmniRoute Free Provider Intelligence Rankings</h2>
+            <p class="section-subtitle">Real-time benchmark ELO, throughput, and 100% free quota limits across providers</p>
+          </div>
+          <button class="btn-secondary" id="btn-refresh-rankings">
+            <span>🔄 Refresh Rankings</span>
+          </button>
+        </div>
+
+        <div class="free-tier-banner mt-3">
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-total-free-models">523+</span>
+            <span class="banner-stat-lbl">Curated Free Models</span>
+          </div>
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-active-free-models">0</span>
+            <span class="banner-stat-lbl">Active & Configured</span>
+          </div>
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-zero-key-providers">2</span>
+            <span class="banner-stat-lbl">Zero-Key NoAuth Providers</span>
+          </div>
+          <div class="banner-stat">
+            <span class="banner-stat-val" id="summary-monthly-capacity">1.5B+</span>
+            <span class="banner-stat-lbl">Monthly Free Token Pool</span>
+          </div>
+        </div>
+
+        <div class="glass-table-wrapper mt-3">
+          <table class="glass-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Provider</th>
+                <th>Benchmark ELO</th>
+                <th>Speed (tok/s)</th>
+                <th>Free Tier Quota</th>
+                <th>Top Free Models</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-rankings"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 8: TELEMETRY LOGS -->
     <section class="tab-pane" id="tab-logs">
       <div class="section-container">
         <div class="section-header flex-between">

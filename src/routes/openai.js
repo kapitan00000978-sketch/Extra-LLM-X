@@ -1,12 +1,11 @@
 import express from 'express';
-import { dispatcher } from '../router/dispatcher.js';
-import { getAllCombos } from '../router/combos.js';
+import { routerEngine } from '../engine/router.js';
+import { getAllCombos } from '../engine/combos.js';
 import { ModelStore, KeyStore, LogStore } from '../db/database.js';
 import { config } from '../config.js';
 
 export const openaiRouter = express.Router();
 
-// Authentication middleware for OpenAI endpoints
 function authMiddleware(req, res, next) {
   if (!config.enableAuth) {
     return next();
@@ -14,7 +13,6 @@ function authMiddleware(req, res, next) {
 
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    // If no auth header, check query param or check if master key matches
     return res.status(401).json({
       error: {
         message: 'Missing Authorization header. Extra LLM X requires Bearer API key (e.g. elx-live-...). Obtain one from http://localhost:3000',
@@ -44,7 +42,6 @@ function authMiddleware(req, res, next) {
 
 /**
  * GET /v1/models
- * Returns all active 100% free models and virtual combos in OpenAI standard format
  */
 openaiRouter.get('/models', authMiddleware, (req, res) => {
   const combos = getAllCombos();
@@ -95,7 +92,6 @@ openaiRouter.get('/models', authMiddleware, (req, res) => {
 
 /**
  * POST /v1/chat/completions
- * Standard OpenAI Chat Completions with Streaming, Function Calling, and Auto-Failover
  */
 openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
   const {
@@ -119,7 +115,7 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
   }
 
   try {
-    const result = await dispatcher.dispatch({
+    const result = await routerEngine.dispatch({
       clientKey: req.clientKey,
       requestedModel: model,
       messages,
@@ -132,41 +128,53 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
 
     const latencyMs = Date.now() - result.startTime;
 
-    // Set custom tracking headers
     res.setHeader('X-ExtraLLMX-Provider', result.provider);
     res.setHeader('X-ExtraLLMX-Actual-Model', result.model);
     res.setHeader('X-ExtraLLMX-Fallback', result.fallbackOccurred ? 'true' : 'false');
     res.setHeader('X-ExtraLLMX-Latency-Ms', latencyMs.toString());
 
+    // OmniRoute Compatibility Headers
+    res.setHeader('x-omniroute-provider', result.provider);
+    res.setHeader('x-omniroute-actual-model', result.model);
+    res.setHeader('x-omniroute-fallback', result.fallbackOccurred ? 'true' : 'false');
+    res.setHeader('x-omniroute-latency-ms', latencyMs.toString());
+    if (result.compression) {
+      res.setHeader('x-omniroute-compressed', result.compression.compressed ? 'true' : 'false');
+      res.setHeader('x-omniroute-tokens-saved', (result.compression.tokensSaved || 0).toString());
+    }
+
     if (stream) {
-      // Setup SSE Stream
       res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders?.();
 
-      let promptTokens = 0;
+      let promptTokens = messages.reduce((acc, m) => acc + (typeof m.content === 'string' ? m.content.length / 4 : 0), 0);
       let completionTokens = 0;
-
-      // Estimate tokens
-      promptTokens = messages.reduce((acc, m) => acc + (typeof m.content === 'string' ? m.content.length / 4 : 0), 0);
 
       const upstreamBody = result.response.body;
       if (upstreamBody) {
-        // Upstream web stream (ReadableStream from fetch)
         const reader = upstreamBody.getReader();
         const decoder = new TextDecoder();
+        let clientClosed = false;
+
+        req.on('close', () => {
+          clientClosed = true;
+          reader.cancel().catch(() => {});
+        });
 
         try {
-          while (true) {
+          while (!clientClosed) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done || clientClosed) break;
             const textChunk = decoder.decode(value, { stream: true });
             completionTokens += Math.max(1, Math.round(textChunk.length / 4));
             res.write(textChunk);
           }
         } catch (streamErr) {
-          console.warn(`[OpenAI Route] Stream error: ${streamErr.message}`);
+          if (!clientClosed) {
+            console.warn(`[OpenAI Route] Stream error: ${streamErr.message}`);
+          }
         } finally {
           res.end();
         }
@@ -174,7 +182,6 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
         res.end();
       }
 
-      // Record logs and key usage asynchronously
       LogStore.record({
         clientKey: req.clientKey,
         requestedModel: model,
@@ -189,9 +196,7 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
 
       KeyStore.recordKeyUsage(req.clientKey, Math.round(promptTokens + completionTokens));
     } else {
-      // Non-streaming response
       const data = await result.response.json();
-
       const promptTokens = data.usage?.prompt_tokens || 0;
       const completionTokens = data.usage?.completion_tokens || 0;
 
@@ -208,7 +213,6 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
       });
 
       KeyStore.recordKeyUsage(req.clientKey, promptTokens + completionTokens);
-
       res.json(data);
     }
   } catch (err) {
@@ -219,7 +223,7 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
         message: err.message,
         type: status === 503 ? 'provider_unavailable_error' : 'api_error',
         code: status,
-        suggestion: 'Check if you have added free API keys on http://localhost:3000'
+        suggestion: 'Ensure you have added at least one free API key at http://localhost:3000'
       }
     });
   }
@@ -227,7 +231,6 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
 
 /**
  * POST /v1/embeddings
- * Simple embeddings endpoint
  */
 openaiRouter.post('/embeddings', authMiddleware, (req, res) => {
   const { input } = req.body;

@@ -1,19 +1,17 @@
 {
   "name": "extra-llm-x",
   "version": "1.0.0",
-  "description": "Next-Gen Free-Model Aggregator, AI Gateway and API Key Provider for Universal Agent HP",
+  "description": "Next-Gen 100% Free LLM Gateway, Dynamic Discovery Engine, and API Key Provider for Universal Agent HP",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test tests/server.test.js tests/http.test.js"
+    "test": "node --test tests/*.test.js"
   },
   "keywords": [
     "ai",
-    "llm",
     "gateway",
-    "omniroute",
     "free-models",
     "universal-agent",
     "groq",
@@ -22,7 +20,7 @@
     "sambanova",
     "cerebras"
   ],
-  "author": "ExtraLLMX",
+  "author": "Senior Full-Stack Architect",
   "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
