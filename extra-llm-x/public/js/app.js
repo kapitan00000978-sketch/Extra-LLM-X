@@ -743,6 +743,52 @@ function initHandshakeTester() {
       }
     }
   });
+
+  document.getElementById('btn-simulate-agent')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-simulate-agent');
+    const badge = document.getElementById('handshake-badge');
+    const meta = document.getElementById('handshake-meta');
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Simulating DAG...';
+    }
+    if (badge) {
+      badge.className = 'handshake-badge testing';
+      badge.textContent = '● Executing Universal Agent DAG Wave...';
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/universal-agent/simulate`, { method: 'POST' });
+      const data = await res.json();
+
+      if (data.success) {
+        if (badge) {
+          badge.className = 'handshake-badge live';
+          badge.textContent = `🟢 DAG Simulation PASSED (${data.totalLatencyMs}ms)`;
+        }
+        if (meta) {
+          const stepSummary = data.steps.map(s => `✓ ${s.step}: <strong>${s.provider}</strong> (${s.model})`).join(' | ');
+          meta.innerHTML = `<strong>Autonomous Pipeline Execution Success!</strong> ${stepSummary}`;
+        }
+        showToast('Universal Agent HP DAG Simulation Succeeded!', 'success');
+      } else {
+        throw new Error(data.error || 'Simulation failed');
+      }
+    } catch (err) {
+      if (badge) {
+        badge.className = 'handshake-badge error';
+        badge.textContent = '🔴 Simulation Failed';
+      }
+      if (meta) meta.textContent = 'Error: ' + err.message;
+      showToast('Simulation error: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🚀 Simulate 2-Step DAG';
+      }
+    }
+  });
 }
 
 // Playground Controller

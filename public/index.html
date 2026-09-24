@@ -395,13 +395,18 @@ TITAN_MODEL=extra/auto-free</code></pre>
               <span class="pulse-dot"></span>
               <span class="handshake-title">Universal Agent HP Live Handshake Status</span>
             </div>
-            <button class="btn-primary btn-sm" id="btn-test-handshake">
-              <span>🧪 Test Handshake</span>
-            </button>
+            <div class="handshake-actions" style="display: flex; gap: 0.5rem;">
+              <button class="btn-primary btn-sm" id="btn-test-handshake">
+                <span>🧪 Test Handshake</span>
+              </button>
+              <button class="btn-secondary btn-sm" id="btn-simulate-agent">
+                <span>🚀 Simulate 2-Step DAG</span>
+              </button>
+            </div>
           </div>
           <div class="handshake-status-body" id="handshake-status-body">
             <div class="handshake-badge live" id="handshake-badge">● Gateway Ready (http://localhost:3000/v1)</div>
-            <div class="handshake-meta" id="handshake-meta">Click "Test Handshake" to verify end-to-end connection compatibility.</div>
+            <div class="handshake-meta" id="handshake-meta">Click "Test Handshake" or "Simulate 2-Step DAG" to test real multi-step autonomous execution.</div>
           </div>
         </div>
 
@@ -419,7 +424,10 @@ OPENAI_API_KEY=elx-live-universal-agent-free-hub
 FAST_MODEL=extra/free-fast
 CODING_MODEL=extra/free-coding
 REASONING_MODEL=extra/free-reasoning
-VISION_MODEL=extra/free-vision</code></pre>
+VISION_MODEL=extra/free-vision
+EMBEDDING_MODEL=extra/free-embedding
+IMAGE_MODEL=flux
+AUDIO_MODEL=whisper-large-v3</code></pre>
               <div class="snippet-actions-row">
                 <button class="btn-copy-code" id="btn-copy-guide-env">Copy .env</button>
                 <button class="btn-secondary btn-sm" id="btn-download-env" title="Download configured .env file">📥 Download .env</button>

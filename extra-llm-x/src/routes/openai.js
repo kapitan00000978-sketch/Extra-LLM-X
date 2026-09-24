@@ -4,6 +4,7 @@ import { getAllCombos } from '../engine/combos.js';
 import { responseCache } from '../engine/cache.js';
 import { freeEmbeddings } from '../engine/embeddings.js';
 import { imagesRouter } from './images.js';
+import { audioRouter } from './audio.js';
 import { ModelStore, KeyStore, LogStore } from '../db/database.js';
 import { config } from '../config.js';
 
@@ -11,6 +12,9 @@ export const openaiRouter = express.Router();
 
 // Mount Free Image Generation
 openaiRouter.use('/images', imagesRouter);
+
+// Mount Free Audio Transcriptions (Whisper)
+openaiRouter.use('/audio', audioRouter);
 
 function authMiddleware(req, res, next) {
   if (!config.enableAuth) {

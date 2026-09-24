@@ -46,8 +46,54 @@ export class DiscoveryEngine {
       console.warn(`[DiscoveryEngine] Error ingesting OmniRoute catalog: ${catalogErr.message}`);
     }
 
+    // 3. Dynamic Live Online Harvester (Scrapes $0 models without keys)
+    try {
+      const liveCount = await this.harvestOnlineFreeModels();
+      totalDiscovered += liveCount;
+    } catch (onlineErr) {
+      // Graceful skip if offline
+    }
+
     console.log(`[DiscoveryEngine] Completed scan: ${totalDiscovered} free models registered in SQLite.`);
     return totalDiscovered;
+  }
+
+  async harvestOnlineFreeModels() {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/models', {
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(4000)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data && Array.isArray(json.data)) {
+          let count = 0;
+          for (const m of json.data) {
+            const isZeroPrompt = m.pricing?.prompt === '0' || m.pricing?.prompt === 0;
+            const isZeroComp = m.pricing?.completion === '0' || m.pricing?.completion === 0;
+            const isFreeId = m.id && m.id.endsWith(':free');
+
+            if (isFreeId || (isZeroPrompt && isZeroComp)) {
+              ModelStore.upsertModel({
+                id: `openrouter/${m.id}`,
+                provider: 'openrouter',
+                model_id: m.id,
+                display_name: `${m.name || m.id} [OpenRouter Live Free]`,
+                description: m.description || 'Live dynamic $0 free model from OpenRouter catalog',
+                context_window: m.context_length || 32768,
+                is_free: 1,
+                capabilities: 'chat,general'
+              });
+              count++;
+            }
+          }
+          return count;
+        }
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+    return 0;
   }
 
   async scanProvider(providerId) {

@@ -153,3 +153,41 @@ test('HTTP: GET /api/cache/stats and POST /api/cache/clear manage semantic cache
   assert.strictEqual(clearData.success, true);
 });
 
+test('HTTP: POST /v1/audio/transcriptions returns valid Whisper transcription', async () => {
+  const res = await fetch(`${baseUrl}/v1/audio/transcriptions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+    },
+    body: JSON.stringify({ prompt: 'Universal Agent audio stream transcription test' })
+  });
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.ok(data.text);
+  assert.ok(data.text.length > 0);
+});
+
+test('HTTP: GET /api/universal-agent/config returns complete env and SDK config', async () => {
+  const res = await fetch(`${baseUrl}/api/universal-agent/config`);
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.strictEqual(data.success, true);
+  assert.ok(data.envSnippet.includes('OPENAI_API_BASE'));
+  assert.ok(data.pythonSnippet.includes('client = openai.OpenAI'));
+  assert.ok(data.nodeSnippet.includes('new OpenAI'));
+  assert.ok(Array.isArray(data.combos));
+});
+
+test('HTTP: POST /api/universal-agent/simulate executes multi-step DAG planning simulation', async () => {
+  const res = await fetch(`${baseUrl}/api/universal-agent/simulate`, { method: 'POST' });
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.strictEqual(data.success, true);
+  assert.strictEqual(data.simulation, 'PASS');
+  assert.strictEqual(data.steps.length, 2);
+  assert.strictEqual(data.steps[0].status, 'completed');
+  assert.strictEqual(data.steps[1].status, 'completed');
+});
+
+

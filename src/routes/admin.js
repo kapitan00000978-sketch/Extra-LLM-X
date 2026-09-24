@@ -5,6 +5,7 @@ import { discoveryEngine } from '../engine/discovery.js';
 import { getAllCombos } from '../engine/combos.js';
 import { healthCheckEngine } from '../engine/health_check.js';
 import { responseCache } from '../engine/cache.js';
+import { routerEngine } from '../engine/router.js';
 import { OMNIROUTE_FREE_MODELS } from '../catalog/omniroute_catalog.js';
 
 export const adminRouter = express.Router();
@@ -346,4 +347,139 @@ adminRouter.post('/cache/clear', (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+adminRouter.get('/universal-agent/config', (req, res) => {
+  try {
+    const keys = KeyStore.getAllSystemKeys();
+    const activeKey = keys.find(k => k.active === 1)?.key || 'elx-live-universal-agent-free-hub';
+
+    const envContent = `# Universal Agent HP — Extra LLM X Free Gateway Environment
+OPENAI_API_BASE=http://localhost:3000/v1
+OPENAI_API_KEY=${activeKey}
+
+# Model Route Mappings
+DEFAULT_MODEL=extra/auto-free
+PLANNING_MODEL=extra/free-reasoning
+CODING_MODEL=extra/free-coding
+FAST_MODEL=extra/free-fast
+VISION_MODEL=extra/free-vision
+EMBEDDING_MODEL=extra/free-embedding
+IMAGE_MODEL=flux
+AUDIO_MODEL=whisper-large-v3
+
+# Gateway Configuration
+EXTRA_LLM_X_URL=http://localhost:3000
+AUTO_FAILOVER_ENABLED=true
+SEMANTIC_CACHE_ENABLED=true
+`;
+
+    const pythonCode = `import openai
+
+client = openai.OpenAI(
+    base_url="http://localhost:3000/v1",
+    api_key="${activeKey}"
+)
+
+# 1. Chat Completion with 100% Free Auto-Routing
+response = client.chat.completions.create(
+    model="extra/auto-free",
+    messages=[{"role": "user", "content": "Hello from Universal Agent HP!"}]
+)
+print("Assistant:", response.choices[0].message.content)
+
+# 2. 100% Free Vector Embeddings (1536 dims)
+emb = client.embeddings.create(
+    model="extra/free-embedding",
+    input=["Agent memory retrieval step"]
+)
+print("Vector dims:", len(emb.data[0].embedding))
+`;
+
+    const nodeCode = `import OpenAI from 'openai';
+
+const openai = new OpenAI({
+  baseURL: 'http://localhost:3000/v1',
+  apiKey: '${activeKey}'
+});
+
+async function main() {
+  const completion = await openai.chat.completions.create({
+    model: 'extra/free-coding',
+    messages: [{ role: 'user', content: 'Generate a TypeScript async queue.' }]
+  });
+  console.log(completion.choices[0].message.content);
+}
+main();
+`;
+
+    res.json({
+      success: true,
+      baseUrl: 'http://localhost:3000/v1',
+      apiKey: activeKey,
+      envSnippet: envContent,
+      pythonSnippet: pythonCode,
+      nodeSnippet: nodeCode,
+      combos: [
+        { role: 'Autopilot', combo: 'extra/auto-free', description: 'Universal failover chain across 26 providers' },
+        { role: 'Reasoning', combo: 'extra/free-reasoning', description: 'DeepSeek-R1 CoT mathematical & logic chain' },
+        { role: 'Coding', combo: 'extra/free-coding', description: 'Codestral, Qwen 2.5 Coder, Llama 3.3 70B' },
+        { role: 'Fast LPUs', combo: 'extra/free-fast', description: 'Sub-second Cerebras and Groq execution' },
+        { role: 'Vision', combo: 'extra/free-vision', description: 'Gemini 2.0 Flash and GPT-4o-mini multimodal' }
+      ]
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.post('/universal-agent/simulate', async (req, res) => {
+  const startTime = Date.now();
+  const logs = [];
+
+  try {
+    // Step 1: Simulate Planner
+    logs.push({ step: '1. Task Decomposition & Planning', model: 'extra/free-reasoning', status: 'started' });
+    const planResult = await routerEngine.dispatch({
+      clientKey: 'elx-live-universal-agent-free-hub',
+      requestedModel: 'extra/free-reasoning',
+      messages: [{ role: 'user', content: 'Universal Agent HP Simulation: Create a 2-step pipeline plan' }],
+      stream: false
+    });
+    logs[0].status = 'completed';
+    logs[0].provider = planResult.provider;
+    logs[0].model = planResult.model;
+    logs[0].fallback = planResult.fallbackOccurred;
+
+    // Step 2: Simulate Coding Specialist
+    logs.push({ step: '2. Code Generation & Tool Synthesis', model: 'extra/free-coding', status: 'started' });
+    const codeResult = await routerEngine.dispatch({
+      clientKey: 'elx-live-universal-agent-free-hub',
+      requestedModel: 'extra/free-coding',
+      messages: [{ role: 'user', content: 'Generate a short fibonacci function in python' }],
+      stream: false
+    });
+    logs[1].status = 'completed';
+    logs[1].provider = codeResult.provider;
+    logs[1].model = codeResult.model;
+    logs[1].fallback = codeResult.fallbackOccurred;
+
+    const totalDuration = Date.now() - startTime;
+
+    res.json({
+      success: true,
+      simulation: 'PASS',
+      totalLatencyMs: totalDuration,
+      steps: logs,
+      summary: 'Universal Agent HP multi-step autonomous execution completed with 0 errors via 100% free routes.'
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      simulation: 'FAIL',
+      error: err.message,
+      steps: logs
+    });
+  }
+});
+
 

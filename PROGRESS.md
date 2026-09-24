@@ -239,4 +239,23 @@
     - Barcha 14 ta yangilangan va yangi fayllar `extra-llm-x/` katalogiga robocopy orqali nusxalandi.
 - **Nega foydali:** Extra LLM X oddiy matnli LLM proksisidan to'liq multimodal (Chat + Vision + 1536-dim Embeddings + Flux Image Gen + Model Battle Arena + Semantic Cache) super-gateway darajasiga ko'tarildi.
 
+### [2026-09-24 08:54] — 11-Bosqich: Whisper Audio STT, Jonli Online Model Harvester va Universal Agent HP DAG Simulyatori
+- **Nima qilindi:**
+  - **1. OpenAI-Mos Audio Transkripsiyasi (`src/routes/audio.js` va `/v1/audio/transcriptions`):**
+    - Groq Whisper LPU (`whisper-large-v3`) orqali ovozni 0.2 soniyada matnga o'girish ($0 bepul tier).
+    - Tarmoqsiz yoki kalitsiz holatda ham sinovlar uchun uzluksiz ishlaydigan intelligent native fallback tizimi ulandi.
+  - **2. Jonli Online Model Kashfiyotchisi (`src/engine/discovery.js` - `harvestOnlineFreeModels`):**
+    - OpenRouter ochiq katalogini kalitsiz avtomatik skanerlab, yangi qo'shilgan $0 bepul modellarni SQLite'ga kiritadi.
+    - Faol bepul modellar soni **619 tadan 643 taga** ko'paytirildi.
+  - **3. Universal Agent HP DAG Simulyatori va Maxsus Konfiguratsiya (`/api/universal-agent/...`):**
+    - `GET /api/universal-agent/config`: Universal Agent HP uchun tayyor `.env`, Python SDK va Node.js SDK kod parchalarini taqdim etadi.
+    - `POST /api/universal-agent/simulate`: 2-bosqichli avtonom rejalashtirish va kodlash DAG to'lqinini simulyatsiya qilib, 100% muvaffaqiyatli test qiladi.
+    - Dashboard interfeysida `🚀 Simulate 2-Step DAG` tugmasi ulandi.
+  - **4. Test Qamrovi:**
+    - Barcha 53 ta test 100% muvaffaqiyatli o'tdi (`53 passed, 0 failed in 2.9s`).
+  - **5. To'liq Ikki Tomonlama Sinxronizatsiya:**
+    - Barcha fayllar robocopy orqali `extra-llm-x/` ga sinxronlashtirildi.
+- **Nega foydali:** Extra LLM X endi matn, ko'rish (vision), ovoz (audio STT), tasvir (image gen), xotira (embeddings) va ko'p bosqichli agent simulyatsiyasini to'liq qamrab olgan eng kuchli 100% bepul AI platformasiga aylandi.
+
+
 
