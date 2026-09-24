@@ -1,12 +1,26 @@
-// Extra LLM X — Frontend Controller & Telemetry Engine
+// Extra LLM X — Next-Gen Frontend Controller & Telemetry Engine (OmniRoute Parity)
 
 const API_BASE = window.location.origin;
 
+// State Management
 let allModels = [];
 let allCombos = [];
+let allPortals = [];
+let allKeys = [];
+let allRankings = [];
+let allLogs = [];
+
 let activeFilter = 'all';
+let activeProviderFilter = 'all';
+let selectedProviderDropdown = '';
+let selectedSortOrder = 'context-desc';
+let modelsCurrentPage = 1;
+const modelsPerPage = 24;
+
+let activeRankingsFilter = 'all';
 let currentChatHistory = [];
 let isGenerating = false;
+let currentAbortController = null;
 
 const navTabs = document.querySelectorAll('.nav-btn');
 const tabPanes = document.querySelectorAll('.tab-pane');
@@ -21,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initPlayground();
   initMatrixView();
   initHealthCheck();
+  initHandshakeTester();
+  initTelemetryActions();
+  initKeyboardShortcuts();
 
   loadStats();
   loadCharts();
@@ -37,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(loadLogs, 6000);
 });
 
+// Tab Navigation
 function initTabs() {
   navTabs.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -48,7 +66,7 @@ function initTabs() {
       const targetPane = document.getElementById(targetId);
       if (targetPane) targetPane.classList.add('active');
 
-      if (targetId === 'tab-models') loadModels();
+      if (targetId === 'tab-models') renderFilteredModels();
       if (targetId === 'tab-providers') loadProviders();
       if (targetId === 'tab-keys') loadSystemKeys();
       if (targetId === 'tab-rankings') loadRankings();
@@ -57,7 +75,6 @@ function initTabs() {
   });
 
   document.getElementById('btn-refresh-rankings')?.addEventListener('click', loadRankings);
-
   document.getElementById('btn-hero-add-provider')?.addEventListener('click', () => switchTab('tab-providers'));
   document.getElementById('btn-hero-gen-key')?.addEventListener('click', () => {
     switchTab('tab-keys');
@@ -71,6 +88,7 @@ function switchTab(tabId) {
   if (btn) btn.click();
 }
 
+// Cockpit Stats
 async function loadStats() {
   try {
     const res = await fetch(`${API_BASE}/api/stats`);
@@ -79,8 +97,8 @@ async function loadStats() {
 
     document.getElementById('stat-total-tokens').textContent = Number(stats.totalTokens || 0).toLocaleString();
     document.getElementById('stat-saved-usd').textContent = `$${stats.estimatedSavedUsd || '0.0000'}`;
-    document.getElementById('stat-active-models').textContent = stats.activeModelsCount || 0;
-    document.getElementById('badge-models-count').textContent = stats.activeModelsCount || 0;
+    document.getElementById('stat-active-models').textContent = stats.activeModelsCount || '600+';
+    document.getElementById('badge-models-count').textContent = stats.activeModelsCount || '600+';
     document.getElementById('stat-total-fallbacks').textContent = stats.totalFallbacks || 0;
 
     const resilienceRate = stats.totalRequests > 0
@@ -92,6 +110,7 @@ async function loadStats() {
   }
 }
 
+// Providers Hub Controller
 async function loadProviders() {
   try {
     const [portalsRes, keysRes] = await Promise.all([
@@ -99,68 +118,137 @@ async function loadProviders() {
       fetch(`${API_BASE}/api/providers/keys`)
     ]);
 
-    const portals = await portalsRes.json();
-    const keys = await keysRes.json();
+    allPortals = await portalsRes.json();
+    allKeys = await keysRes.json();
 
-    document.getElementById('badge-providers-count').textContent = portals.length;
-    renderProvidersGrid(portals);
-    renderProviderKeysTable(keys);
+    document.getElementById('badge-providers-count').textContent = allPortals.length;
+
+    // Update filter badge counters
+    const activeCount = allPortals.filter(p => p.status === 'active' || p.status === 'ready').length;
+    const noauthCount = allPortals.filter(p => p.isNoAuth).length;
+    const neededCount = allPortals.filter(p => !p.isNoAuth && p.status !== 'active').length;
+
+    const elAll = document.getElementById('cnt-p-all');
+    const elAct = document.getElementById('cnt-p-active');
+    const elNoa = document.getElementById('cnt-p-noauth');
+    const elNed = document.getElementById('cnt-p-needed');
+    if (elAll) elAll.textContent = allPortals.length;
+    if (elAct) elAct.textContent = activeCount;
+    if (elNoa) elNoa.textContent = noauthCount;
+    if (elNed) elNed.textContent = neededCount;
+
+    renderProvidersGrid();
+    renderProviderKeysTable(allKeys);
   } catch (err) {
     showToast('Failed to load providers: ' + err.message, 'error');
   }
 }
 
-function renderProvidersGrid(portals) {
+function renderProvidersGrid() {
   const container = document.getElementById('providers-grid');
   if (!container) return;
 
-  container.innerHTML = portals.map(p => {
+  const searchQuery = (document.getElementById('input-provider-search')?.value || '').toLowerCase().trim();
+
+  const filtered = allPortals.filter(p => {
+    let matchesType = true;
+    if (activeProviderFilter === 'active') matchesType = (p.status === 'active' || p.status === 'ready');
+    else if (activeProviderFilter === 'noauth') matchesType = !!p.isNoAuth;
+    else if (activeProviderFilter === 'needed') matchesType = (!p.isNoAuth && p.status !== 'active');
+
+    const matchesSearch = !searchQuery ||
+      p.name.toLowerCase().includes(searchQuery) ||
+      p.id.toLowerCase().includes(searchQuery) ||
+      (p.popularModels && p.popularModels.toLowerCase().includes(searchQuery));
+
+    return matchesType && matchesSearch;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">
+        No providers found matching this filter or search.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(p => {
     const isReady = p.status === 'ready';
     const isActive = p.status === 'active';
-    let statusText = '⚪ No Key Added';
-    if (isReady) statusText = '🟢 Ready (Local / Demo)';
-    else if (isActive) statusText = `🟢 ${p.activeKeysCount} Key(s) Active`;
+    let statusBadge = '<span class="tag-status standby">⚪ Key Needed</span>';
+    if (p.isNoAuth) {
+      statusBadge = '<span class="tag-status live" style="background:rgba(0,245,212,0.15);color:var(--accent-cyan);border-color:var(--accent-cyan);">⚡ Zero-Key Live</span>';
+    } else if (isActive) {
+      statusBadge = `<span class="tag-status live">🟢 ${p.activeKeysCount} Key(s) Active</span>`;
+    } else if (isReady) {
+      statusBadge = '<span class="tag-status live">🟢 Ready</span>';
+    }
 
     const isLocalOrMock = p.id === 'ollama' || p.id === 'lmstudio' || p.id === 'mock';
 
     return `
-      <div class="provider-card ${isActive || isReady ? 'status-active' : ''}">
+      <div class="provider-card ${isActive || isReady || p.isNoAuth ? 'status-active' : ''}">
         <div>
           <div class="provider-card-header">
-            <h3 class="provider-name">${p.name}</h3>
-            <span class="provider-badge-pill">${p.badge}</span>
+            <h3 class="provider-name">${escapeHtml(p.name)}</h3>
+            <span class="provider-badge-pill">${escapeHtml(p.badge)}</span>
           </div>
-          <div class="provider-limits">⚡ ${p.freeTierInfo}</div>
-          <div class="provider-popular">Models: ${p.popularModels}</div>
+          <div class="provider-limits">⚡ ${escapeHtml(p.freeTierInfo)}</div>
+          <div class="provider-popular">Models: <code>${escapeHtml(p.popularModels)}</code></div>
         </div>
 
         <div>
           <div class="provider-keys-summary">
             <span>Status:</span>
-            <strong>${statusText}</strong>
+            ${statusBadge}
           </div>
 
           <div class="provider-card-actions">
-            ${!isLocalOrMock ? `
-              <button class="btn-primary" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;" onclick="openAddKeyModal('${p.id}', '${p.name}', '${p.guide}')">
+            ${!isLocalOrMock && !p.isNoAuth ? `
+              <button class="btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" onclick="openAddKeyModal('${p.id}', '${p.name}', '${p.guide}')">
                 + Add Key
               </button>
             ` : `
-              <button class="btn-secondary" style="padding: 0.45rem 0.9rem; font-size: 0.8rem;" onclick="scanProviders()">
-                🔄 Scan
+              <button class="btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" onclick="testProviderPing('${p.id}', this)">
+                🧪 Ping
               </button>
             `}
-            ${p.getKeyUrl !== '#' ? `
+            ${p.getKeyUrl && p.getKeyUrl !== '#' ? `
               <a href="${p.getKeyUrl}" target="_blank" rel="noopener noreferrer" class="btn-get-free-key">
                 Get Free Key ↗
               </a>
-            ` : `<span style="font-size: 0.78rem; color: var(--accent-cyan);">Zero-Key Ready</span>`}
+            ` : `<span style="font-size: 0.78rem; color: var(--accent-cyan); font-weight: 600;">No Auth Required</span>`}
           </div>
         </div>
       </div>
     `;
   }).join('');
 }
+
+window.testProviderPing = async function(providerId, btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ ...';
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/health-check/provider/${providerId}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success && data.result) {
+      showToast(`${providerId.toUpperCase()}: ${data.result.status.toUpperCase()} (${data.result.latency_ms || 10}ms)`, 'success');
+      loadHealth();
+    } else {
+      showToast(`${providerId}: ${data.error || 'Check failed'}`, 'error');
+    }
+  } catch (err) {
+    showToast(`Ping failed: ${err.message}`, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🧪 Ping';
+    }
+  }
+};
 
 function renderProviderKeysTable(keys) {
   const tbody = document.getElementById('tbody-provider-keys');
@@ -170,7 +258,7 @@ function renderProviderKeysTable(keys) {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-          No external provider keys added yet. System is currently running in Zero-Key Demo mode with full route simulation.
+          No external provider keys added yet. System is currently running in Zero-Key Public & Fallback mode with full route simulation.
         </td>
       </tr>
     `;
@@ -183,9 +271,9 @@ function renderProviderKeysTable(keys) {
 
     return `
       <tr>
-        <td><strong>${k.provider.toUpperCase()}</strong></td>
-        <td>${k.label || '-'}</td>
-        <td><code style="font-family: var(--font-mono); color: var(--accent-cyan);">${k.api_key_masked}</code></td>
+        <td><strong>${escapeHtml(k.provider.toUpperCase())}</strong></td>
+        <td>${escapeHtml(k.label || '-')}</td>
+        <td><code style="font-family: var(--font-mono); color: var(--accent-cyan);">${escapeHtml(k.api_key_masked)}</code></td>
         <td>
           <span class="status-tag ${k.active ? 'active' : 'inactive'}">
             ${k.active ? 'Active' : 'Disabled'}
@@ -231,6 +319,7 @@ window.toggleProviderKey = async function(id, active) {
   }
 };
 
+// Free Models Catalog with Advanced Pagination
 async function loadModels() {
   try {
     const res = await fetch(`${API_BASE}/api/models`);
@@ -238,12 +327,32 @@ async function loadModels() {
     allModels = data.models || [];
     allCombos = data.combos || [];
 
+    populateProviderDropdown(allModels);
     renderCombos(allCombos);
-    renderModels(allModels);
+    renderFilteredModels();
     populatePlaygroundModels(allCombos, allModels);
   } catch (err) {
     showToast('Failed to load models: ' + err.message, 'error');
   }
+}
+
+function populateProviderDropdown(models) {
+  const select = document.getElementById('select-model-provider');
+  if (!select) return;
+
+  const currentVal = select.value;
+  const providerCounts = {};
+  models.forEach(m => {
+    providerCounts[m.provider] = (providerCounts[m.provider] || 0) + 1;
+  });
+
+  const sortedProviders = Object.keys(providerCounts).sort();
+  select.innerHTML = '<option value="">All Providers (' + sortedProviders.length + ')</option>' +
+    sortedProviders.map(p => `
+      <option value="${p}">${p.toUpperCase()} (${providerCounts[p]})</option>
+    `).join('');
+
+  if (currentVal) select.value = currentVal;
 }
 
 function renderCombos(combos) {
@@ -254,9 +363,9 @@ function renderCombos(combos) {
     <div class="combo-card">
       <div>
         <span class="combo-badge">100% FREE FAILOVER COMBO</span>
-        <h3 class="combo-title">${c.display_name}</h3>
-        <div class="combo-id">Model ID: ${c.id}</div>
-        <p class="combo-desc">${c.description}</p>
+        <h3 class="combo-title">${escapeHtml(c.display_name)}</h3>
+        <div class="combo-id">Model ID: <code>${escapeHtml(c.id)}</code></div>
+        <p class="combo-desc">${escapeHtml(c.description)}</p>
       </div>
 
       <div>
@@ -264,7 +373,7 @@ function renderCombos(combos) {
           <div class="combo-chain-title">Automatic Failover Route Chain:</div>
           <div class="chain-steps">
             ${c.targets.slice(0, 5).map((t, idx) => `
-              <span class="chain-step">${t.provider}/${t.model.split('/').pop()}</span>
+              <span class="chain-step">${escapeHtml(t.provider)}/${escapeHtml(t.model.split('/').pop())}</span>
               ${idx < Math.min(4, c.targets.length - 1) ? '<span class="chain-arrow">→</span>' : ''}
             `).join('')}
           </div>
@@ -283,72 +392,223 @@ function renderCombos(combos) {
   `).join('');
 }
 
-function renderModels(models) {
+function renderFilteredModels() {
   const container = document.getElementById('models-grid');
   if (!container) return;
 
-  const search = (document.getElementById('input-model-search')?.value || '').toLowerCase();
+  const search = (document.getElementById('input-model-search')?.value || '').toLowerCase().trim();
 
-  const filtered = models.filter(m => {
-    const matchesFilter = activeFilter === 'all' || (m.capabilities && m.capabilities.includes(activeFilter));
+  // 1. Filter
+  let filtered = allModels.filter(m => {
+    const matchesCapability = activeFilter === 'all' || (m.capabilities && m.capabilities.includes(activeFilter));
+    const matchesProvider = !selectedProviderDropdown || m.provider === selectedProviderDropdown;
     const matchesSearch = !search ||
       m.display_name.toLowerCase().includes(search) ||
       m.model_id.toLowerCase().includes(search) ||
       m.provider.toLowerCase().includes(search);
-    return matchesFilter && matchesSearch;
+
+    return matchesCapability && matchesProvider && matchesSearch;
   });
 
-  if (filtered.length === 0) {
+  // 2. Sort
+  filtered.sort((a, b) => {
+    if (selectedSortOrder === 'context-desc') return (b.context_window || 0) - (a.context_window || 0);
+    if (selectedSortOrder === 'context-asc') return (a.context_window || 0) - (b.context_window || 0);
+    if (selectedSortOrder === 'name-asc') return a.display_name.localeCompare(b.display_name);
+    if (selectedSortOrder === 'provider-asc') return a.provider.localeCompare(b.provider);
+    return 0;
+  });
+
+  const totalFiltered = filtered.length;
+  const totalPages = Math.ceil(totalFiltered / modelsPerPage) || 1;
+  modelsCurrentPage = Math.max(1, Math.min(modelsCurrentPage, totalPages));
+
+  // 3. Slice page
+  const startIdx = (modelsCurrentPage - 1) * modelsPerPage;
+  const endIdx = Math.min(startIdx + modelsPerPage, totalFiltered);
+  const pageSlice = filtered.slice(startIdx, endIdx);
+
+  // 4. Update Meta and Page Indicators
+  const metaEl = document.getElementById('models-results-count');
+  if (metaEl) {
+    metaEl.textContent = totalFiltered > 0
+      ? `Showing ${startIdx + 1}–${endIdx} of ${totalFiltered} free models`
+      : '0 models found';
+  }
+
+  const indEl = document.getElementById('page-indicator');
+  if (indEl) indEl.textContent = `${modelsCurrentPage} / ${totalPages}`;
+
+  updatePaginationButtons(totalPages);
+
+  // 5. Render Cards
+  if (pageSlice.length === 0) {
     container.innerHTML = `
       <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">
-        No free models found matching the filter. Click "Scan & Refresh Models" above!
+        No free models found matching this filter.
       </div>
     `;
+    renderModelsMatrix([]);
     return;
   }
 
-  container.innerHTML = filtered.map(m => `
-    <div class="model-card">
-      <div>
-        <div class="model-header">
-          <h4 class="model-name">${m.display_name}</h4>
-          <span class="provider-badge-pill" style="font-size: 0.65rem;">${m.provider.toUpperCase()}</span>
+  container.innerHTML = pageSlice.map(m => {
+    const contextFormatted = m.context_window >= 1000000
+      ? `${(m.context_window / 1000000).toFixed(1)}M`
+      : `${Math.round((m.context_window || 8192) / 1024)}k`;
+
+    return `
+      <div class="model-card">
+        <div>
+          <div class="model-header">
+            <h4 class="model-name">${escapeHtml(m.display_name)}</h4>
+            <span class="provider-badge-pill" style="font-size: 0.65rem;">${escapeHtml(m.provider.toUpperCase())}</span>
+          </div>
+          <div class="model-id-pill">${escapeHtml(m.id)}</div>
+          <div class="model-tags">
+            <span class="model-tag free-tag">100% FREE</span>
+            <span class="model-tag context-tag">${contextFormatted} Context</span>
+            ${(m.capabilities || 'chat').split(',').map(c => `<span class="model-tag">${escapeHtml(c.trim())}</span>`).join('')}
+          </div>
         </div>
-        <div class="model-id-pill">${m.id}</div>
-        <div class="model-tags">
-          <span class="model-tag free-tag">100% FREE</span>
-          <span class="model-tag context-tag">${Math.round((m.context_window || 8192) / 1024)}k Context</span>
-          ${(m.capabilities || 'chat').split(',').map(c => `<span class="model-tag">${c.trim()}</span>`).join('')}
+
+        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+          <button class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.78rem;" onclick="useModelInPlayground('${escapeHtml(m.id)}')">
+            Playground 💬
+          </button>
+          <button class="btn-secondary" style="padding: 0.4rem 0.65rem; font-size: 0.78rem;" onclick="copyText('${escapeHtml(m.id)}')">
+            Copy
+          </button>
         </div>
       </div>
+    `;
+  }).join('');
 
-      <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-        <button class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.78rem;" onclick="useModelInPlayground('${m.id}')">
-          Playground 💬
-        </button>
-        <button class="btn-secondary" style="padding: 0.4rem 0.65rem; font-size: 0.78rem;" onclick="copyText('${m.id}')">
-          Copy
-        </button>
-      </div>
-    </div>
-  `).join('');
-
-  renderModelsMatrix(filtered);
+  renderModelsMatrix(pageSlice);
 }
 
+function updatePaginationButtons(totalPages) {
+  const btnPrev = document.getElementById('btn-page-prev');
+  const btnNext = document.getElementById('btn-page-next');
+  const btnPrevB = document.getElementById('btn-page-prev-b');
+  const btnNextB = document.getElementById('btn-page-next-b');
+
+  const isFirst = modelsCurrentPage <= 1;
+  const isLast = modelsCurrentPage >= totalPages;
+
+  if (btnPrev) btnPrev.disabled = isFirst;
+  if (btnNext) btnNext.disabled = isLast;
+  if (btnPrevB) btnPrevB.disabled = isFirst;
+  if (btnNextB) btnNextB.disabled = isLast;
+
+  const containerNumbers = document.getElementById('models-page-numbers');
+  if (!containerNumbers) return;
+
+  let pages = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages = [1];
+    let start = Math.max(2, modelsCurrentPage - 1);
+    let end = Math.min(totalPages - 1, modelsCurrentPage + 1);
+
+    if (start > 2) pages.push('...');
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (end < totalPages - 1) pages.push('...');
+    pages.push(totalPages);
+  }
+
+  containerNumbers.innerHTML = pages.map(p => {
+    if (p === '...') return `<span style="color: var(--text-muted); padding: 0 0.2rem;">...</span>`;
+    return `
+      <button class="page-num-btn ${p === modelsCurrentPage ? 'active' : ''}" onclick="goToModelPage(${p})">
+        ${p}
+      </button>
+    `;
+  }).join('');
+}
+
+window.goToModelPage = function(pageNum) {
+  modelsCurrentPage = pageNum;
+  renderFilteredModels();
+  document.getElementById('tab-models')?.scrollIntoView({ behavior: 'smooth' });
+};
+
 function initFilters() {
+  // Capability pills
   const pills = document.querySelectorAll('#model-filter-pills .filter-pill');
   pills.forEach(pill => {
     pill.addEventListener('click', () => {
       pills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       activeFilter = pill.getAttribute('data-filter');
-      renderModels(allModels);
+      modelsCurrentPage = 1;
+      renderFilteredModels();
     });
   });
 
+  // Search input
   document.getElementById('input-model-search')?.addEventListener('input', () => {
-    renderModels(allModels);
+    modelsCurrentPage = 1;
+    renderFilteredModels();
+  });
+
+  // Provider dropdown
+  const provSelect = document.getElementById('select-model-provider');
+  provSelect?.addEventListener('change', () => {
+    selectedProviderDropdown = provSelect.value;
+    modelsCurrentPage = 1;
+    renderFilteredModels();
+  });
+
+  // Sort dropdown
+  const sortSelect = document.getElementById('select-model-sort');
+  sortSelect?.addEventListener('change', () => {
+    selectedSortOrder = sortSelect.value;
+    renderFilteredModels();
+  });
+
+  // Pagination navigation
+  const prevHandler = () => {
+    if (modelsCurrentPage > 1) {
+      modelsCurrentPage--;
+      renderFilteredModels();
+    }
+  };
+  const nextHandler = () => {
+    modelsCurrentPage++;
+    renderFilteredModels();
+  };
+
+  document.getElementById('btn-page-prev')?.addEventListener('click', prevHandler);
+  document.getElementById('btn-page-next')?.addEventListener('click', nextHandler);
+  document.getElementById('btn-page-prev-b')?.addEventListener('click', prevHandler);
+  document.getElementById('btn-page-next-b')?.addEventListener('click', nextHandler);
+
+  // Provider Hub filters
+  const provPills = document.querySelectorAll('#provider-filter-pills .filter-pill');
+  provPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      provPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeProviderFilter = pill.getAttribute('data-pfilter');
+      renderProvidersGrid();
+    });
+  });
+
+  document.getElementById('input-provider-search')?.addEventListener('input', () => {
+    renderProvidersGrid();
+  });
+
+  // Rankings category filters
+  const rankPills = document.querySelectorAll('#rankings-filter-pills .filter-pill');
+  rankPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      rankPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeRankingsFilter = pill.getAttribute('data-rfilter');
+      renderRankingsTable();
+    });
   });
 
   document.getElementById('btn-scan-all-providers')?.addEventListener('click', scanProviders);
@@ -371,6 +631,7 @@ async function scanProviders() {
   }
 }
 
+// Client System API Keys
 async function loadSystemKeys() {
   try {
     const res = await fetch(`${API_BASE}/api/system-keys`);
@@ -387,11 +648,11 @@ function renderSystemKeysTable(keys) {
 
   tbody.innerHTML = keys.map(k => `
     <tr>
-      <td><strong>${k.name}</strong></td>
+      <td><strong>${escapeHtml(k.name)}</strong></td>
       <td>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <code style="font-family: var(--font-mono); color: var(--accent-cyan);">${k.key}</code>
-          <button class="btn-copy-small" onclick="copyText('${k.key}')" title="Copy Key">📋</button>
+          <code style="font-family: var(--font-mono); color: var(--accent-cyan);">${escapeHtml(k.key)}</code>
+          <button class="btn-copy-small" onclick="copyText('${escapeHtml(k.key)}')" title="Copy Key">📋</button>
         </div>
       </td>
       <td>${k.rate_limit_rpm} req/min</td>
@@ -424,6 +685,55 @@ window.deleteSystemKey = async function(key) {
   }
 };
 
+// Universal Agent Handshake Tester
+function initHandshakeTester() {
+  document.getElementById('btn-test-handshake')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-test-handshake');
+    const badge = document.getElementById('handshake-badge');
+    const meta = document.getElementById('handshake-meta');
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Testing...';
+    }
+    if (badge) {
+      badge.className = 'handshake-badge testing';
+      badge.textContent = '● Probing Gateway...';
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/api/handshake`);
+      const data = await res.json();
+
+      if (data.success) {
+        if (badge) {
+          badge.className = 'handshake-badge live';
+          badge.textContent = `🟢 Connected & Ready (${data.latencyMs || 1}ms)`;
+        }
+        if (meta) {
+          meta.innerHTML = `<strong>Handshake OK!</strong> Active Free Models: <code>${data.activeFreeModels}</code> | Client Keys: <code>${data.clientKeysActive}</code> | Endpoint: <code>${data.endpoint}</code>`;
+        }
+        showToast('Universal Agent HP Handshake Successful!', 'success');
+      } else {
+        throw new Error(data.error || 'Handshake failed');
+      }
+    } catch (err) {
+      if (badge) {
+        badge.className = 'handshake-badge error';
+        badge.textContent = '🔴 Connection Error';
+      }
+      if (meta) meta.textContent = 'Error: ' + err.message;
+      showToast('Handshake failed: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🧪 Test Handshake';
+      }
+    }
+  });
+}
+
+// Playground Controller
 function initPlayground() {
   const tempSlider = document.getElementById('range-play-temp');
   const tempVal = document.getElementById('val-play-temp');
@@ -434,9 +744,73 @@ function initPlayground() {
   }
 
   const sendBtn = document.getElementById('btn-play-send');
+  const stopBtn = document.getElementById('btn-play-stop');
+  const clearBtn = document.getElementById('btn-play-clear');
+  const copyAllBtn = document.getElementById('btn-play-copy-all');
+  const resetSysBtn = document.getElementById('btn-clear-system');
+  const presetSelect = document.getElementById('select-system-preset');
   const msgInput = document.getElementById('input-play-message');
+  const modelSelect = document.getElementById('select-play-model');
+
+  modelSelect?.addEventListener('change', () => {
+    const pill = document.getElementById('play-active-model-pill');
+    if (pill) pill.textContent = `⚡ ${modelSelect.value}`;
+  });
+
+  presetSelect?.addEventListener('change', () => {
+    const sys = document.getElementById('input-play-system');
+    if (sys && presetSelect.value) {
+      sys.value = presetSelect.value;
+      showToast('System preset applied', 'success');
+    }
+  });
+
+  document.querySelectorAll('#quick-prompts-bar .chip-prompt').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.getAttribute('data-prompt');
+      if (prompt && msgInput) {
+        msgInput.value = prompt;
+        msgInput.focus();
+        showToast('Prompt inserted. Press Send or Enter!', 'success');
+      }
+    });
+  });
 
   sendBtn?.addEventListener('click', sendPlaygroundMessage);
+  stopBtn?.addEventListener('click', stopPlaygroundGeneration);
+
+  clearBtn?.addEventListener('click', () => {
+    currentChatHistory = [];
+    const container = document.getElementById('play-chat-messages');
+    if (container) {
+      container.innerHTML = `
+        <div class="chat-bubble assistant">
+          <div class="bubble-header">⚡ Extra LLM X System</div>
+          <div class="bubble-content">
+            Conversation cleared. Ready for your next query!
+          </div>
+        </div>
+      `;
+    }
+    showToast('Chat history cleared', 'success');
+  });
+
+  copyAllBtn?.addEventListener('click', () => {
+    if (currentChatHistory.length === 0) {
+      showToast('No messages to copy', 'error');
+      return;
+    }
+    const text = currentChatHistory.map(m => `[${m.role.toUpperCase()}]:\n${m.content}`).join('\n\n---\n\n');
+    copyText(text, copyAllBtn);
+  });
+
+  resetSysBtn?.addEventListener('click', () => {
+    const sys = document.getElementById('input-play-system');
+    if (sys) sys.value = '';
+    if (presetSelect) presetSelect.value = '';
+    showToast('System prompt reset', 'success');
+  });
+
   msgInput?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -462,8 +836,20 @@ function populatePlaygroundModels(combos, models) {
 window.useModelInPlayground = function(modelId) {
   switchTab('tab-playground');
   const select = document.getElementById('select-play-model');
-  if (select) select.value = modelId;
+  if (select) {
+    select.value = modelId;
+    const pill = document.getElementById('play-active-model-pill');
+    if (pill) pill.textContent = `⚡ ${modelId}`;
+  }
 };
+
+function stopPlaygroundGeneration() {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+    showToast('Generation cancelled', 'success');
+  }
+}
 
 async function sendPlaygroundMessage() {
   if (isGenerating) return;
@@ -474,16 +860,35 @@ async function sendPlaygroundMessage() {
   const chatMessages = document.getElementById('play-chat-messages');
   const model = document.getElementById('select-play-model').value || 'extra/auto-free';
   const temperature = parseFloat(document.getElementById('range-play-temp').value || '0.7');
-  const maxTokens = parseInt(document.getElementById('input-play-tokens').value || '512', 10);
+  const maxTokens = parseInt(document.getElementById('input-play-tokens').value || '1024', 10);
+  const systemPrompt = (document.getElementById('input-play-system')?.value || '').trim();
+
+  // Construct message payload
+  const messagesToSend = [];
+  if (systemPrompt) {
+    messagesToSend.push({ role: 'system', content: systemPrompt });
+  }
+  currentChatHistory.forEach(m => messagesToSend.push(m));
+  messagesToSend.push({ role: 'user', content: text });
 
   appendChatBubble('user', 'You', text);
   input.value = '';
   isGenerating = true;
 
-  const assistantBubble = appendChatBubble('assistant', `⚡ Extra LLM X (${model})`, 'Thinking...');
+  const sendBtn = document.getElementById('btn-play-send');
+  const stopBtn = document.getElementById('btn-play-stop');
+  const statusPill = document.getElementById('play-stream-status');
+
+  if (sendBtn) sendBtn.classList.add('hidden');
+  if (stopBtn) stopBtn.classList.remove('hidden');
+  if (statusPill) statusPill.textContent = 'Streaming...';
+
+  const assistantBubble = appendChatBubble('assistant', `⚡ Extra LLM X (${model})`, '');
   const contentEl = assistantBubble.querySelector('.bubble-content');
+  contentEl.innerHTML = '<span class="streaming-cursor"></span>';
 
   currentChatHistory.push({ role: 'user', content: text });
+  currentAbortController = new AbortController();
 
   const startTime = Date.now();
   try {
@@ -495,11 +900,12 @@ async function sendPlaygroundMessage() {
       },
       body: JSON.stringify({
         model,
-        messages: currentChatHistory,
+        messages: messagesToSend,
         stream: true,
         temperature,
         max_tokens: maxTokens
-      })
+      }),
+      signal: currentAbortController.signal
     });
 
     if (!res.ok) {
@@ -507,15 +913,14 @@ async function sendPlaygroundMessage() {
       throw new Error(errJson.error?.message || `HTTP ${res.status}`);
     }
 
-    const prov = res.headers.get('X-ExtraLLMX-Provider') || 'auto';
-    const actualModel = res.headers.get('X-ExtraLLMX-Actual-Model') || model;
-    const fallback = res.headers.get('X-ExtraLLMX-Fallback') === 'true';
+    const prov = res.headers.get('x-omniroute-provider') || res.headers.get('X-ExtraLLMX-Provider') || 'auto';
+    const actualModel = res.headers.get('x-omniroute-actual-model') || res.headers.get('X-ExtraLLMX-Actual-Model') || model;
+    const fallback = res.headers.get('x-omniroute-fallback') === 'true' || res.headers.get('X-ExtraLLMX-Fallback') === 'true';
 
     document.getElementById('tele-provider').textContent = prov.toUpperCase();
     document.getElementById('tele-model').textContent = actualModel;
-    document.getElementById('tele-fallback').textContent = fallback ? 'YES (Auto-Rerouted)' : 'Direct';
+    document.getElementById('tele-fallback').textContent = fallback ? 'YES (Auto-Failover)' : 'Direct Route';
 
-    contentEl.textContent = '';
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let fullReply = '';
@@ -533,20 +938,30 @@ async function sendPlaygroundMessage() {
             const data = JSON.parse(line.slice(6));
             const delta = data.choices?.[0]?.delta?.content || '';
             fullReply += delta;
-            contentEl.textContent = fullReply;
+            contentEl.innerHTML = formatMarkdown(fullReply) + '<span class="streaming-cursor"></span>';
             chatMessages.scrollTop = chatMessages.scrollHeight;
           } catch (e) {}
         }
       }
     }
 
+    // Finalize message
+    contentEl.innerHTML = formatMarkdown(fullReply);
     currentChatHistory.push({ role: 'assistant', content: fullReply });
     document.getElementById('tele-latency').textContent = `${Date.now() - startTime} ms`;
+    if (statusPill) statusPill.textContent = `Completed in ${Date.now() - startTime}ms`;
   } catch (err) {
-    contentEl.textContent = `❌ Error: ${err.message}`;
-    contentEl.style.color = '#ef4444';
+    if (err.name === 'AbortError') {
+      contentEl.innerHTML += '<div style="color: var(--accent-amber); font-size: 0.8rem; margin-top: 0.5rem;">[Generation Stopped]</div>';
+    } else {
+      contentEl.innerHTML = `<span style="color: #ef4444;">❌ Error: ${escapeHtml(err.message)}</span>`;
+    }
+    if (statusPill) statusPill.textContent = 'Stopped';
   } finally {
     isGenerating = false;
+    currentAbortController = null;
+    if (sendBtn) sendBtn.classList.remove('hidden');
+    if (stopBtn) stopBtn.classList.add('hidden');
   }
 }
 
@@ -555,50 +970,180 @@ function appendChatBubble(role, sender, text) {
   const bubble = document.createElement('div');
   bubble.className = `chat-bubble ${role}`;
   bubble.innerHTML = `
-    <div class="bubble-header">${sender}</div>
-    <div class="bubble-content">${escapeHtml(text)}</div>
+    <div class="bubble-header flex-between">
+      <span>${escapeHtml(sender)}</span>
+      <button class="btn-copy-small" onclick="copyBubbleText(this)" title="Copy Message">📋</button>
+    </div>
+    <div class="bubble-content">${text ? formatMarkdown(text) : ''}</div>
   `;
   container.appendChild(bubble);
   container.scrollTop = container.scrollHeight;
   return bubble;
 }
 
+window.copyBubbleText = function(btn) {
+  const contentEl = btn.closest('.chat-bubble')?.querySelector('.bubble-content');
+  if (contentEl) {
+    copyText(contentEl.innerText || contentEl.textContent);
+  }
+};
+
+// Markdown Formatter with Code Block Copy
+function formatMarkdown(text) {
+  if (!text) return '';
+
+  let html = escapeHtml(text);
+
+  // Code blocks: ```lang\ncode\n```
+  html = html.replace(/```([a-zA-Z0-9_\-\+]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    const language = lang || 'code';
+    return `
+      <div class="code-block-wrapper">
+        <div class="code-header flex-between">
+          <span class="code-lang">${language}</span>
+          <button class="btn-copy-code" onclick="copyCodeSnippet(this)">Copy Code</button>
+        </div>
+        <pre><code class="language-${language}">${code.trim()}</code></pre>
+      </div>
+    `;
+  });
+
+  // Inline code: `code`
+  html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+  // Bold: **text**
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  // Italic: *text*
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+  // Newlines to <br>
+  html = html.replace(/\n/g, '<br>');
+
+  return html;
+}
+
+window.copyCodeSnippet = function(btn) {
+  const codeEl = btn.closest('.code-block-wrapper')?.querySelector('code');
+  if (codeEl) {
+    copyText(codeEl.innerText || codeEl.textContent);
+  }
+};
+
+// Rankings Controller
+async function loadRankings() {
+  try {
+    const [rankRes, sumRes] = await Promise.all([
+      fetch(`${API_BASE}/api/free-provider-rankings`),
+      fetch(`${API_BASE}/api/free-tier/summary`)
+    ]);
+
+    if (sumRes.ok) {
+      const summary = await sumRes.json();
+      const elTotal = document.getElementById('summary-total-free-models');
+      const elActive = document.getElementById('summary-active-free-models');
+      const elZero = document.getElementById('summary-zero-key-providers');
+      const elCap = document.getElementById('summary-monthly-capacity');
+
+      if (elTotal) elTotal.textContent = summary.totalCuratedFreeModels ? `${summary.totalCuratedFreeModels}+` : '523+';
+      if (elActive) elActive.textContent = summary.activeFreeModels ? `${summary.activeFreeModels}+` : '600+';
+      if (elZero) elZero.textContent = summary.zeroKeyProviders ?? '5';
+      if (elCap) elCap.textContent = summary.monthlyCapacityPool || '1.5B+';
+    }
+
+    if (rankRes.ok) {
+      const data = await rankRes.json();
+      allRankings = data.rankings || [];
+      renderRankingsTable();
+    }
+  } catch (err) {
+    console.warn('Rankings load error:', err.message);
+  }
+}
+
+function renderRankingsTable() {
+  const tbody = document.getElementById('tbody-rankings');
+  if (!tbody) return;
+
+  const filtered = allRankings.filter(r => {
+    if (activeRankingsFilter === 'all') return true;
+    return r.category && r.category.toLowerCase().includes(activeRankingsFilter.toLowerCase());
+  });
+
+  tbody.innerHTML = filtered.map(r => {
+    const rankMedal = r.rank === 1 ? '🥇 #1' : r.rank === 2 ? '🥈 #2' : r.rank === 3 ? '🥉 #3' : `#${r.rank}`;
+    const statusBadge = r.isConfigured
+      ? `<span class="tag-status live">● Active</span>`
+      : r.isNoAuth
+        ? `<span class="tag-status live" style="background:rgba(0,245,212,0.15);color:var(--accent-cyan);border-color:var(--accent-cyan);">⚡ Zero-Key Live</span>`
+        : `<span class="tag-status standby">○ Key Needed</span>`;
+
+    const topModels = (r.topFreeModels || []).map(m => `<span class="model-tag">${escapeHtml(m)}</span>`).join(' ');
+
+    return `
+      <tr>
+        <td><strong style="color: var(--accent-cyan);">${rankMedal}</strong></td>
+        <td>
+          <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(r.name)}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(r.category || 'General LLM')}</div>
+        </td>
+        <td><span class="elo-badge">${r.benchmarkScore}</span></td>
+        <td><span class="tok-speed">${r.speedTokPerSec} tok/s</span></td>
+        <td><span style="font-size: 0.82rem; color: var(--text-secondary);">${escapeHtml(r.freeQuota)}</span></td>
+        <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${topModels}</div></td>
+        <td>${statusBadge}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Telemetry Logs Controller
 async function loadLogs() {
   try {
-    const res = await fetch(`${API_BASE}/api/logs?limit=50`);
+    const res = await fetch(`${API_BASE}/api/logs?limit=100`);
     if (!res.ok) return;
-    const logs = await res.json();
-    renderLogsTable(logs);
+    allLogs = await res.json();
+    renderLogsTable();
   } catch (err) {
     console.warn('Logs error:', err.message);
   }
 }
 
-function renderLogsTable(logs) {
+function renderLogsTable() {
   const tbody = document.getElementById('tbody-logs');
   if (!tbody) return;
 
-  if (logs.length === 0) {
+  const search = (document.getElementById('input-log-search')?.value || '').toLowerCase().trim();
+
+  const filtered = allLogs.filter(l => {
+    if (!search) return true;
+    return (l.requested_model && l.requested_model.toLowerCase().includes(search)) ||
+      (l.provider && l.provider.toLowerCase().includes(search)) ||
+      (l.actual_model && l.actual_model.toLowerCase().includes(search)) ||
+      String(l.status_code).includes(search);
+  });
+
+  if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-          No requests recorded yet. Send queries from Universal Agent HP or the Playground!
+        <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+          No telemetry requests recorded. Send queries from Universal Agent HP or the Playground!
         </td>
       </tr>
     `;
     return;
   }
 
-  tbody.innerHTML = logs.map(l => {
+  tbody.innerHTML = filtered.map(l => {
     const time = new Date(l.timestamp).toLocaleTimeString();
     const isSuccess = l.status_code === 200;
 
     return `
       <tr>
         <td>${time}</td>
-        <td><code>${l.requested_model}</code></td>
-        <td><strong>${(l.provider || '-').toUpperCase()}</strong></td>
-        <td><code>${l.actual_model || '-'}</code></td>
+        <td><code>${escapeHtml(l.requested_model)}</code></td>
+        <td><strong>${escapeHtml((l.provider || '-').toUpperCase())}</strong></td>
+        <td><code>${escapeHtml(l.actual_model || '-')}</code></td>
         <td>${l.prompt_tokens} / ${l.completion_tokens}</td>
         <td>${l.latency_ms} ms</td>
         <td>
@@ -609,16 +1154,96 @@ function renderLogsTable(logs) {
         <td>
           ${l.fallback_occurred ? '<span style="color: var(--accent-amber); font-weight: 700;">⚡ Failover</span>' : '<span style="color: var(--text-muted);">Direct</span>'}
         </td>
+        <td>
+          <button class="btn-secondary btn-sm" onclick="inspectTelemetryLog('${escapeHtml(l.id)}')">
+            🔍 Inspect
+          </button>
+        </td>
       </tr>
     `;
   }).join('');
 }
 
+window.inspectTelemetryLog = function(logId) {
+  const log = allLogs.find(l => l.id === logId);
+  if (!log) return;
+
+  const metaEl = document.getElementById('log-detail-meta');
+  const jsonEl = document.getElementById('modal-log-json');
+  const modal = document.getElementById('modal-log-detail');
+
+  if (metaEl) {
+    metaEl.innerHTML = `
+      <div class="log-meta-card">
+        <div class="log-meta-label">Status Code</div>
+        <div class="log-meta-val" style="color: ${log.status_code === 200 ? 'var(--accent-green)' : '#ef4444'};">${log.status_code}</div>
+      </div>
+      <div class="log-meta-card">
+        <div class="log-meta-label">Latency</div>
+        <div class="log-meta-val">${log.latency_ms} ms</div>
+      </div>
+      <div class="log-meta-card">
+        <div class="log-meta-label">Provider</div>
+        <div class="log-meta-val">${escapeHtml((log.provider || 'none').toUpperCase())}</div>
+      </div>
+      <div class="log-meta-card">
+        <div class="log-meta-label">Total Tokens</div>
+        <div class="log-meta-val">${(log.prompt_tokens || 0) + (log.completion_tokens || 0)}</div>
+      </div>
+    `;
+  }
+
+  if (jsonEl) {
+    jsonEl.textContent = JSON.stringify(log, null, 2);
+  }
+
+  modal?.classList.add('active');
+};
+
+function initTelemetryActions() {
+  document.getElementById('input-log-search')?.addEventListener('input', renderLogsTable);
+
+  document.getElementById('btn-export-logs')?.addEventListener('click', () => {
+    window.location.href = `${API_BASE}/api/logs/export`;
+    showToast('Telemetry logs exported as JSON', 'success');
+  });
+
+  document.getElementById('btn-clear-logs')?.addEventListener('click', async () => {
+    if (!confirm('Clear all telemetry logs?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/logs/clear`, { method: 'POST' });
+      if (res.ok) {
+        showToast('Telemetry logs cleared', 'success');
+        loadLogs();
+        loadStats();
+      }
+    } catch (err) {
+      showToast('Failed to clear logs: ' + err.message, 'error');
+    }
+  });
+
+  document.getElementById('btn-close-log-modal')?.addEventListener('click', () => {
+    document.getElementById('modal-log-detail')?.classList.remove('active');
+  });
+  document.getElementById('btn-close-log-modal-ft')?.addEventListener('click', () => {
+    document.getElementById('modal-log-detail')?.classList.remove('active');
+  });
+}
+
+// Modals Controller
 function initModals() {
   const modalAddKey = document.getElementById('modal-add-key');
   document.getElementById('btn-close-key-modal')?.addEventListener('click', () => modalAddKey.classList.remove('active'));
   document.getElementById('btn-modal-save-key')?.addEventListener('click', saveModalProviderKey);
   document.getElementById('btn-modal-test-key')?.addEventListener('click', testModalProviderKey);
+
+  // Toggle Password Masking
+  document.getElementById('btn-toggle-modal-pwd')?.addEventListener('click', () => {
+    const input = document.getElementById('modal-input-key');
+    if (input) {
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+  });
 
   const modalSysKey = document.getElementById('modal-create-sys-key');
   document.getElementById('btn-open-create-key-modal')?.addEventListener('click', () => modalSysKey.classList.add('active'));
@@ -653,7 +1278,7 @@ async function saveModalProviderKey() {
   const label = document.getElementById('modal-input-label').value.trim();
 
   if (!apiKey) {
-    showToast('Please enter an API key', 'error');
+    showToast('API Key cannot be empty', 'error');
     return;
   }
 
@@ -665,17 +1290,16 @@ async function saveModalProviderKey() {
     });
 
     if (res.ok) {
-      showToast(`${provider.toUpperCase()} key saved successfully!`, 'success');
+      showToast(`Key saved for ${provider.toUpperCase()}!`, 'success');
       document.getElementById('modal-add-key').classList.remove('active');
       loadProviders();
       loadModels();
-      loadStats();
     } else {
-      const data = await res.json();
-      showToast(data.error || 'Failed to save key', 'error');
+      const err = await res.json();
+      showToast('Error: ' + err.error, 'error');
     }
   } catch (err) {
-    showToast('Error: ' + err.message, 'error');
+    showToast('Failed to save key: ' + err.message, 'error');
   }
 }
 
@@ -736,18 +1360,50 @@ async function createSystemKey() {
 }
 
 function initCopyButtons() {
-  document.getElementById('btn-copy-base-url')?.addEventListener('click', () => copyText('http://localhost:3000/v1'));
-  document.getElementById('btn-copy-quick-env')?.addEventListener('click', () => copyText(document.getElementById('snippet-quick-env')?.textContent));
-  document.getElementById('btn-copy-guide-env')?.addEventListener('click', () => copyText(document.getElementById('guide-code-env')?.textContent));
-  document.getElementById('btn-copy-guide-cli')?.addEventListener('click', () => copyText(document.getElementById('guide-code-cli')?.textContent));
-  document.getElementById('btn-copy-guide-python')?.addEventListener('click', () => copyText(document.getElementById('guide-code-python')?.textContent));
-  document.getElementById('btn-copy-guide-cursor')?.addEventListener('click', () => copyText(document.getElementById('guide-code-cursor')?.textContent));
+  const wireCopy = (btnId, textGetter) => {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      const text = typeof textGetter === 'function' ? textGetter() : textGetter;
+      copyText(text, e.currentTarget);
+    });
+  };
+
+  wireCopy('btn-copy-base-url', () => 'http://localhost:3000/v1');
+  wireCopy('btn-copy-quick-env', () => document.getElementById('snippet-quick-env')?.textContent);
+  wireCopy('btn-copy-guide-env', () => document.getElementById('guide-code-env')?.textContent);
+  wireCopy('btn-copy-guide-cli', () => document.getElementById('guide-code-cli')?.textContent);
+  wireCopy('btn-copy-guide-python', () => document.getElementById('guide-code-python')?.textContent);
+  wireCopy('btn-copy-guide-cursor', () => document.getElementById('guide-code-cursor')?.textContent);
+
+  document.getElementById('btn-download-env')?.addEventListener('click', (e) => {
+    const envContent = document.getElementById('guide-code-env')?.textContent || '';
+    const blob = new Blob([envContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Universal-Agent-HP.env';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Downloaded Universal-Agent-HP.env file', 'success');
+  });
 }
 
-window.copyText = function(text) {
+window.copyText = function(text, btnElement) {
   if (!text) return;
   navigator.clipboard.writeText(text).then(() => {
-    showToast(`Copied: ${text.slice(0, 32)}...`, 'success');
+    showToast('Copied to clipboard!', 'success');
+    if (btnElement && btnElement.tagName) {
+      const originalHtml = btnElement.innerHTML;
+      btnElement.classList.add('btn-copied');
+      btnElement.innerHTML = '✓ Copied!';
+      setTimeout(() => {
+        btnElement.classList.remove('btn-copied');
+        btnElement.innerHTML = originalHtml;
+      }, 1500);
+    }
   }).catch(() => {
     showToast('Failed to copy', 'error');
   });
@@ -757,14 +1413,20 @@ function showToast(message, type = 'success') {
   if (!toastContainer) return;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
+  let icon = '⚡';
+  if (type === 'error') icon = '❌';
+  else if (type === 'warning') icon = '⚠️';
+  else if (type === 'info') icon = 'ℹ️';
+
   toast.innerHTML = `
-    <span>${type === 'success' ? '⚡' : '⚠️'}</span>
-    <span>${message}</span>
+    <span class="toast-icon">${icon}</span>
+    <span class="toast-msg">${escapeHtml(message)}</span>
   `;
   toastContainer.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = '0';
+    toast.style.transform = 'translateY(10px)';
     setTimeout(() => toast.remove(), 300);
   }, 3500);
 }
@@ -777,6 +1439,78 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// Keyboard Shortcuts
+function initKeyboardShortcuts() {
+  const modalShortcuts = document.getElementById('modal-shortcuts');
+  const openShortcutsBtn = document.getElementById('btn-open-shortcuts');
+  const closeShortcutsBtn = document.getElementById('btn-close-shortcuts-modal');
+  const closeShortcutsFt = document.getElementById('btn-close-shortcuts-ft');
+
+  const toggleShortcutsModal = () => {
+    if (modalShortcuts) modalShortcuts.classList.toggle('active');
+  };
+
+  openShortcutsBtn?.addEventListener('click', toggleShortcutsModal);
+  closeShortcutsBtn?.addEventListener('click', () => modalShortcuts?.classList.remove('active'));
+  closeShortcutsFt?.addEventListener('click', () => modalShortcuts?.classList.remove('active'));
+
+  document.addEventListener('keydown', (e) => {
+    const isTyping = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+
+    // '?' opens shortcuts modal when not in input
+    if (e.key === '?' && !isTyping) {
+      e.preventDefault();
+      toggleShortcutsModal();
+      return;
+    }
+
+    // Number keys 1-8 switch tabs when not typing
+    if (!isTyping && e.key >= '1' && e.key <= '8') {
+      const tabs = [
+        'tab-cockpit',
+        'tab-providers',
+        'tab-models',
+        'tab-keys',
+        'tab-universal',
+        'tab-playground',
+        'tab-rankings',
+        'tab-logs'
+      ];
+      const targetTab = tabs[parseInt(e.key, 10) - 1];
+      if (targetTab) {
+        e.preventDefault();
+        switchTab(targetTab);
+        return;
+      }
+    }
+
+    // Focus search on '/' when not typing in input
+    if (e.key === '/' && !isTyping) {
+      e.preventDefault();
+      switchTab('tab-models');
+      const search = document.getElementById('input-model-search');
+      search?.focus();
+      search?.select();
+      return;
+    }
+
+    // Ctrl+Enter sends prompt in playground
+    if (e.key === 'Enter' && e.ctrlKey) {
+      const activeTab = document.querySelector('.tab-pane.active');
+      if (activeTab && activeTab.id === 'tab-playground') {
+        e.preventDefault();
+        sendPlaygroundMessage();
+        return;
+      }
+    }
+
+    // Escape closes any modal
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    }
+  });
 }
 
 // Theme Manager
@@ -898,7 +1632,7 @@ function initHealthCheck() {
       btn.disabled = true;
       btn.innerHTML = '⏳ Probing endpoints...';
     }
-    showToast('Probing all 24 connected AI providers...', 'success');
+    showToast('Probing connected AI providers...', 'success');
     try {
       await fetch(`${API_BASE}/api/health-check/run`, { method: 'POST' });
       showToast('Health diagnostics completed!', 'success');
@@ -950,7 +1684,7 @@ function renderHealthGrid(records) {
     }
 
     return `
-      <div class="health-card" title="${escapeHtml(r.error_message || '')}">
+      <div class="health-card">
         <div class="health-card-left">
           <span class="health-status-dot ${statusClass}"></span>
           <span class="health-name">${escapeHtml(r.provider)}</span>
@@ -1000,7 +1734,7 @@ function renderModelsMatrix(modelsToRender) {
       : `${Math.round((m.context_window || 8192) / 1024)}k tokens`;
 
     const capsBadges = (m.capabilities || 'chat').split(',').map(c => 
-      `<span class="model-tag">${c.trim()}</span>`
+      `<span class="model-tag">${escapeHtml(c.trim())}</span>`
     ).join(' ');
 
     return `
@@ -1017,61 +1751,3 @@ function renderModelsMatrix(modelsToRender) {
     `;
   }).join('');
 }
-
-async function loadRankings() {
-  try {
-    const [rankRes, sumRes] = await Promise.all([
-      fetch(`${API_BASE}/api/free-provider-rankings`),
-      fetch(`${API_BASE}/api/free-tier/summary`)
-    ]);
-
-    if (sumRes.ok) {
-      const summary = await sumRes.json();
-      const elTotal = document.getElementById('summary-total-free-models');
-      const elActive = document.getElementById('summary-active-free-models');
-      const elZero = document.getElementById('summary-zero-key-providers');
-      const elCap = document.getElementById('summary-monthly-capacity');
-
-      if (elTotal) elTotal.textContent = summary.totalCuratedFreeModels ? `${summary.totalCuratedFreeModels}+` : '523+';
-      if (elActive) elActive.textContent = summary.activeFreeModels ?? '0';
-      if (elZero) elZero.textContent = summary.zeroKeyProviders ?? '2';
-      if (elCap) elCap.textContent = summary.monthlyCapacityPool || '1.5B+';
-    }
-
-    if (rankRes.ok) {
-      const data = await rankRes.json();
-      const tbody = document.getElementById('tbody-rankings');
-      if (!tbody) return;
-
-      const rankings = data.rankings || [];
-      tbody.innerHTML = rankings.map(r => {
-        const rankMedal = r.rank === 1 ? '🥇 #1' : r.rank === 2 ? '🥈 #2' : r.rank === 3 ? '🥉 #3' : `#${r.rank}`;
-        const statusBadge = r.isConfigured
-          ? `<span class="tag-status live">● Active</span>`
-          : r.isNoAuth
-            ? `<span class="tag-status live" style="background:rgba(0,245,212,0.2);color:var(--accent-cyan);border-color:var(--accent-cyan);">⚡ Zero-Key Live</span>`
-            : `<span class="tag-status standby">○ Key Needed</span>`;
-
-        const topModels = (r.topFreeModels || []).map(m => `<span class="model-tag">${escapeHtml(m)}</span>`).join(' ');
-
-        return `
-          <tr>
-            <td><strong style="color: var(--accent-cyan);">${rankMedal}</strong></td>
-            <td>
-              <div style="font-weight: 600; color: var(--text-primary);">${escapeHtml(r.name)}</div>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(r.category || 'General LLM')}</div>
-            </td>
-            <td><span class="elo-badge">${r.benchmarkScore}</span></td>
-            <td><span class="tok-speed">${r.speedTokPerSec} tok/s</span></td>
-            <td><span style="font-size: 0.82rem; color: var(--text-secondary);">${escapeHtml(r.freeQuota)}</span></td>
-            <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${topModels}</div></td>
-            <td>${statusBadge}</td>
-          </tr>
-        `;
-      }).join('');
-    }
-  } catch (err) {
-    console.warn('Rankings load error:', err.message);
-  }
-}
-

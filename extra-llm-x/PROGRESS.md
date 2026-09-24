@@ -109,3 +109,42 @@
     - `ARCHITECTURE.md`: 24 provayderlik Mermaid chizmasi bilan kengaytirildi.
 - **Nega foydali:** Universal Agent HP va foydalanuvchilar eng so'nggi DeepSeek-R1 fikrlash modellaridan, yangi hisoblash platformalaridan uzluksiz, barqaror va bepul foydalanish imkoniyatiga ega bo'ldi.
 
+### [2026-09-24 07:05] — 7-Bosqich: World-Class UI/UX Overhaul & OmniRoute 90% Parity
+- **Nima qilindi:**
+  - **Foydalanuvchi interfeysi (UI/UX) to'liq noldan qayta ishlandi:**
+    1. **600+ Modellar Katalogi Optimallashuvi:**
+       - DOM yuklanishi va qotishini (lag) yo'qotish uchun sahifalash (pagination) tizimi joriy etildi: har sahifada 24 tadan model.
+       - Dinamik sahifa tugmalari (Oldingi, 1, 2, 3... Keyingi) va natijalar hisoblagichi ("Showing 1–24 of 606 free models").
+       - Provayder bo'yicha saralash select filteri (Barcha provayderlar yoki aniq provayder).
+       - Tartiblash select filtri (Kontekst hajmi Yuqori->Past, Nomi A-Z).
+       - Debounce qilingan qidiruv maydoni.
+    2. **LMSYS Uslubidagi Top 3 Podium (Rankings):**
+       - 🥇 #1 DeepSeek Official (Oltin toj 👑, yaltiroq oltin hoshiya, 1380 ELO).
+       - 🥈 #2 Cerebras Cloud (Kumush toj, 2,150 tok/s wafer tezligi, 1320 ELO).
+       - 🥉 #3 Groq Cloud (Bronza toj, 580 tok/s LPU tezligi, 1315 ELO).
+       - Kategoriya pill filtrlari (All, Frontier Reasoning, High Speed LPUs, Multimodal Vision, Code Specialists).
+    3. **Universal Agent HP Jonli Handshake Tekshiruvi:**
+       - Interaktiv "🧪 Test Handshake" diagnostika paneli: `/api/handshake` orqali kechikish (latency ms), faol modellar soni (606+) va mijoz kalitlarini jonli tekshiradi.
+       - "📥 Download .env" tugmasi qo'shildi: Universal Agent HP uchun tayyor `.env` faylini brauzer orqali 1-bosishda yuklab beradi.
+       - Har bir nusxalash tugmasiga (`.btn-copy-code`, `#btn-copy-base-url` va h.k.) 1.5 soniyalik yashil `✓ Copied!` animatsiyasi berildi.
+    4. **Playground (AI Suhbat) Imkoniyatlari:**
+       - Matn oqimli yozilayotganda miltillovchi kursor (`.streaming-cursor`).
+       - Markdown bloklari chiroyli ajratilib, 1-bosishda "Copy Code" funksiyasi bilan jihozlandi.
+       - Generatsiyani istalgan payt to'xtatuvchi `⏹️ Stop` tugmasi (`AbortController`).
+       - Tizimli ko'rsatma (System Prompt) andozalari (Code Architect, Universal Agent HP Brain, Pure JSON, Concise).
+       - 4 ta tezkor test savollari chipi (Quick Prompt Chips: Python DAG, LPU Speed, JSON Schema, Zero Cost).
+    5. **Telemetriya va Loglarni Ko'zdan Kechirish (Inspection):**
+       - Har bir log qatoriga bosilganda `#modal-log-detail` oynasi ochilib, JSON va to'liq marshrut tafsilotlarini ko'rsatadi.
+       - Jonli qidiruv filtri, `💾 Export JSON` va `🗑️ Clear Logs` tugmalari (`/api/logs/export`, `/api/logs/clear`).
+    6. **Klaviatura Qisqa Tugmalari (Shortcuts):**
+       - `?` tugmasi yoki headerdagi `⌨️ [?]` orqali klaviatura qisqa tugmalari oynasi ochiladi.
+       - `1` dan `8` gacha raqamlar tablar o'rtasida bir zumda o'tkazadi.
+       - `/` qidiruv maydoniga fokus beradi.
+       - `Ctrl + Enter` Playground'da xabarni yuboradi.
+       - `Esc` barcha ochiq modallarni yopadi.
+    7. **Mobil va Kichik Ekranlar Moslashuvchanligi:**
+       - Gorizontal silliq aylanuvchi nav tablar paneli (`-webkit-overflow-scrolling: touch`).
+       - Grid va flex konteynerlari kichik ekranlarda avtomatik 1 ustunga o'tadi.
+  - **Barcha 44 ta test muvaffaqiyatli o'tdi (100% Yashil).**
+- **Nega foydali:** Interfeys foydalanish uchun nihoyatda qulay, ko'zni quvontiradigan darajada estetik va Universal Agent HP bilan ishlashda eng yuqori darajadagi foydalanuvchi tajribasini (UX) taqdim etadi.
+

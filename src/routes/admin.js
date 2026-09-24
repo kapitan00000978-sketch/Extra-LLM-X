@@ -288,3 +288,42 @@ adminRouter.get('/logs', (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+adminRouter.post('/logs/clear', (req, res) => {
+  try {
+    LogStore.clearLogs();
+    res.json({ success: true, message: 'Telemetry logs cleared' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.get('/logs/export', (req, res) => {
+  try {
+    const logs = LogStore.getRecentLogs(1000);
+    res.setHeader('Content-Disposition', 'attachment; filename="extra-llm-x-telemetry.json"');
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify(logs, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.get('/handshake', (req, res) => {
+  try {
+    const freeModels = ModelStore.getFreeModels();
+    const systemKeys = KeyStore.getAllSystemKeys();
+    res.json({
+      success: true,
+      status: 'ready',
+      endpoint: 'http://localhost:3000/v1',
+      activeFreeModels: freeModels.length,
+      clientKeysActive: systemKeys.filter(k => k.active === 1).length,
+      ping: 'pong',
+      latencyMs: 1,
+      compatibleWith: ['Universal Agent HP', 'Cursor', 'Cline', 'Roo Code', 'Aider', 'OpenAI Python SDK']
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});

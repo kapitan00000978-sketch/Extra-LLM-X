@@ -322,6 +322,10 @@ export const LogStore = {
     } catch (e) {
       return [];
     }
+  },
+
+  clearLogs() {
+    return db.prepare('DELETE FROM request_logs').run();
   }
 };
 

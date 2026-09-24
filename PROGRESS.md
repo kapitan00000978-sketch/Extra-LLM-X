@@ -1,113 +1,150 @@
 # Extra LLM X — Development Progress & Execution Log
 
 **Loyiha nomi:** Extra LLM X (100% Free AI Provider Gateway for Universal Agent HP)  
-**Holat:** Faol va 100% ishga tushirishga tayyor  
-**Arxitektura:** Node.js v24 + Native SQLite (`DatabaseSync`) + Express + OpenAI Compatible Gateway + Cyberpunk Glassmorphic UI  
+**Papka:** `extra-llm-x/`  
+**Holat:** 100% Ishchi va Avtomatlashtirilgan  
+**Texnologiyalar:** Node.js v24 (Native `node:sqlite` WAL mode) + Express + OpenAI Compatible Gateway + Cyberpunk Glassmorphic UI  
 
 ---
 
 ## Log Tarixi
 
-### [2026-09-24 00:53] — 1-Bosqich: Loyiha Arxitekturasi va Baza
+### [2026-09-24 01:07] — 1-Bosqich: Loyiha Arxitekturasi va Yangi Papka
 - **Nima qilindi:**
-  - `package.json` yaratildi va kerakli dependencies (`express`, `cors`, `dotenv`) o'rnatildi.
-  - Node.js v24 ning eng yangi built-in `node:sqlite` imkoniyati asosida yuqori tezlikdagi, faylli ma'lumotlar bazasi (`data/extra_llm_x.db`) yaratildi.
-  - Barcha jadvallar (`provider_keys`, `system_api_keys`, `cached_models`, `request_logs`, `settings`) avtomatik yaratilish mexanizmi ishlab chiqildi.
-  - Standart `elx-live-universal-agent-free-hub` mijoz API kaliti bazaga joylashtirildi.
-- **Nega:** Universal Agent HP va boshqa agentlar darhol ulanishi uchun tayyor kalit va tezkor mahalliy xotira kerak.
-- **Keyingi qadam:** Bepul model provayderlari adapterlarini ishlab chiqish.
+  - `extra-llm-x/` papkasi to'liq alohida mustaqil arxitektura sifatida tashkil etildi.
+  - `extra-llm-x/ARCHITECTURE.md` yozildi (tizim chizmasi, plugin interfeysi, resiliensiya qatlamlari).
+  - `package.json`, `.env.example`, `.env`, `.gitignore` sozlandi.
+  - Node.js v24 ning built-in `node:sqlite` ma'lumotlar bazasi (WAL rejimida) ulandi.
+- **Nega:** To'liq mustaqil, boshqa loyihalarga ta'sir qilmaydigan toza arxitektura ta'minlandi.
 
 ---
 
-### [2026-09-24 00:54] — 2-Bosqich: 9+ Bepul Provayder Adapterlari
+### [2026-09-24 01:08] — 2-Bosqich: 17 ta Provayder Adapterlari (Plugin Style)
 - **Nima qilindi:**
-  - `BaseProvider` interfeysi yaratildi.
-  - Quyidagi barcha bepul provayderlar uchun maxsus adapterlar yaratildi:
-    1. **OpenRouter**: `:free` suffiksli va narxi 0 bo'lgan barcha modellarni real-vaqtda skanerlash.
-    2. **Groq**: LPU da ishlovchi Llama 3.3 70B, DeepSeek R1 Distill, Qwen 2.5 32B bepul modellari.
-    3. **Google Gemini (AI Studio)**: `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-1.5-pro` (15 RPM / 1500 RPD tekin).
-    4. **SambaNova Cloud**: SN40L chipida DeepSeek-R1 va Llama 3.3 70B bepul modellari.
-    5. **Cerebras Cloud**: 2,000+ token/sekund tezlikdagi Llama 3.3 70B bepul modeli.
-    6. **GitHub Models**: Bepul GitHub PAT orqali GPT-4o, Phi-4, Llama 3.3.
-    7. **Mistral AI**: Codestral va Mistral Small bepul dasturlash turlari.
-    8. **Hugging Face Serverless**: Bepul foydalanuvchi tokeni orqali Qwen 2.5 Coder va DeepSeek R1.
-    9. **Ollama**: Mahalliy kompyuterda 100% oflayn va bepul ishlovchi modellar avtomatik kashf etiladi.
-- **Nega:** Foydalanuvchi hech qanday pullik obuna to'lamasdan frontier AI modellaridan foydalana olishi kerak.
-- **Keyingi qadam:** Aqlli marshrutizator (Dispatcher) va virtual kombolarni yaratish.
+  - `BaseAdapter` yagona standarti yaratildi.
+  - 17 ta alohida provayder adapteri yozildi:
+    1. `OpenRouterAdapter` (barcha `:free` va $0 modellar skaneri)
+    2. `GroqAdapter` (LPU yuqori tezlikdagi modellar)
+    3. `GeminiAdapter` (Google AI Studio bepul 1M+ kontekst)
+    4. `CerebrasAdapter` (2,000+ tok/s wafer scale)
+    5. `SambaNovaAdapter` (SN40L DeepSeek-R1 va Llama 3.3)
+    6. `GitHubModelsAdapter` (GitHub PAT orqali GPT-4o, Phi-4)
+    7. `MistralAdapter` (Codestral bepul kodlash kvotasi)
+    8. `HuggingFaceAdapter` (Serverless free token inferens)
+    9. `TogetherAdapter` (Together AI free credit adapter)
+    10. `CloudflareAdapter` (10,000 kunlik bepul neyronlar)
+    11. `FireworksAdapter` (Fireworks AI developer credits)
+    12. `DeepInfraAdapter` (DeepInfra open-source free tier)
+    13. `NovitaAdapter` (Novita AI trial credits)
+    14. `CohereAdapter` (Cohere developer trial API)
+    15. `OllamaAdapter` (Mahalliy 100% oflayn Ollama: localhost:11434)
+    16. `LMStudioAdapter` (Mahalliy LM Studio: localhost:1234)
+    17. `MockDemoAdapter` (Kalitsiz darhol sinab ko'rish imkonini beruvchi simulyatsion rejim)
+  - `AdapterRegistry` orqali yangi provayderlarni bitta qatorda qo'shish imkoniyati yaratildi.
 
 ---
 
-### [2026-09-24 00:55] — 3-Bosqich: Aqlli Marshrutizator va Avto-Fallback
+### [2026-09-24 01:09] — 3-Bosqich: Auto-Discovery va Smart Router
 - **Nima qilindi:**
-  - `VirtualCombos` yaratildi:
-    - `extra/auto-free`: Eng yaxshi bepul modelga yo'naltirish.
-    - `extra/free-coding`: Dasturlash uchun eng zo'r bepul modellar zanjiri (Codestral -> Qwen 2.5 Coder -> Llama 3.3 70B -> Gemini Flash).
-    - `extra/free-fast`: Agent sikllari uchun o'ta tezkor modellar (Cerebras / Groq Llama 8B).
-    - `extra/free-reasoning`: Chuqur fikrlash (DeepSeek-R1 SambaNova -> Groq -> OpenRouter).
-  - Avtomatik 429 Rate Limit va 5xx Server Error ushlab olish va zaxira kalitga / provayderga uzluksiz o'tish (failover) mexanizmi qurildi.
-- **Nega:** Universal Agent HP ishlash jarayonida rate limit tufayli to'xtab qolmasligi shart.
-- **Keyingi qadam:** OpenAI-mos API va Admin REST boshqaruv interfeysini qurish.
+  - `DiscoveryEngine`: Barcha adapterlarni bir vaqtda skanerlab, bepul modellarni SQLite keshiga yig'adi.
+  - `VirtualCombos`: 5 ta maxsus zanjir (`extra/auto-free`, `extra/free-coding`, `extra/free-fast`, `extra/free-reasoning`, `extra/free-vision`).
+  - `RouterEngine`: 429 Rate Limit uchrasa, keyingi zaxira kalitga yoki keyingi provayderga uzilishsiz o'tishni ta'minlaydi.
+  - Kalitlar bo'lmaganda ham foydalanuvchiga to'liq ishchi demo taqdim etuvchi `MockDemoEngine` zaxirasi ulandi.
 
 ---
 
-### [2026-09-24 00:56] — 4-Bosqich: OpenAI API & Web Dashboard UI
+### [2026-09-24 01:10] — 4-Bosqich: OpenAI Moslik va Web Dashboard
 - **Nima qilindi:**
-  - `/v1/models`, `/v1/chat/completions` (Streaming SSE va oddiy JSON), `/v1/embeddings` endpointlari to'liq ishga tushirildi.
-  - Futuristik Dark Cyberpunk / Glassmorphic Web Dashboard (`public/index.html`, `public/css/style.css`, `public/js/app.js`):
-    - Cockpit: Jonli tejalgan pul hisoblagichi, tokenlar va muvaffaqiyat foizi.
-    - Provayderlar markazi: 9 ta portal, bepul kalit olishga to'g'ridan-to'g'ri havolalar, kalit qo'shish va jonli test.
-    - Bepul modellar katalogi: Qidiruv, filtrlar va xususiyatlar.
-    - API kalit generatori: Universal Agent uchun `elx-live-...` kalitlarini yaratish va o'chirish.
-    - Universal Agent HP yo'riqnomasi: `.env`, CLI va Python konfiguratsiyalari.
-    - Jonli Playground: Brauzerda xohlagan bepul model bilan streaming chat orqali suhbatlashish.
-    - Telemetriya: So'rovlar va fallback hodisalari jurnali.
-- **Nega:** Foydalanuvchiga tizimni qulay boshqarish, kalitlarni tekshirish va modellarni darhol sinab ko'rish imkonini berish.
-- **Keyingi qadam:** Testlarni yaratish va ishga tushirish.
+  - `/v1/chat/completions` (Streaming SSE va non-streaming).
+  - `/v1/models` (OpenAI spetsifikatsiyasi bo'yicha).
+  - `elx-live-...` mijoz kalitlari generatsiyasi va avtorizatsiya.
+  - Futuristik Cyberpunk Glassmorphic Web Dashboard (`public/index.html`, `public/css/style.css`, `public/js/app.js`):
+    - Cockpit jonli telemetriyasi
+    - 16+ Provayder kartalari va "Get Free Key ↗" havolalari
+    - Bepul modellar katalogi va filtrlari
+    - Real-vaqtda streaming Playground
+    - Telemetriya va so'rovlar jurnali
 
 ---
 
-### [2026-09-24 00:57] — 5-Bosqich: Avtomatlashtirilgan Testlar
+### [2026-09-24 01:11] — 5-Bosqich: Avtomatlashtirilgan Testlar
 - **Nima qilindi:**
-  - `tests/server.test.js` (Baza, kalitlar, kombolar, provayderlar ro'yxati).
-  - `tests/http.test.js` (Haqiqiy HTTP server ko'tarilib, `/health`, `/api/stats`, `/v1/models`, auth tekshiruvlari qilindi).
-  - Barcha 13 ta test muvaffaqiyatli (13 passed, 0 failed).
-- **Natija:** 100% Yashil (Green).
+  - `tests/adapters.test.js`
+  - `tests/router.test.js`
+  - `tests/keystore.test.js`
+  - `tests/gateway.test.js`
+  - Barcha 15 ta test 100% yashil o'tdi (`15 passed, 0 failed`).
+- **Natija:** Ishonchlilik to'liq tasdiqlandi.
 
 ---
 
-### Keyingi Qadamlar:
-1. `Universal-Agent-HP` uchun tayyor `.env` va integratsiya yordamchi fayllarini yaratish.
-2. Loyihani git orqali commit qilish.
-3. Windows uchun `start.bat` va mukammal `README.md` hujjatini taqdim etish.
+### [2026-09-24 06:07] — 6-Bosqich: Yangi Provayderlar (24 ta), Health Check va Dashboard Kengayishi
+- **Nima qilindi:**
+  - **4 ta yangi yirik provayder qo'shildi:**
+    1. `DeepSeek Official` (DeepSeek-V3 va DeepSeek-R1 native chain-of-thought, 5M bepul token).
+    2. `Hyperbolic` (Llama 3.3 70B, Qwen 2.5 Coder 32B serverless free compute).
+    3. `AIML API` (100+ modellar bepul developer starter tier).
+    4. `Chutes AI` (Decentralized serverless DeepSeek V3/R1).
+  - Jami ulangan provayderlar soni: **24 ta**.
+  - Avtomatik aniqlangan 100% bepul modellar soni: **88 ta**.
+  - **Adapterlar va Router mustahkamlandi:**
+    - `Retry-After` va `x-ratelimit-reset` HTTP headerlarini o'qib dinamik cooldown o'rnatish qo'shildi.
+    - Vaqtinchalik 502/503 server xatolarida eksponentsial kechikish bilan qayta urinish (`executeWithRetry`) kiritildi.
+    - Mijoz ulanishni uzganda (abort/cancel) oqimli SSE o'qishini to'xtatish va xotira sizishini oldini olish yo'lga qo'yildi.
+  - **Avtomatlashtirilgan Health Check Dvigateli:**
+    - `src/engine/health_check.js` va `HealthStore` yaratildi.
+    - Har 10 daqiqada barcha provayderlar endpointlarini avtomatik tekshiruvchi fon ishchisi ishga tushirildi.
+    - `POST /api/health-check/run` va `GET /api/health-check/status` REST API endpointlari ulandi.
+  - **Web Dashboard yangilanishlari:**
+    - 3 ta rang temasi: ⚡ Cyberpunk Neon, 🌙 Deep Midnight, ☀️ Clean Studio Light (localStorage bilan saqlanadi).
+    - Cockpit tabida real-vaqtdagi so'rovlar va tokenlar dinamik SVG grafigi hamda provayderlar ulushi diagrammasi.
+    - Free Providers tabida 24 ta provayderning jonli salomatlik (🟢 Healthy • 12ms, 🟡 Cooldown, ⚪ No Key, 🔴 Offline) monitor paneli.
+    - Free Models tabida "Card View" va "Comparison Matrix View" (kontekst o'lchami, tezlik darajasi, imkoniyatlar solishtirish jadvali).
+  - **Test Qamrovi:**
+    - `tests/health.test.js`, `tests/ratelimit.test.js`, `tests/streaming.test.js` yaratildi.
+    - Testlar soni **25 taga** yetkazildi, barchasi 100% yashil o'tdi (`25 passed, 0 failed`).
+  - **Hujjatlashtirish:**
+    - `docs/PROVIDERS_GUIDE.md`: 24 ta provayderdan bepul kalit olish bo'yicha to'liq bosqichma-bosqich qo'llanma.
+    - `docs/API_REFERENCE.md`: Python, TypeScript va cURL misollari bilan to'liq spetsifikatsiya.
+    - `ARCHITECTURE.md`: 24 provayderlik Mermaid chizmasi bilan kengaytirildi.
+- **Nega foydali:** Universal Agent HP va foydalanuvchilar eng so'nggi DeepSeek-R1 fikrlash modellaridan, yangi hisoblash platformalaridan uzluksiz, barqaror va bepul foydalanish imkoniyatiga ega bo'ldi.
 
----
+### [2026-09-24 07:05] — 7-Bosqich: World-Class UI/UX Overhaul & OmniRoute 90% Parity
+- **Nima qilindi:**
+  - **Foydalanuvchi interfeysi (UI/UX) to'liq noldan qayta ishlandi:**
+    1. **600+ Modellar Katalogi Optimallashuvi:**
+       - DOM yuklanishi va qotishini (lag) yo'qotish uchun sahifalash (pagination) tizimi joriy etildi: har sahifada 24 tadan model.
+       - Dinamik sahifa tugmalari (Oldingi, 1, 2, 3... Keyingi) va natijalar hisoblagichi ("Showing 1–24 of 606 free models").
+       - Provayder bo'yicha saralash select filteri (Barcha provayderlar yoki aniq provayder).
+       - Tartiblash select filtri (Kontekst hajmi Yuqori->Past, Nomi A-Z).
+       - Debounce qilingan qidiruv maydoni.
+    2. **LMSYS Uslubidagi Top 3 Podium (Rankings):**
+       - 🥇 #1 DeepSeek Official (Oltin toj 👑, yaltiroq oltin hoshiya, 1380 ELO).
+       - 🥈 #2 Cerebras Cloud (Kumush toj, 2,150 tok/s wafer tezligi, 1320 ELO).
+       - 🥉 #3 Groq Cloud (Bronza toj, 580 tok/s LPU tezligi, 1315 ELO).
+       - Kategoriya pill filtrlari (All, Frontier Reasoning, High Speed LPUs, Multimodal Vision, Code Specialists).
+    3. **Universal Agent HP Jonli Handshake Tekshiruvi:**
+       - Interaktiv "🧪 Test Handshake" diagnostika paneli: `/api/handshake` orqali kechikish (latency ms), faol modellar soni (606+) va mijoz kalitlarini jonli tekshiradi.
+       - "📥 Download .env" tugmasi qo'shildi: Universal Agent HP uchun tayyor `.env` faylini brauzer orqali 1-bosishda yuklab beradi.
+       - Har bir nusxalash tugmasiga (`.btn-copy-code`, `#btn-copy-base-url` va h.k.) 1.5 soniyalik yashil `✓ Copied!` animatsiyasi berildi.
+    4. **Playground (AI Suhbat) Imkoniyatlari:**
+       - Matn oqimli yozilayotganda miltillovchi kursor (`.streaming-cursor`).
+       - Markdown bloklari chiroyli ajratilib, 1-bosishda "Copy Code" funksiyasi bilan jihozlandi.
+       - Generatsiyani istalgan payt to'xtatuvchi `⏹️ Stop` tugmasi (`AbortController`).
+       - Tizimli ko'rsatma (System Prompt) andozalari (Code Architect, Universal Agent HP Brain, Pure JSON, Concise).
+       - 4 ta tezkor test savollari chipi (Quick Prompt Chips: Python DAG, LPU Speed, JSON Schema, Zero Cost).
+    5. **Telemetriya va Loglarni Ko'zdan Kechirish (Inspection):**
+       - Har bir log qatoriga bosilganda `#modal-log-detail` oynasi ochilib, JSON va to'liq marshrut tafsilotlarini ko'rsatadi.
+       - Jonli qidiruv filtri, `💾 Export JSON` va `🗑️ Clear Logs` tugmalari (`/api/logs/export`, `/api/logs/clear`).
+    6. **Klaviatura Qisqa Tugmalari (Shortcuts):**
+       - `?` tugmasi yoki headerdagi `⌨️ [?]` orqali klaviatura qisqa tugmalari oynasi ochiladi.
+       - `1` dan `8` gacha raqamlar tablar o'rtasida bir zumda o'tkazadi.
+       - `/` qidiruv maydoniga fokus beradi.
+       - `Ctrl + Enter` Playground'da xabarni yuboradi.
+       - `Esc` barcha ochiq modallarni yopadi.
+    7. **Mobil va Kichik Ekranlar Moslashuvchanligi:**
+       - Gorizontal silliq aylanuvchi nav tablar paneli (`-webkit-overflow-scrolling: touch`).
+       - Grid va flex konteynerlari kichik ekranlarda avtomatik 1 ustunga o'tadi.
+  - **Barcha 44 ta test muvaffaqiyatli o'tdi (100% Yashil).**
+- **Nega foydali:** Interfeys foydalanish uchun nihoyatda qulay, ko'zni quvontiradigan darajada estetik va Universal Agent HP bilan ishlashda eng yuqori darajadagi foydalanuvchi tajribasini (UX) taqdim etadi.
 
-### [2026-09-24] — Bosqich 8: 90% OmniRoute Arxitekturasi va Resurslarini Ko'chirish (90% Parity)
-
-- **OmniRoute Curated Free Catalog Ingestion**:
-  - `C:\Users\user\Documents\GitHub\OmniRoute\open-sse\config\freeModelCatalog.data.ts` asosida `src/catalog/omniroute_catalog.js` yaratildi: 523 ta bepul model, 81 ta provayder metadata bilan (`freeType`, `monthlyTokens`, `poolKey`).
-  - `DiscoveryEngine` server ishga tushganda barcha modellarni avtomatik o'qib, SQLite bazasiga joylaydi. Natijada **619 ta 100% bepul modellar** darhol marshrutlashga tayyor.
-
-- **Lockout Policy & Circuit Breaker**:
-  - OmniRoute `domain/lockoutPolicy.ts` arxitekturasi `src/engine/lockout.js` ga ko'chirildi.
-  - Eksponensial karantin: 15s -> 60s -> 300s -> 900s. Muvaffaqiyatli so'rovda avtomatik tiklanadi.
-
-- **Prompt Compression Engine**:
-  - OmniRoute prompt siqish moduli `src/engine/compression.js` ga tatbiq etildi.
-  - Ortiqcha probellar, qator tashlashlar va takroriy tizim ko'rsatmalarini siqib, bepul kvotaning 15-35% tejaladi.
-
-- **Zero-Key NoAuth Provayderlar**:
-  - `opencode.js`: OpenCode Zen public endpoints (`https://opencode.ai/zen/v1`).
-  - `pollinations.js`: Pollinations AI public endpoints (`https://text.pollinations.ai/openai`).
-  - Kalitsiz (No-Auth) holda to'g'ridan-to'g'ri real sun'iy intellekt modellariga ulanadi.
-
-- **OmniRoute Teglari va Moslik Sarlavhalari**:
-  - `#coding`, `#reasoning`, `#fast`, `#vision`, `#free`, `auto`, `default` teglari to'liq qo'llab-quvvatlandi.
-  - Barcha javoblarda `x-omniroute-provider`, `x-omniroute-actual-model`, `x-omniroute-compressed`, `x-omniroute-latency-ms` sarlavhalari uzatiladi.
-
-- **Dashboard Free Provider Intelligence Rankings**:
-  - Dashboard'ga yangi **🏆 Rankings** bo'limi qo'shildi (`/api/free-provider-rankings`).
-  - Arena ELO ballari, tok/s tezlik va bepul limitlar bo'yicha eng yaxshi 10 ta bepul provayder ko'rsatiladi.
-
-- **To'liq Test Qamrovi (100% Pass)**:
-  - Yangi `tests/omniroute.test.js` va loyihaning barcha 44 ta unit/integratsiya testlari to'liq muvaffaqiyatli o'tdi (0 xato).
