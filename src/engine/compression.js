@@ -80,6 +80,59 @@ export class PromptCompressionEngine {
       compressed: charsSaved > 0
     };
   }
+
+  estimateTokens(messages) {
+    if (!Array.isArray(messages)) return 0;
+    let totalChars = 0;
+    for (const msg of messages) {
+      if (typeof msg.content === 'string') {
+        totalChars += msg.content.length;
+      } else if (Array.isArray(msg.content)) {
+        for (const part of msg.content) {
+          if (part.type === 'text' && typeof part.text === 'string') {
+            totalChars += part.text.length;
+          }
+        }
+      }
+    }
+    // Standard rule of thumb: ~4 characters per token for English & code
+    return Math.ceil(totalChars / 4) + (messages.length * 4);
+  }
+
+  pruneMessagesForBudget(messages, maxTokens = 8192) {
+    if (!Array.isArray(messages) || messages.length <= 2) {
+      return { messages, pruned: false, estimatedTokens: this.estimateTokens(messages) };
+    }
+
+    let estimated = this.estimateTokens(messages);
+    if (estimated <= maxTokens) {
+      return { messages, pruned: false, estimatedTokens: estimated };
+    }
+
+    // Separate system messages and conversation turns
+    const systemMessages = messages.filter(m => m.role === 'system');
+    const conversation = messages.filter(m => m.role !== 'system');
+
+    // Always preserve at least the last 2 conversation turns
+    const preservedTailCount = Math.min(conversation.length, 4);
+    const tailMessages = conversation.slice(-preservedTailCount);
+    let middleMessages = conversation.slice(0, -preservedTailCount);
+
+    // Iteratively drop older middle messages until under budget
+    while (middleMessages.length > 0 && estimated > maxTokens) {
+      middleMessages.shift(); // Drop oldest turn
+      const candidate = [...systemMessages, ...middleMessages, ...tailMessages];
+      estimated = this.estimateTokens(candidate);
+    }
+
+    const prunedMessages = [...systemMessages, ...middleMessages, ...tailMessages];
+    return {
+      messages: prunedMessages,
+      pruned: prunedMessages.length < messages.length,
+      originalTokens: this.estimateTokens(messages),
+      estimatedTokens: estimated
+    };
+  }
 }
 
 export const promptCompression = new PromptCompressionEngine();

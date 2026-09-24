@@ -22,6 +22,8 @@ export const VirtualCombos = {
       { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p3-70b-instruct' },
       { provider: 'pollinations', model: 'openai' },
       { provider: 'opencode', model: 'deepseek-v3' },
+      { provider: 'kilo', model: 'kilo-auto/free' },
+      { provider: 'puter', model: 'gpt-4o-mini' },
       { provider: 'mock', model: 'extra-demo-model' }
     ]
   },

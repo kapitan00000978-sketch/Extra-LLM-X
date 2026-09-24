@@ -216,4 +216,51 @@ test('BatchStore: manages asynchronous batch job state and progress', async (t) 
   assert.strictEqual(updated.failed_requests, 1);
 });
 
+test('Zero-Key Providers: Kilo and Puter adapters register and discover free models', async (t) => {
+  const { KiloAdapter } = await import('../src/adapters/kilo.js');
+  const { PuterAdapter } = await import('../src/adapters/puter.js');
+
+  const kilo = new KiloAdapter();
+  assert.strictEqual(kilo.id, 'kilo');
+  assert.strictEqual(kilo.isNoAuth, true);
+  const kiloModels = await kilo.discoverModels();
+  assert.ok(kiloModels.length >= 4);
+  assert.ok(kiloModels.some(m => m.id === 'kilo/kilo-auto/free'));
+
+  const puter = new PuterAdapter();
+  assert.strictEqual(puter.id, 'puter');
+  assert.strictEqual(puter.isNoAuth, true);
+  const puterModels = await puter.discoverModels();
+  assert.ok(puterModels.length >= 4);
+  assert.ok(puterModels.some(m => m.id === 'puter/gpt-4o-mini'));
+});
+
+test('PromptCompressionEngine: estimateTokens and pruneMessagesForBudget', async (t) => {
+  const { promptCompression } = await import('../src/engine/compression.js');
+
+  const messages = [
+    { role: 'system', content: 'You are an autonomous AI coding assistant.' },
+    { role: 'user', content: 'Turn 1: ' + 'A'.repeat(1000) },
+    { role: 'assistant', content: 'Turn 1 reply: ' + 'B'.repeat(1000) },
+    { role: 'user', content: 'Turn 2: ' + 'C'.repeat(1000) },
+    { role: 'assistant', content: 'Turn 2 reply: ' + 'D'.repeat(1000) },
+    { role: 'user', content: 'Turn 3: ' + 'E'.repeat(1000) },
+    { role: 'assistant', content: 'Turn 3 reply: ' + 'F'.repeat(1000) },
+    { role: 'user', content: 'Final question: ' + 'G'.repeat(500) }
+  ];
+
+  const estimated = promptCompression.estimateTokens(messages);
+  assert.ok(estimated > 1500, `Estimated tokens should be > 1500, got ${estimated}`);
+
+  // Prune with a low token budget (e.g. 800 tokens)
+  const result = promptCompression.pruneMessagesForBudget(messages, 800);
+  assert.strictEqual(result.pruned, true);
+  assert.ok(result.messages.length < messages.length);
+  // System prompt must always be preserved
+  assert.strictEqual(result.messages[0].role, 'system');
+  // Final question must be preserved
+  assert.strictEqual(result.messages[result.messages.length - 1].content.startsWith('Final question:'), true);
+});
+
+
 
