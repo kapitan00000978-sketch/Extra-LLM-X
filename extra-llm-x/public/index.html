@@ -177,6 +177,48 @@
         </div>
       </div>
 
+      <!-- Interactive Savings & ROI Calculator -->
+      <div class="section-container mt-4">
+        <div class="glass-card roi-calculator-card">
+          <div class="roi-header flex-between">
+            <div>
+              <h2 class="section-title">💰 Commercial API vs Extra LLM X Savings Calculator</h2>
+              <p class="section-subtitle">Real-time cost savings compared to OpenAI GPT-4o, Anthropic Claude 3.5 Sonnet, and Gemini Pro</p>
+            </div>
+            <span class="badge-roi">100% FREE • $0 SPENT</span>
+          </div>
+          <div class="roi-grid mt-3">
+            <div class="roi-input-column">
+              <label for="roi-token-slider">Simulated Monthly Token Volume: <span id="roi-token-display" style="font-weight: 700; color: var(--accent-cyan);">5,000,000 tokens</span></label>
+              <input type="range" id="roi-token-slider" min="100000" max="50000000" step="500000" value="5000000" style="width: 100%; margin-top: 0.5rem;">
+              <div class="roi-quick-presets mt-2" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="chip-prompt btn-roi-preset" data-roivals="1000000">1M Tokens</button>
+                <button class="chip-prompt btn-roi-preset" data-roivals="5000000">5M Tokens</button>
+                <button class="chip-prompt btn-roi-preset" data-roivals="20000000">20M Tokens</button>
+                <button class="chip-prompt btn-roi-preset" data-roivals="50000000">50M Tokens</button>
+              </div>
+            </div>
+            <div class="roi-comparison-column">
+              <div class="roi-price-box">
+                <span class="roi-comp-name">Commercial OpenAI GPT-4o Cost:</span>
+                <span class="roi-comp-cost red" id="roi-gpt4o-cost">$25.00 / mo</span>
+              </div>
+              <div class="roi-price-box">
+                <span class="roi-comp-name">Claude 3.5 Sonnet Cost:</span>
+                <span class="roi-comp-cost red" id="roi-claude-cost">$75.00 / mo</span>
+              </div>
+              <div class="roi-price-box highlight-box">
+                <span class="roi-comp-name">Extra LLM X Free Gateway:</span>
+                <span class="roi-comp-cost green" id="roi-extra-cost">$0.00 (FREE FOREVER)</span>
+              </div>
+              <div class="roi-saved-badge mt-2">
+                <span>Estimated Annual Savings: <strong id="roi-annual-savings" style="color: var(--accent-green); font-size: 1.15rem;">$1,200.00 / year</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Virtual Combos -->
       <div class="section-container">
         <div class="section-header">

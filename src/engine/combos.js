@@ -20,8 +20,8 @@ export const VirtualCombos = {
       { provider: 'github', model: 'gpt-4o-mini' },
       { provider: 'together', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo' },
       { provider: 'fireworks', model: 'accounts/fireworks/models/llama-v3p3-70b-instruct' },
-      { provider: 'opencode', model: 'deepseek-v3' },
       { provider: 'pollinations', model: 'openai' },
+      { provider: 'opencode', model: 'deepseek-v3' },
       { provider: 'mock', model: 'extra-demo-model' }
     ]
   },
@@ -43,8 +43,8 @@ export const VirtualCombos = {
       { provider: 'gemini', model: 'gemini-2.0-flash' },
       { provider: 'github', model: 'gpt-4o' },
       { provider: 'huggingface', model: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
-      { provider: 'opencode', model: 'qwen-2.5-72b' },
       { provider: 'pollinations', model: 'qwen' },
+      { provider: 'opencode', model: 'qwen-2.5-72b' },
       { provider: 'mock', model: 'extra-demo-coder' }
     ]
   },
@@ -81,6 +81,7 @@ export const VirtualCombos = {
       { provider: 'openrouter', model: 'deepseek/deepseek-r1:free' },
       { provider: 'huggingface', model: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B' },
       { provider: 'fireworks', model: 'accounts/fireworks/models/deepseek-r1' },
+      { provider: 'pollinations', model: 'deepseek' },
       { provider: 'opencode', model: 'deepseek-v3' },
       { provider: 'mock', model: 'extra-demo-model' }
     ]

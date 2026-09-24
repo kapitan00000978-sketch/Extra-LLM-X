@@ -4,6 +4,7 @@ import { KeyStore, ModelStore, LogStore } from '../db/database.js';
 import { lockoutPolicy } from './lockout.js';
 import { promptCompression } from './compression.js';
 import { responseCache } from './cache.js';
+import { speculativeHedging } from './hedging.js';
 import { config } from '../config.js';
 
 export class RouterEngine {
@@ -103,6 +104,80 @@ export class RouterEngine {
     return { combo: comboName, targets: filtered.length > 0 ? filtered : baseTargets };
   }
 
+  async executeSingleTarget(target, activeMessages, stream, temperature, max_tokens, tools, tool_choice) {
+    const targetId = `${target.provider}/${target.model}`;
+    if (lockoutPolicy.isLocked(targetId)) {
+      const lock = lockoutPolicy.getLockStatus(targetId);
+      const err = new Error(`Target ${targetId} locked out (cooldown: ${Math.round(lock.remainingMs / 1000)}s)`);
+      err.isLocked = true;
+      throw err;
+    }
+
+    const adapter = adapterRegistry.get(target.provider);
+    if (!adapter) throw new Error(`Adapter ${target.provider} not found`);
+
+    let keyRecord = null;
+    let apiKey = null;
+
+    const isNoAuthOrLocal = target.provider === 'ollama' || 
+                            target.provider === 'lmstudio' || 
+                            target.provider === 'mock' ||
+                            target.provider === 'opencode' ||
+                            target.provider === 'pollinations';
+
+    if (isNoAuthOrLocal) {
+      apiKey = 'noauth';
+    } else {
+      keyRecord = KeyStore.getAvailableProviderKey(target.provider);
+      if (!keyRecord) {
+        const err = new Error(`No active API key for provider ${target.provider}`);
+        err.isUnconfigured = true;
+        throw err;
+      }
+      apiKey = keyRecord.api_key;
+    }
+
+    try {
+      const res = await adapter.executeWithRetry(() => adapter.executeChat({
+        apiKey,
+        model: target.model,
+        messages: activeMessages,
+        stream,
+        temperature,
+        max_tokens,
+        tools,
+        tool_choice
+      }), 1, 250);
+
+      if (keyRecord) {
+        KeyStore.touchProviderKey(keyRecord.id);
+      }
+      lockoutPolicy.recordSuccess(targetId);
+
+      return {
+        response: res,
+        provider: target.provider,
+        model: target.model
+      };
+    } catch (err) {
+      lockoutPolicy.recordFailure(targetId);
+      if (keyRecord) {
+        const { isRateLimit, isAuth } = adapter.classifyError(err, err.status || 500);
+        if (isRateLimit) {
+          const cooldownSec = adapter.parseCooldownSeconds(err.headers, 60);
+          console.warn(`[Router] Rate limit (429) hit on ${target.provider}. Cooling down key for ${cooldownSec}s.`);
+          KeyStore.markKeyCooldown(keyRecord.id, cooldownSec);
+        } else if (isAuth) {
+          console.warn(`[Router] Auth failure (401/403) on ${target.provider}. Pausing key for 1h.`);
+          KeyStore.markKeyCooldown(keyRecord.id, 3600);
+        } else {
+          KeyStore.markKeyCooldown(keyRecord.id, 15);
+        }
+      }
+      throw err;
+    }
+  }
+
   async dispatch({ clientKey, requestedModel, messages, stream = false, temperature = 0.7, max_tokens, tools, tool_choice, compression = 'lite', skipCache = false }) {
     const startTime = Date.now();
     const requirements = this.detectRequirements(messages, tools);
@@ -144,96 +219,70 @@ export class RouterEngine {
     const compressionResult = promptCompression.compressMessages(messages, compression);
     const activeMessages = compressionResult.messages;
 
+    // Speculative Hedging for Non-Streaming Multi-Target Requests (OmniRoute / LiteLLM Enterprise Parity)
+    if (!stream && config.enableHedging !== false && plan.targets.length >= 2) {
+      const viable = [];
+      for (const t of plan.targets) {
+        const targetId = `${t.provider}/${t.model}`;
+        if (lockoutPolicy.isLocked(targetId)) continue;
+        const isNoAuth = t.provider === 'ollama' || t.provider === 'lmstudio' || t.provider === 'mock' || t.provider === 'opencode' || t.provider === 'pollinations';
+        if (isNoAuth || KeyStore.getAvailableProviderKey(t.provider)) {
+          viable.push(t);
+          if (viable.length === 2) break;
+        }
+      }
+
+      if (viable.length >= 2) {
+        const [targetA, targetB] = viable;
+        try {
+          const hedgedResult = await speculativeHedging.executeHedged({
+            primaryFn: () => this.executeSingleTarget(targetA, activeMessages, false, temperature, max_tokens, tools, tool_choice),
+            fallbackFn: () => this.executeSingleTarget(targetB, activeMessages, false, temperature, max_tokens, tools, tool_choice),
+            hedgeDelayMs: 4000,
+            onPrimarySlow: () => {
+              console.log(`[Router] Hedging: ${targetA.provider}/${targetA.model} taking >4s, triggering speculative race with ${targetB.provider}/${targetB.model}`);
+            }
+          });
+
+          return {
+            response: hedgedResult.response,
+            provider: hedgedResult.provider,
+            model: hedgedResult.model,
+            fallbackOccurred: Boolean(hedgedResult.hedged),
+            startTime,
+            compression: compressionResult,
+            cacheHash
+          };
+        } catch (hedgeErr) {
+          lastError = hedgeErr;
+        }
+      }
+    }
+
+    // Sequential failover loop across combo targets
     for (let i = 0; i < plan.targets.length; i++) {
       const target = plan.targets[i];
-      const targetId = `${target.provider}/${target.model}`;
-
-      // Check OmniRoute Circuit Breaker Lockout
-      if (lockoutPolicy.isLocked(targetId)) {
-        const lock = lockoutPolicy.getLockStatus(targetId);
-        console.log(`[Router] Skipping locked-out target ${targetId} (cooldown: ${Math.round(lock.remainingMs / 1000)}s)`);
-        continue;
-      }
-
-      const adapter = adapterRegistry.get(target.provider);
-      if (!adapter) continue;
-
-      let keyRecord = null;
-      let apiKey = null;
-
-      const isNoAuthOrLocal = target.provider === 'ollama' || 
-                              target.provider === 'lmstudio' || 
-                              target.provider === 'mock' ||
-                              target.provider === 'opencode' ||
-                              target.provider === 'pollinations';
-
-      if (isNoAuthOrLocal) {
-        apiKey = 'noauth';
-      } else {
-        keyRecord = KeyStore.getAvailableProviderKey(target.provider);
-        if (!keyRecord) {
-          // No active key for this provider, continue to next target in combo
-          continue;
-        }
-        apiKey = keyRecord.api_key;
-      }
-
       try {
         if (i > 0) {
           fallbackOccurred = true;
           console.log(`[Router] Failover routing to target ${i + 1}/${plan.targets.length}: ${target.provider}/${target.model}`);
         }
 
-        const res = await adapter.executeWithRetry(() => adapter.executeChat({
-          apiKey,
-          model: target.model,
-          messages: activeMessages,
-          stream,
-          temperature,
-          max_tokens,
-          tools,
-          tool_choice
-        }), 1, 250);
-
-        if (keyRecord) {
-          KeyStore.touchProviderKey(keyRecord.id);
-        }
-
-        // OmniRoute Success: reset lockout
-        lockoutPolicy.recordSuccess(targetId);
+        const resObj = await this.executeSingleTarget(target, activeMessages, stream, temperature, max_tokens, tools, tool_choice);
 
         return {
-          response: res,
-          provider: target.provider,
-          model: target.model,
+          response: resObj.response,
+          provider: resObj.provider,
+          model: resObj.model,
           fallbackOccurred,
           startTime,
           compression: compressionResult,
           cacheHash
         };
       } catch (err) {
+        if (err.isLocked || err.isUnconfigured) continue;
         lastError = err;
-        const status = err.status || 500;
-        const { isRateLimit, isAuth } = adapter.classifyError(err, status);
-
         console.warn(`[Router] ${target.provider}/${target.model} failed: ${err.message}`);
-
-        // Record failure in OmniRoute Circuit Breaker
-        lockoutPolicy.recordFailure(targetId);
-
-        if (keyRecord) {
-          if (isRateLimit) {
-            const cooldownSec = adapter.parseCooldownSeconds(err.headers, 60);
-            console.warn(`[Router] Rate limit (429) hit on ${target.provider}. Cooling down key for ${cooldownSec}s.`);
-            KeyStore.markKeyCooldown(keyRecord.id, cooldownSec);
-          } else if (isAuth) {
-            console.warn(`[Router] Auth failure (401/403) on ${target.provider}. Pausing key for 1h.`);
-            KeyStore.markKeyCooldown(keyRecord.id, 3600);
-          } else {
-            KeyStore.markKeyCooldown(keyRecord.id, 15);
-          }
-        }
-
         continue;
       }
     }

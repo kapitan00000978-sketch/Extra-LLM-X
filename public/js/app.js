@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initHandshakeTester();
   initTelemetryActions();
   initKeyboardShortcuts();
+  initRoiCalculator();
 
   loadStats();
   loadCharts();
@@ -2156,4 +2157,59 @@ function renderModelsMatrix(modelsToRender) {
       </tr>
     `;
   }).join('');
+}
+
+// 💰 Interactive ROI & Savings Calculator
+function initRoiCalculator() {
+  const slider = document.getElementById('roi-token-slider');
+  const tokenDisplay = document.getElementById('roi-token-display');
+  const gptCostEl = document.getElementById('roi-gpt4o-cost');
+  const claudeCostEl = document.getElementById('roi-claude-cost');
+  const savingsEl = document.getElementById('roi-annual-savings');
+  const presetChips = document.querySelectorAll('.btn-roi-preset');
+
+  if (!slider) return;
+
+  const updateCalculations = (tokens) => {
+    const millions = tokens / 1000000;
+    // Commercial rates:
+    // GPT-4o: ~$5.00 / 1M tokens ($2.50 input / $10 output avg)
+    // Claude 3.5 Sonnet: ~$15.00 / 1M tokens ($3.00 input / $15 output avg)
+    const gptCost = millions * 5.0;
+    const claudeCost = millions * 15.0;
+    const avgMonthly = (gptCost + claudeCost) / 2;
+    const annualSavings = avgMonthly * 12;
+
+    if (tokenDisplay) {
+      tokenDisplay.textContent = `${Number(tokens).toLocaleString()} tokens`;
+    }
+    if (gptCostEl) {
+      gptCostEl.textContent = `$${gptCost.toFixed(2)} / mo`;
+    }
+    if (claudeCostEl) {
+      claudeCostEl.textContent = `$${claudeCost.toFixed(2)} / mo`;
+    }
+    if (savingsEl) {
+      savingsEl.textContent = `$${annualSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / year`;
+    }
+  };
+
+  slider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value, 10);
+    updateCalculations(val);
+  });
+
+  presetChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const val = parseInt(chip.getAttribute('data-roivals'), 10);
+      if (val && slider) {
+        slider.value = val;
+        updateCalculations(val);
+        presetChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      }
+    });
+  });
+
+  updateCalculations(parseInt(slider.value || '5000000', 10));
 }

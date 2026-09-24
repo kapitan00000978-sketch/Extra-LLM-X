@@ -14,6 +14,7 @@ export class MockDemoAdapter extends BaseAdapter {
       keyPrefix: '',
       keyPlaceholder: 'No key needed'
     });
+    this.isNoAuth = true;
     this.freeModels = [
       { id: 'extra-demo-model', name: 'Extra LLM X Demo AI', context: 32768, caps: 'chat,fast' },
       { id: 'extra-demo-coder', name: 'Extra LLM X Demo Coder', context: 32768, caps: 'chat,code' }

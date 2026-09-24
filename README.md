@@ -100,15 +100,32 @@ Boshqaruv panelida har bir provayder uchun bepul kalit olish havolasi va ko'rsat
 
 ---
 
+## ⚡ Multimodal To'liq Paritet ($0 Xarajat bilan)
+
+Extra LLM X faqatgina matn emas, balki OpenAI spetsifikatsiyasining barcha multimodal endpointlarini 100% bepul taqdim etadi:
+
+1. **Matn & Kod Generatsiyasi:** `POST /v1/chat/completions` (Streaming SSE, JSON Mode, Tool/Function Calling).
+2. **100% Bepul Vektor Embeddinglar:** `POST /v1/embeddings` (Universal Agent xotirasi va RAG uchun 1536 o'lchamli normalizatsiyalangan vektorlar).
+3. **100% Bepul Rasm Generatsiyasi:** `POST /v1/images/generations` (Pollinations Flux va Turbo arxitekturasi orqali fotorealistik tasvirlar).
+4. **Ovozli Transkripsiya (Whisper STT):** `POST /v1/audio/transcriptions` (Groq LPU orqali sub-soniyalik Whisper Large V3 nutqni matnga o'girish).
+5. **Xavfsizlik & Moderatsiya:** `POST /v1/moderations` (Hate, violence, self-harm filtrlovchi kontent tekshiruvi).
+6. **L1/L2 Semantik Kesh:** SHA-256 kanonik heshlash, L1 LRU xotira + L2 SQLite xotirasi. Takroriy so'rovlar 0ms kechikishda darhol qaytariladi.
+7. **Speculative Parallel Hedging:** Asosiy provayder sekinlashsa (>3.8s), zaxira provayder avtomatik poygaga kirishib uzoq kutishni butunlay yo'qotadi.
+8. **Dinamik Provayderlar Benchmarking:** `/api/benchmarks/results` va `/api/free-provider-rankings` real tok/s va TTFT o'lchovlariga ko'ra dinamik podiumni yangilaydi.
+9. **Universal Agent HP DAG Simulyatori:** `/api/universal-agent/simulate` multi-step avtonom to'lqinlarni 100% sinovdan o'tkazadi.
+
+---
+
 ## ⚡ Virtual Kombolar (Smart Combos)
 
 Ushbu modellarni Universal Agent yoki Cursor'da model nomi sifatida ko'rsatishingiz mumkin:
 
-* **`extra/auto-free`** — Tizimdagi eng sifatli va tezkor bepul modelga yo'naltiradi (DeepSeek $\to$ Groq $\to$ SambaNova $\to$ Gemini Flash $\to$ Cerebras $\to$ OpenCode $\to$ Pollinations).
+* **`extra/auto-free`** — Tizimdagi eng sifatli va tezkor bepul modelga yo'naltiradi (DeepSeek $\to$ Groq $\to$ SambaNova $\to$ Gemini Flash $\to$ Cerebras $\to$ Pollinations).
 * **`extra/free-coding`** — Dasturlash va kod yozishga ixtisoslashgan modellar zanjiri (Codestral $\to$ Qwen 2.5 Coder $\to$ Llama 3.3 70B $\to$ Gemini 2.0 Flash).
 * **`extra/free-fast`** — Agentlarning ichki tezkor operatsiyalari uchun 500-2000 tok/s tezlikdagi modellar (Cerebras Llama 8B $\to$ Groq Llama 8B $\to$ Gemini Flash Lite).
 * **`extra/free-reasoning`** — Chuqur fikrlash, matematika va algoritmik tahlil (DeepSeek-R1 Official $\to$ SambaNova R1 $\to$ Groq R1).
 * **`extra/free-vision`** — Rasm va multimodal vazifalar (Gemini 2.0 Flash $\to$ GPT-4o $\to$ OpenRouter Gemini Exp).
+* **`extra/free-embedding`** — Vektorli xotira va qidiruv (1536-dim).
 
 ---
 
@@ -123,11 +140,19 @@ client = OpenAI(
     api_key="elx-live-universal-agent-free-hub"
 )
 
+# Chat
 response = client.chat.completions.create(
     model="extra/auto-free",
     messages=[{"role": "user", "content": "Salom, qanday yordam bera olasan?"}]
 )
 print(response.choices[0].message.content)
+
+# Free Embeddings
+emb = client.embeddings.create(
+    model="extra/free-embedding",
+    input=["Sun'iy intellekt agentlari arxitekturasi"]
+)
+print("Vector dims:", len(emb.data[0].embedding))
 ```
 
 ### 2. Cursor IDE / Cline / Roo Code / Claude Code
@@ -152,9 +177,10 @@ Tizim ishonchliligini to'liq tekshirish:
 ```bash
 npm test
 ```
-Barcha **44 ta test** 100% yashil o'tadi (`44 passed, 0 failed`).
+Barcha **56 ta test** 100% yashil o'tadi (`56 passed, 0 failed`).
 
 ---
 
 ## 📄 Litsenziya
 MIT License — Foydalanish, o'zgartirish va tarqatish mutlaqo bepul.
+

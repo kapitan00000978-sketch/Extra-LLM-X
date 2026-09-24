@@ -190,4 +190,20 @@ test('HTTP: POST /api/universal-agent/simulate executes multi-step DAG planning 
   assert.strictEqual(data.steps[1].status, 'completed');
 });
 
+test('HTTP: GET /api/benchmarks/results and /api/free-provider-rankings return dynamic podium', async () => {
+  const res = await fetch(`${baseUrl}/api/benchmarks/results`);
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.strictEqual(data.success, true);
+  assert.ok(Array.isArray(data.rankings));
+  assert.ok(data.rankings.length >= 10);
+
+  const resRank = await fetch(`${baseUrl}/api/free-provider-rankings`);
+  assert.strictEqual(resRank.status, 200);
+  const rankData = await resRank.json();
+  assert.ok(Array.isArray(rankData.rankings));
+  assert.strictEqual(rankData.rankings[0].rank, 1);
+});
+
+
 

@@ -94,6 +94,16 @@ export function initDatabase() {
       expires_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_response_cache_expires ON response_cache(expires_at);
+
+    CREATE TABLE IF NOT EXISTS provider_benchmarks (
+      provider TEXT PRIMARY KEY,
+      speed_tok_per_sec REAL DEFAULT 0,
+      latency_ms INTEGER DEFAULT 0,
+      ttft_ms INTEGER DEFAULT 0,
+      elo_score INTEGER DEFAULT 1200,
+      sample_count INTEGER DEFAULT 0,
+      last_benchmarked_at INTEGER DEFAULT 0
+    );
   `);
 
   // Ensure default key exists for immediate out-of-the-box use
@@ -454,6 +464,51 @@ export const CacheStore = {
         hitRate: '0.0%',
         tokensSaved: 0
       };
+    }
+  }
+};
+
+export const BenchmarkStore = {
+  getAll() {
+    try {
+      return db.prepare('SELECT * FROM provider_benchmarks').all();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  recordProbe({ provider, speedTokPerSec, latencyMs, ttftMs }) {
+    try {
+      db.prepare(`
+        INSERT INTO provider_benchmarks (provider, speed_tok_per_sec, latency_ms, ttft_ms, sample_count, last_benchmarked_at)
+        VALUES (?, ?, ?, ?, 1, ?)
+        ON CONFLICT(provider) DO UPDATE SET
+          speed_tok_per_sec = (provider_benchmarks.speed_tok_per_sec * provider_benchmarks.sample_count + excluded.speed_tok_per_sec) / (provider_benchmarks.sample_count + 1),
+          latency_ms = (provider_benchmarks.latency_ms * provider_benchmarks.sample_count + excluded.latency_ms) / (provider_benchmarks.sample_count + 1),
+          ttft_ms = (provider_benchmarks.ttft_ms * provider_benchmarks.sample_count + excluded.ttft_ms) / (provider_benchmarks.sample_count + 1),
+          sample_count = provider_benchmarks.sample_count + 1,
+          last_benchmarked_at = excluded.last_benchmarked_at
+      `).run(provider, speedTokPerSec, latencyMs, ttftMs, Date.now());
+    } catch (e) {
+      console.warn('[BenchmarkStore] recordProbe error:', e.message);
+    }
+  },
+
+  getAggregatedTelemetry() {
+    try {
+      return db.prepare(`
+        SELECT 
+          provider,
+          COUNT(*) as request_count,
+          AVG(latency_ms) as avg_latency,
+          SUM(completion_tokens) as total_completion_tokens,
+          SUM(latency_ms) as total_latency_ms
+        FROM request_logs
+        WHERE status_code = 200 AND provider != 'none' AND provider != 'cache'
+        GROUP BY provider
+      `).all();
+    } catch (e) {
+      return [];
     }
   }
 };

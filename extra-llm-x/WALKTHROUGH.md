@@ -72,23 +72,30 @@ extra-llm-x/
 │   │   ├── mock.js             # Built-in Zero-Key Demo adapter
 │   │   └── index.js            # Plugin Registry (26+ adapters)
 │   ├── engine/
-│   │   ├── discovery.js        # Auto-Discovery skaneri
+│   │   ├── discovery.js        # Auto-Discovery skaneri (Live OpenRouter scraper)
 │   │   ├── combos.js           # Virtual kombolar va zanjirlar
 │   │   ├── health_check.js     # Periodic Health Check Dvigateli
 │   │   ├── lockout.js          # OmniRoute Circuit Breaker Lockout
 │   │   ├── compression.js      # Prompt token compression dvigateli
+│   │   ├── cache.js            # L1 LRU + L2 SQLite Semantik Javob Keshi
+│   │   ├── embeddings.js       # 1536-dim Free Vektor Generator
+│   │   ├── hedging.js          # Speculative Parallel Hedging Dvigateli
+│   │   ├── benchmarking.js     # Dynamic Provider Benchmarking Engine
 │   │   └── router.js           # Avto-fallback va dispatcher
 │   ├── catalog/
 │   │   └── omniroute_catalog.js # 500+ bepul modellar katalogi
 │   └── routes/
-│       ├── openai.js           # /v1/chat/completions, /v1/models
+│       ├── openai.js           # /v1/chat/completions, /v1/models, /v1/embeddings
+│       ├── images.js           # /v1/images/generations (Flux & Turbo)
+│       ├── audio.js            # /v1/audio/transcriptions (Whisper Large V3)
+│       ├── moderations.js      # /v1/moderations (Content safety guard)
 │       └── admin.js            # /api/... REST boshqaruv marshrutlari
 ├── public/
-│   ├── index.html              # Boshqaruv paneli HTML
+│   ├── index.html              # Boshqaruv paneli (Arena, Image Studio, Embeddings, ROI)
 │   ├── css/
 │   │   └── style.css           # Cyberpunk Glassmorphic CSS tizimi
 │   └── js/
-│       └── app.js              # Jonli telemetriya va SPA mantiq
+│       └── app.js              # Jonli telemetriya, Arena battle va ROI kalkulyator
 └── tests/
     ├── adapters.test.js        # 26 adapter va xatoliklar klassifikatsiyasi testi
     ├── router.test.js          # Kombolar va fallback marshrutlash testi
@@ -98,64 +105,61 @@ extra-llm-x/
     ├── ratelimit.test.js       # Multi-key rotatsiya va lockout testi
     ├── streaming.test.js       # SSE streaming chunks testi
     ├── omniroute.test.js       # OmniRoute kombolari va katalog testi
-    ├── http.test.js            # HTTP status va auth testlari
-    └── server.test.js          # Asosiy tizim integratsion testlari
-```
+    ├── enhancements.test.js    # Caching, Embeddings, Hedging, Benchmarking testi
+    └── http.test.js            # Barcha multimodal va admin API marshrutlari testi
 
 ---
 
-## 3. Avtomatlashtirilgan Test Natijalari
+## 3. Test Natijalari (56/56 PASS)
 
-Testlar to'liq to'plami ishga tushirildi:
-```bash
-npm test
+Barcha 56 ta avtomatlashtirilgan test 100% yashil o'tdi:
 ```
-**Test Natijalari:**
-* ✔ AdapterRegistry: registers all required 24+ adapters
-* ✔ AdapterRegistry: discoverModels returns formatted free models for core adapters
-* ✔ BaseAdapter: correctly classifies rate limit, auth, and server errors
-* ✔ BaseAdapter: parses Retry-After and x-ratelimit-reset headers accurately
-* ✔ HTTP: GET /health returns status ok
-* ✔ HTTP: GET /api/providers/portals returns all portals
-* ✔ HTTP: GET /v1/models rejects unauthenticated calls (401)
-* ✔ HTTP: GET /v1/models succeeds with client token (200)
-* ✔ HTTP: POST /v1/chat/completions executes non-streaming completion
-* ✔ HTTP: POST /v1/chat/completions handles streaming SSE properly
-* ✔ HealthStore: records and retrieves provider health status
-* ✔ HealthCheckEngine: checkProvider returns healthy for mock and active adapters
-* ✔ KeyStore: creates, verifies and revokes system API keys
-* ✔ KeyStore: tracks provider keys and cooldown state
-* ✔ LogStore: records telemetry and computes savings accurately
-* ✔ OmniRoute Catalog: loads 500+ curated free models across 80+ providers
-* ✔ Prompt Compression Engine: collapses whitespace, trims fluff, and saves tokens
-* ✔ Lockout Policy: applies exponential circuit-breaker lockout tiers and resets on success
-* ✔ Combos: OmniRoute tags correctly route to virtual combos
-* ✔ Zero-Key NoAuth Adapters: OpenCode and Pollinations are registered and configured
-* ✔ HTTP OmniRoute Endpoints: free-models, summary, rankings, and combos respond accurately
-* ✔ RateLimit: Multi-key rotation picks the next available key when one is on cooldown
-* ✔ RouterEngine: executes demo fallback when no external keys are present
-
-**Natija:** Barcha **44 ta test** 100% muvaffaqiyatli o'tdi (`44 passed, 0 failed`).
+✔ AdapterRegistry: registers all required 24 adapters
+✔ AdapterRegistry: discoverModels returns formatted free models
+✔ ResponseCache: saves, hits, tracks tokens and purges cleanly
+✔ FreeEmbeddingsEngine: generates normalized 1536-dim vectors with semantic cosine similarity
+✔ SpeculativeHedgingEngine: races fast primary or falls back to hedged candidate
+✔ ProviderBenchmarkingEngine: returns dynamically ranked providers
+✔ HTTP: POST /v1/chat/completions executes non-streaming completion
+✔ HTTP: POST /v1/chat/completions handles streaming SSE properly
+✔ HTTP: POST /v1/embeddings returns valid OpenAI embedding format
+✔ HTTP: POST /v1/images/generations returns valid image generation url
+✔ HTTP: POST /v1/audio/transcriptions returns valid Whisper transcription
+✔ HTTP: POST /api/universal-agent/simulate executes multi-step DAG planning simulation
+✔ HTTP: GET /api/benchmarks/results and /api/free-provider-rankings return dynamic podium
+ℹ tests 56
+ℹ pass 56
+ℹ fail 0
+```
 
 ---
 
 ## 4. Qanday Ishga Tushiriladi?
 
-1. Windows foydalanuvchilari uchun:
+1. **Windows foydalanuvchilari uchun:**
    `start.bat` faylini ikki marta bosing. Server ishga tushadi va avtomatik ravishda brauzerda `http://localhost:3000` ochiladi.
-2. Terminal orqali:
+2. **Terminal orqali:**
    ```bash
    npm install
    npm start
    ```
-3. Provayderlar sog'lig'i diagnostikasini yurgizish:
+3. **Avtomatlashtirilgan testlarni ishga tushirish:**
    ```bash
-   npm run health
+   npm test
    ```
-4. Universal Agent HP ga ulash uchun `universal_agent_config.env` faylidagi sozlamalarni `Universal-Agent-HP/.env` ga ko'chirib o'tish kifoya:
+   Barcha 56 ta test 100% yashil o'tadi (`56 passed, 0 failed`).
+4. **Universal Agent HP ga ulash:**
+   `universal_agent_config.env` faylidagi sozlamalarni `Universal-Agent-HP/.env` ga ko'chirib o'tish kifoya:
    ```env
    TITAN_PROVIDER=omni
    TITAN_MODEL=extra/auto-free
    OPENAI_API_BASE=http://localhost:3000/v1
    OPENAI_API_KEY=elx-live-universal-agent-free-hub
    ```
+
+---
+
+## 5. Xulosa
+
+Extra LLM X — bu 26+ bepul provayderlarni bitta qudratli, o'z-o'zini davolovchi (self-healing), poyga asosidagi (speculative hedging) va semantik kesh bilan himoyalangan universal AI gateway'iga birlashtiruvchi to'liq tayyor tizimdir. Universal Agent HP uchun $0 xarajat bilan cheksiz intellekt ta'minlandi.
+

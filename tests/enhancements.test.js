@@ -122,3 +122,38 @@ test('RouterEngine: Capability and Requirement Guards', (t) => {
   const firstProvider = toolPlan.targets[0].provider;
   assert.ok(['groq', 'gemini', 'sambanova', 'cerebras', 'mistral'].includes(firstProvider), `Tool target prioritized: ${firstProvider}`);
 });
+
+test('SpeculativeHedgingEngine: races fast primary or falls back to hedged candidate', async (t) => {
+  const { SpeculativeHedgingEngine } = await import('../src/engine/hedging.js');
+  const hedging = new SpeculativeHedgingEngine(50); // 50ms hedge delay
+
+  // Case 1: Primary is fast (< 50ms)
+  const resFast = await hedging.executeHedged({
+    primaryFn: async () => ({ text: 'primary fast' }),
+    fallbackFn: async () => ({ text: 'fallback' }),
+    hedgeDelayMs: 50
+  });
+  assert.strictEqual(resFast.text, 'primary fast');
+  assert.strictEqual(resFast.hedged, false, 'Primary won race');
+
+  // Case 2: Primary is slow (> 50ms), fallback completes first
+  const resHedged = await hedging.executeHedged({
+    primaryFn: () => new Promise(resolve => setTimeout(() => resolve({ text: 'primary slow' }), 150)),
+    fallbackFn: async () => ({ text: 'fallback fast' }),
+    hedgeDelayMs: 40
+  });
+  assert.strictEqual(resHedged.text, 'fallback fast');
+  assert.strictEqual(resHedged.hedged, true, 'Fallback won race due to slow primary');
+});
+
+test('ProviderBenchmarkingEngine: returns dynamically ranked providers', async (t) => {
+  const { benchmarkEngine } = await import('../src/engine/benchmarking.js');
+  const rankings = benchmarkEngine.getRankings();
+
+  assert.ok(Array.isArray(rankings), 'Rankings is an array');
+  assert.ok(rankings.length >= 10, 'Contains at least 10 providers');
+  assert.strictEqual(rankings[0].rank, 1, 'Top provider has rank 1');
+  assert.ok(rankings[0].benchmarkScore >= rankings[1].benchmarkScore, 'Rankings are sorted descending by score');
+  assert.ok(rankings.some(r => r.id === 'cerebras' && r.speedTokPerSec > 1000), 'Identifies Cerebras ultra-high throughput');
+});
+
