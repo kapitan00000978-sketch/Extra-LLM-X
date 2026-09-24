@@ -9,7 +9,7 @@
 Oddiy AI gateway'lar (masalan, OmniRoute yoki LiteLLM) barcha modellarni aralashtirib yuboradi va foydalanuvchi bilmasdan pullik modellarga so'rov yuborib mablag' sarflab qo'yishi mumkin.
 
 **Extra LLM X** esa **faqat va faqat 100% BEPUL modellar va bepul kvotalar (Free Tiers)** ustiga qurilgan:
-1. **100% Kafolatlangan Bepul Modellar:** Barcha 16+ provayderlardagi (Groq, Google Gemini, OpenRouter, SambaNova, Cerebras, GitHub Models, Mistral, HuggingFace, Together, Cloudflare, Fireworks, DeepInfra, Novita, Cohere, Ollama, LM Studio) narxi $0 bo'lgan modellar avtomatik kashf etiladi va filtrlanadi.
+1. **100% Kafolatlangan Bepul Modellar:** Barcha 26+ provayderlardagi (Groq, Google Gemini, OpenRouter, SambaNova, Cerebras, GitHub Models, Mistral, HuggingFace, Together, Cloudflare, Fireworks, DeepInfra, Novita, Cohere, Ollama, LM Studio) narxi $0 bo'lgan modellar avtomatik kashf etiladi va filtrlanadi.
 2. **O'zining API Kalitlarini Yaratish:** Server o'zining `elx-live-...` formatidagi mijoz API kalitlarini yaratadi, tezlikni cheklaydi (rate limit) va foydalanish statistikasini yuritadi.
 3. **Aqlli Avto-Fallback (Kutilmagan Limitlarni Yengish):** Agar biror bepul provayderda 429 Rate Limit uchrasa, tizim uzilishsiz boshqa zaxira kalitga yoki boshqa provayderdagi muqobil bepul modelga ulanadi.
 4. **Universal Agent HP ga To'liq Moslashgan:** Universal Agent HP ning CEO, DAG to'lqinlari va 29 mutaxassis agentlari 24/7 uzluksiz, bir tiyin ham to'lamasdan ishlashi uchun barcha virtual kombolar (`extra/auto-free`, `extra/free-coding`, `extra/free-fast`, `extra/free-reasoning`) tayyorlangan.
@@ -177,7 +177,7 @@ Tizim ishonchliligini to'liq tekshirish:
 ```bash
 npm test
 ```
-Barcha **56 ta test** 100% yashil o'tadi (`56 passed, 0 failed`).
+Barcha **69 ta test** 100% yashil o'tadi (`69 passed, 0 failed`).
 
 ---
 

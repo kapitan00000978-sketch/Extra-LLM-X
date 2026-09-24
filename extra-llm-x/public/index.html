@@ -541,6 +541,9 @@ Model Name:   extra/free-coding</code></pre>
           <button class="mode-tab-btn" data-pmode="arena" id="btn-pmode-arena">⚔️ Model Arena (Battle)</button>
           <button class="mode-tab-btn" data-pmode="images" id="btn-pmode-images">🎨 Flux Image Studio</button>
           <button class="mode-tab-btn" data-pmode="embeddings" id="btn-pmode-embeddings">🧬 Free Embeddings</button>
+          <button class="mode-tab-btn" data-pmode="search" id="btn-pmode-search">🔍 Web Search Studio</button>
+          <button class="mode-tab-btn" data-pmode="sandbox" id="btn-pmode-sandbox">⚡ Code Sandbox Studio</button>
+          <button class="mode-tab-btn" data-pmode="compactor" id="btn-pmode-compactor">🗜️ Context Compactor</button>
         </div>
         <div class="cache-indicator-pill" id="cache-indicator-pill">
           <span class="pulse-dot"></span>
@@ -586,6 +589,23 @@ Model Name:   extra/free-coding</code></pre>
             <div class="form-group">
               <label for="input-play-tokens">Max Tokens:</label>
               <input type="number" class="input-text" id="input-play-tokens" value="1024" min="64" max="8192">
+            </div>
+
+            <!-- Advanced Engine Controls -->
+            <div class="form-group advanced-toggles-card mt-2">
+              <label class="toggle-card-title">Extra LLM X Engine Features</label>
+              <label class="checkbox-label" title="Fetch real-time DuckDuckGo web results and ground model responses with source citations">
+                <input type="checkbox" id="check-web-search">
+                <span>🌐 Live Web Search Grounding</span>
+              </label>
+              <label class="checkbox-label mt-1" title="Universal OpenAI tool calling schema polyfill for all free models">
+                <input type="checkbox" id="check-tools-polyfill">
+                <span>🛠️ Universal Tool Calling Polyfill</span>
+              </label>
+              <label class="checkbox-label mt-1" title="Intelligently compress conversation turns to prevent token overflow on small free models">
+                <input type="checkbox" id="check-compact-context">
+                <span>🗜️ Context Compactor (Token Saver)</span>
+              </label>
             </div>
 
             <div class="telemetry-box mt-3">
@@ -772,6 +792,151 @@ Model Name:   extra/free-coding</code></pre>
             <div class="vector-preview-box mt-3">
               <span class="vec-label">Sample A Normalized Vector Preview (1536 dims):</span>
               <code class="vec-preview-code" id="emb-vector-preview">[]</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODE 5: WEB SEARCH GROUNDING STUDIO -->
+      <div class="playground-mode-panel" id="panel-pmode-search">
+        <div class="section-container">
+          <div class="studio-header mb-3">
+            <h3>🔍 Free Live Web Search Grounding Studio</h3>
+            <p class="section-desc">Search the live web in real-time via DuckDuckGo without any API key, subscriptions, or proxies. Feed citations directly into models.</p>
+          </div>
+
+          <div class="search-studio-box">
+            <div class="flex-gap mb-2">
+              <input type="text" class="input-text flex-1" id="input-search-query" placeholder="Type a live query (e.g. 'What is the latest stable release of Node.js?')" value="Latest Node.js LTS release version and features">
+              <select class="input-select" id="select-search-limit" style="width: 140px;">
+                <option value="3">3 Results</option>
+                <option value="5" selected>5 Results</option>
+                <option value="8">8 Results</option>
+              </select>
+              <button class="btn-primary" id="btn-run-web-search">
+                <span>🔍 Search Live Web</span>
+              </button>
+            </div>
+
+            <div class="preset-query-chips mb-3">
+              <span class="chip-label">Quick Prompts:</span>
+              <button class="badge-chip search-chip-btn" data-query="Latest release of Node.js and its features">Node.js LTS</button>
+              <button class="badge-chip search-chip-btn" data-query="Python 3.13 new features and performance improvements">Python 3.13</button>
+              <button class="badge-chip search-chip-btn" data-query="DeepSeek V3 and R1 open source model architecture">DeepSeek V3/R1</button>
+              <button class="badge-chip search-chip-btn" data-query="Today world technology news AI developments">Tech News</button>
+            </div>
+
+            <div id="search-results-container" class="search-results-grid">
+              <div class="empty-state-card">Click 'Search Live Web' or select a quick prompt above to fetch live DuckDuckGo results.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODE 6: CODE EXECUTION SANDBOX STUDIO -->
+      <div class="playground-mode-panel" id="panel-pmode-sandbox">
+        <div class="section-container">
+          <div class="studio-header mb-3">
+            <h3>⚡ Code Execution Sandbox Studio</h3>
+            <p class="section-desc">Run Python and JavaScript code snippets safely in isolated local processes with execution timeouts and output buffer guards.</p>
+          </div>
+
+          <div class="sandbox-studio-box">
+            <div class="sandbox-controls-bar flex-between mb-2">
+              <div class="flex-gap">
+                <select class="input-select" id="select-sandbox-lang" style="width: 160px;">
+                  <option value="javascript">JavaScript (Node)</option>
+                  <option value="python">Python 3</option>
+                </select>
+                <select class="input-select" id="select-sandbox-preset" style="width: 240px;">
+                  <option value="">Load snippet template...</option>
+                  <option value="js-bench">JS: Performance Benchmark</option>
+                  <option value="js-matrix">JS: Fibonacci Sequence</option>
+                  <option value="py-math">Py: Prime Numbers Calculation</option>
+                  <option value="py-system">Py: System & OS Telemetry</option>
+                </select>
+              </div>
+              <button class="btn-primary" id="btn-run-sandbox">
+                <span>⚡ Run Code in Sandbox</span>
+              </button>
+            </div>
+
+            <div class="sandbox-editor-wrapper mb-3">
+              <textarea class="code-editor-textarea" id="textarea-sandbox-code" rows="12" spellcheck="false">// Isolated JavaScript Sandbox
+const fib = (n) => (n <= 1 ? n : fib(n - 1) + fib(n - 2));
+console.log('Extra LLM X Isolated Sandbox Test');
+const start = Date.now();
+const res = fib(28);
+console.log(`Fibonacci(28) = ${res}`);
+console.log(`Executed in ${Date.now() - start}ms`);
+</textarea>
+            </div>
+
+            <div class="sandbox-output-panel" id="sandbox-output-panel">
+              <div class="sandbox-output-header flex-between">
+                <span class="output-title">Terminal Console Output</span>
+                <div class="sandbox-meta-badges">
+                  <span class="badge" id="badge-sandbox-status">Ready</span>
+                  <span class="badge" id="badge-sandbox-time">-</span>
+                </div>
+              </div>
+              <pre class="terminal-stdout" id="sandbox-stdout">// Output will stream here after execution...</pre>
+              <pre class="terminal-stderr hidden" id="sandbox-stderr"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODE 7: CONTEXT COMPACTOR STUDIO -->
+      <div class="playground-mode-panel" id="panel-pmode-compactor">
+        <div class="section-container">
+          <div class="studio-header mb-3">
+            <h3>🗜️ Context Compactor & Token Optimizer Studio</h3>
+            <p class="section-desc">Extend small free model context limits indefinitely by summarizing and compacting historical conversation turns while keeping key facts and recent dialog intact.</p>
+          </div>
+
+          <div class="compactor-studio-box">
+            <div class="flex-between mb-3">
+              <div class="flex-gap">
+                <button class="btn-secondary" id="btn-load-sample-dialog">Load Long Conversation History (8 Turns)</button>
+                <div class="flex-gap align-center">
+                  <label for="input-compactor-max" style="font-size: 0.85rem; color: var(--text-muted);">Max Token Threshold:</label>
+                  <input type="number" class="input-text" id="input-compactor-max" value="120" style="width: 100px;">
+                </div>
+              </div>
+              <button class="btn-primary" id="btn-run-compactor">
+                <span>🗜️ Run Smart Compaction</span>
+              </button>
+            </div>
+
+            <div class="compactor-metrics-grid mb-3">
+              <div class="stat-card">
+                <span class="stat-label">Tokens Before</span>
+                <span class="stat-val" id="metric-tokens-before">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Tokens After</span>
+                <span class="stat-val highlight-cyan" id="metric-tokens-after">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Tokens Saved</span>
+                <span class="stat-val highlight-neon" id="metric-tokens-saved">0</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Compacted</span>
+                <span class="stat-val" id="metric-compacted-status">No</span>
+              </div>
+            </div>
+
+            <div class="compactor-preview-split">
+              <div class="preview-col">
+                <h4>Original Conversation (<span id="count-orig-msgs">0</span> messages)</h4>
+                <pre class="json-preview-box" id="preview-orig-messages">// Click 'Load Long Conversation History' above...</pre>
+              </div>
+              <div class="preview-col">
+                <h4>Compacted Payload (<span id="count-compact-msgs">0</span> messages)</h4>
+                <pre class="json-preview-box highlight-border" id="preview-compact-messages">// Compacted messages will render here...</pre>
+              </div>
             </div>
           </div>
         </div>

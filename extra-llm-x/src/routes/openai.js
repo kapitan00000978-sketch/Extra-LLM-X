@@ -3,6 +3,10 @@ import { routerEngine } from '../engine/router.js';
 import { getAllCombos } from '../engine/combos.js';
 import { responseCache } from '../engine/cache.js';
 import { freeEmbeddings } from '../engine/embeddings.js';
+import { FreeSearchEngine } from '../engine/search.js';
+import { CodeSandboxEngine } from '../engine/sandbox.js';
+import { ToolCallingPolyfill } from '../engine/tool_calling.js';
+import { ContextCompactor } from '../engine/compactor.js';
 import { imagesRouter } from './images.js';
 import { audioRouter } from './audio.js';
 import { moderationsRouter } from './moderations.js';
@@ -60,6 +64,7 @@ function authMiddleware(req, res, next) {
 
 /**
  * GET /v1/models
+ * Returns all free models aggregated from all configured free providers and virtual combos
  */
 openaiRouter.get('/models', authMiddleware, (req, res) => {
   const combos = getAllCombos();
@@ -102,7 +107,7 @@ openaiRouter.get('/models', authMiddleware, (req, res) => {
     }
   }));
 
-  // Extra Multimodal entries (Embeddings & Flux Image Gen)
+  // Extra Multimodal & Studio entries
   const multimodalEntries = [
     {
       id: 'extra/free-embedding',
@@ -121,6 +126,15 @@ openaiRouter.get('/models', authMiddleware, (req, res) => {
       permission: [],
       root: 'flux',
       extra_llm_x: { type: 'image_generation', capabilities: 'image', is_free: true }
+    },
+    {
+      id: 'audio/whisper-large-v3',
+      object: 'model',
+      created: now,
+      owned_by: 'groq',
+      permission: [],
+      root: 'whisper-large-v3',
+      extra_llm_x: { type: 'audio_transcription', capabilities: 'audio', is_free: true }
     }
   ];
 
@@ -141,7 +155,9 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
     temperature = 0.7,
     max_tokens,
     tools,
-    tool_choice
+    tool_choice,
+    web_search = false,
+    compact_context = false
   } = req.body;
 
   if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -154,13 +170,51 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
     });
   }
 
+  let processedMessages = messages;
+  let searchResults = [];
+
+  // 1. Live Web Search Grounding
+  if (web_search === true) {
+    try {
+      const groundResult = await FreeSearchEngine.groundMessages(processedMessages);
+      processedMessages = groundResult.messages;
+      searchResults = groundResult.searchResults;
+      if (searchResults.length > 0) {
+        res.setHeader('X-ExtraLLMX-WebSearch-Grounded', 'true');
+        res.setHeader('X-ExtraLLMX-Sources-Count', searchResults.length.toString());
+      }
+    } catch (e) {
+      console.warn('[Web Search Grounding Warning]:', e.message);
+    }
+  }
+
+  // 2. Intelligent Context Compaction
+  if (compact_context === true) {
+    try {
+      const compactResult = ContextCompactor.compact(processedMessages);
+      if (compactResult.compacted) {
+        processedMessages = compactResult.messages;
+        res.setHeader('X-ExtraLLMX-Context-Compacted', 'true');
+        res.setHeader('X-ExtraLLMX-Tokens-Saved', (compactResult.tokensSaved || 0).toString());
+      }
+    } catch (e) {
+      console.warn('[Context Compactor Warning]:', e.message);
+    }
+  }
+
+  // 3. Universal Tool Calling Polyfill
+  const hasTools = Array.isArray(tools) && tools.length > 0;
+  if (hasTools) {
+    processedMessages = ToolCallingPolyfill.injectToolsPrompt(processedMessages, tools);
+  }
+
   const skipCache = responseCache.shouldSkip(req);
 
   try {
     const result = await routerEngine.dispatch({
       clientKey: req.clientKey,
       requestedModel: model,
-      messages,
+      messages: processedMessages,
       stream,
       temperature,
       max_tokens,
@@ -224,7 +278,7 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
       res.flushHeaders?.();
 
-      let promptTokens = messages.reduce((acc, m) => acc + (typeof m.content === 'string' ? m.content.length / 4 : 0), 0);
+      let promptTokens = processedMessages.reduce((acc, m) => acc + (typeof m.content === 'string' ? m.content.length / 4 : 0), 0);
       let completionTokens = 0;
 
       const upstreamBody = result.response.body;
@@ -248,7 +302,7 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
           }
         } catch (streamErr) {
           if (!clientClosed) {
-            console.warn(`[OpenAI Route] Stream error: ${streamErr.message}`);
+            console.warn('[OpenAI Route] Stream error: ' + streamErr.message);
           }
         } finally {
           res.end();
@@ -274,6 +328,21 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
       const data = await result.response.json();
       const promptTokens = data.usage?.prompt_tokens || 0;
       const completionTokens = data.usage?.completion_tokens || 0;
+
+      // Polyfill Tool Call extraction from content if tools were requested
+      if (hasTools && data.choices && data.choices[0]?.message?.content) {
+        const { cleanContent, toolCalls } = ToolCallingPolyfill.extractToolCalls(data.choices[0].message.content);
+        if (toolCalls && toolCalls.length > 0) {
+          data.choices[0].message.tool_calls = toolCalls;
+          data.choices[0].message.content = cleanContent || null;
+          data.choices[0].finish_reason = 'tool_calls';
+        }
+      }
+
+      // Attach search grounding citations if available
+      if (searchResults && searchResults.length > 0) {
+        data.extra_llm_x_search_results = searchResults;
+      }
 
       // Save to L1/L2 Response Cache
       if (result.cacheHash) {
@@ -335,3 +404,98 @@ openaiRouter.post('/embeddings', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * POST /v1/search
+ * 100% Free Live Web Search Grounding API
+ */
+openaiRouter.post('/search', authMiddleware, async (req, res) => {
+  try {
+    const { query, limit = 5 } = req.body;
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      return res.status(400).json({
+        error: {
+          message: 'Invalid request: "query" string parameter is required.',
+          type: 'invalid_request_error',
+          code: 400
+        }
+      });
+    }
+
+    const maxResults = Math.min(20, Math.max(1, parseInt(limit, 10) || 5));
+    const results = await FreeSearchEngine.search(query.trim(), maxResults);
+
+    res.json({
+      object: 'list',
+      query: query.trim(),
+      count: results.length,
+      data: results
+    });
+  } catch (err) {
+    console.error(`[Search Route Error] ${err.message}`);
+    res.status(500).json({
+      error: {
+        message: err.message,
+        type: 'api_error',
+        code: 500
+      }
+    });
+  }
+});
+
+/**
+ * POST /v1/sandbox/eval
+ * 100% Free Isolated Code Execution Sandbox API (Python & JavaScript)
+ */
+openaiRouter.post('/sandbox/eval', authMiddleware, async (req, res) => {
+  try {
+    const { language = 'javascript', code, timeoutMs = 5000 } = req.body;
+
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({
+        error: {
+          message: 'Invalid request: "code" string is required.',
+          type: 'invalid_request_error',
+          code: 400
+        }
+      });
+    }
+
+    const result = await CodeSandboxEngine.execute({
+      language,
+      code,
+      timeoutMs: Math.min(30000, Math.max(500, parseInt(timeoutMs, 10) || 5000))
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error(`[Sandbox Route Error] ${err.message}`);
+    res.status(500).json({
+      error: {
+        message: err.message,
+        type: 'api_error',
+        code: 500
+      }
+    });
+  }
+});
+
+/**
+ * POST /v1/compactor/compact
+ * Extends context windows for free models by compacting conversation history
+ */
+openaiRouter.post('/compactor/compact', authMiddleware, async (req, res) => {
+  try {
+    const { messages = [], maxTokens = 3000, keepRecent = 4 } = req.body;
+    const result = ContextCompactor.compact(messages, { maxTokens, keepRecent });
+    res.json(result);
+  } catch (err) {
+    console.error(`[Compactor Route Error] ${err.message}`);
+    res.status(500).json({
+      error: {
+        message: err.message,
+        type: 'api_error',
+        code: 500
+      }
+    });
+  }
+});

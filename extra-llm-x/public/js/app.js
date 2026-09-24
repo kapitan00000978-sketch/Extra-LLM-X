@@ -907,6 +907,9 @@ function initPlayground() {
   initArena();
   initImageStudio();
   initEmbeddingsStudio();
+  initWebSearchStudio();
+  initCodeSandboxStudio();
+  initCompactorStudio();
 }
 
 function populatePlaygroundModels(combos, models) {
@@ -1312,7 +1315,27 @@ async function sendPlaygroundMessage() {
         messages: messagesToSend,
         stream: true,
         temperature,
-        max_tokens: maxTokens
+        max_tokens: maxTokens,
+        web_search: document.getElementById('check-web-search')?.checked || false,
+        compact_context: document.getElementById('check-compact-context')?.checked || false,
+        tools: document.getElementById('check-tools-polyfill')?.checked ? [
+          {
+            type: 'function',
+            function: {
+              name: 'web_search',
+              description: 'Search live internet data',
+              parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] }
+            }
+          },
+          {
+            type: 'function',
+            function: {
+              name: 'execute_code',
+              description: 'Execute Python or JS code in sandbox',
+              parameters: { type: 'object', properties: { language: { type: 'string' }, code: { type: 'string' } }, required: ['code'] }
+            }
+          }
+        ] : undefined
       }),
       signal: currentAbortController.signal
     });
@@ -2434,3 +2457,276 @@ window.deleteWebhook = async function(id) {
     showToast('Failed to delete webhook: ' + err.message, 'error');
   }
 };
+
+/* ==========================================================================
+   UPGRADE STUDIOS: WEB SEARCH, SANDBOX, COMPACTOR
+   ========================================================================== */
+
+function initWebSearchStudio() {
+  const queryInput = document.getElementById('input-search-query');
+  const limitSelect = document.getElementById('select-search-limit');
+  const searchBtn = document.getElementById('btn-run-web-search');
+  const resultsContainer = document.getElementById('search-results-container');
+  const chips = document.querySelectorAll('.search-chip-btn');
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const q = chip.getAttribute('data-query');
+      if (q && queryInput) {
+        queryInput.value = q;
+        searchBtn?.click();
+      }
+    });
+  });
+
+  searchBtn?.addEventListener('click', async () => {
+    const q = (queryInput?.value || '').trim();
+    if (!q) {
+      showToast('Please enter a search query', 'error');
+      return;
+    }
+
+    const limit = parseInt(limitSelect?.value || '5', 10);
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<span>⏳ Searching DuckDuckGo...</span>';
+    resultsContainer.innerHTML = '<div class="empty-state-card">Fetching live results from DuckDuckGo...</div>';
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+        },
+        body: JSON.stringify({ query: q, limit })
+      });
+
+      if (!res.ok) throw new Error(`Search failed with status ${res.status}`);
+      const data = await res.json();
+      const results = data.data || [];
+
+      if (results.length === 0) {
+        resultsContainer.innerHTML = '<div class="empty-state-card">No results found for this query. Try another query.</div>';
+        return;
+      }
+
+      resultsContainer.innerHTML = results.map((r, i) => `
+        <div class="search-result-card">
+          <a href="${r.url}" target="_blank" rel="noopener noreferrer" class="search-result-title">${i + 1}. ${escapeHtml(r.title)}</a>
+          <span class="search-result-url">${escapeHtml(r.url)}</span>
+          <p class="search-result-snippet">${escapeHtml(r.snippet)}</p>
+        </div>
+      `).join('');
+
+      showToast(`Found ${results.length} live search results`, 'success');
+    } catch (err) {
+      resultsContainer.innerHTML = `<div class="empty-state-card" style="color: #ff5252;">Search error: ${escapeHtml(err.message)}</div>`;
+      showToast(err.message, 'error');
+    } finally {
+      searchBtn.disabled = false;
+      searchBtn.innerHTML = '<span>🔍 Search Live Web</span>';
+    }
+  });
+}
+
+function initCodeSandboxStudio() {
+  const langSelect = document.getElementById('select-sandbox-lang');
+  const presetSelect = document.getElementById('select-sandbox-preset');
+  const codeArea = document.getElementById('textarea-sandbox-code');
+  const runBtn = document.getElementById('btn-run-sandbox');
+  const stdoutEl = document.getElementById('sandbox-stdout');
+  const stderrEl = document.getElementById('sandbox-stderr');
+  const statusBadge = document.getElementById('badge-sandbox-status');
+  const timeBadge = document.getElementById('badge-sandbox-time');
+
+  const templates = {
+    'js-bench': `// JS Performance Benchmark
+console.log('--- Extra LLM X Benchmark ---');
+const t0 = Date.now();
+let count = 0;
+for (let i = 0; i < 2000000; i++) {
+  count += (i % 2 === 0 ? 1 : 0);
+}
+console.log('Even numbers count:', count);
+console.log('Completed in:', Date.now() - t0, 'ms');`,
+
+    'js-matrix': `// JS Fibonacci Sequence
+const fib = (n) => (n <= 1 ? n : fib(n - 1) + fib(n - 2));
+console.log('Fibonacci sequence test:');
+for (let i = 1; i <= 15; i++) {
+  console.log(\`fib(\${i}) = \${fib(i)}\`);
+}`,
+
+    'py-math': `# Python Prime Sieve
+def sieve(n):
+    primes = []
+    is_prime = [True] * (n + 1)
+    for p in range(2, n + 1):
+        if is_prime[p]:
+            primes.append(p)
+            for i in range(p * p, n + 1, p):
+                is_prime[i] = False
+    return primes
+
+primes_100 = sieve(100)
+print(f"Primes up to 100 ({len(primes_100)} total):")
+print(primes_100)`,
+
+    'py-system': `# Python System Telemetry
+import sys, platform, time
+
+print("Extra LLM X Isolated Sandbox Environment:")
+print("Platform:", platform.system(), platform.release())
+print("Python Version:", sys.version.split()[0])
+print("System Epoch Time:", int(time.time()))
+print("Status: 100% Operational")`
+  };
+
+  presetSelect?.addEventListener('change', () => {
+    const val = presetSelect.value;
+    if (templates[val] && codeArea) {
+      codeArea.value = templates[val];
+      if (val.startsWith('py')) {
+        langSelect.value = 'python';
+      } else {
+        langSelect.value = 'javascript';
+      }
+    }
+  });
+
+  runBtn?.addEventListener('click', async () => {
+    const code = (codeArea?.value || '').trim();
+    if (!code) {
+      showToast('Please enter code to execute', 'error');
+      return;
+    }
+
+    const language = langSelect?.value || 'javascript';
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<span>⏳ Running code...</span>';
+    statusBadge.textContent = 'Running...';
+    statusBadge.className = 'badge badge-warning';
+    stdoutEl.textContent = '// Running...';
+    stderrEl.classList.add('hidden');
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/sandbox/eval`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+        },
+        body: JSON.stringify({ language, code, timeoutMs: 5000 })
+      });
+
+      const data = await res.json();
+      timeBadge.textContent = `${data.durationMs}ms`;
+
+      if (data.success) {
+        statusBadge.textContent = `Exit: 0 (Success)`;
+        statusBadge.className = 'badge badge-success';
+        stdoutEl.textContent = data.stdout || '(No stdout output)';
+        stderrEl.classList.add('hidden');
+        showToast(`Executed in ${data.durationMs}ms`, 'success');
+      } else {
+        statusBadge.textContent = `Exit: ${data.exitCode} (Failed)`;
+        statusBadge.className = 'badge badge-danger';
+        stdoutEl.textContent = data.stdout || '(No stdout output)';
+        if (data.stderr) {
+          stderrEl.textContent = data.stderr;
+          stderrEl.classList.remove('hidden');
+        }
+        showToast('Execution error or timeout', 'error');
+      }
+    } catch (err) {
+      statusBadge.textContent = 'Error';
+      statusBadge.className = 'badge badge-danger';
+      stderrEl.textContent = err.message;
+      stderrEl.classList.remove('hidden');
+      showToast(err.message, 'error');
+    } finally {
+      runBtn.disabled = false;
+      runBtn.innerHTML = '<span>⚡ Run Code in Sandbox</span>';
+    }
+  });
+}
+
+function initCompactorStudio() {
+  const loadBtn = document.getElementById('btn-load-sample-dialog');
+  const runBtn = document.getElementById('btn-run-compactor');
+  const maxInput = document.getElementById('input-compactor-max');
+  const previewOrig = document.getElementById('preview-orig-messages');
+  const previewCompact = document.getElementById('preview-compact-messages');
+  const countOrig = document.getElementById('count-orig-msgs');
+  const countCompact = document.getElementById('count-compact-msgs');
+  const valBefore = document.getElementById('metric-tokens-before');
+  const valAfter = document.getElementById('metric-tokens-after');
+  const valSaved = document.getElementById('metric-tokens-saved');
+  const valStatus = document.getElementById('metric-compacted-status');
+
+  let currentMessages = [];
+
+  const sampleDialog = [
+    { role: 'system', content: 'You are an AI coding assistant and architect for Extra LLM X.' },
+    { role: 'user', content: 'We need to design a scalable high-performance LLM gateway that aggregates 26+ free AI model providers with zero latency overhead.' },
+    { role: 'assistant', content: 'I recommend creating adapter abstractions for each vendor (Groq, Cerebras, SambaNova, OpenRouter, Mistral, HuggingFace, etc.) with unified response parsing and failover combos.' },
+    { role: 'user', content: 'What about caching and rate limit mitigation? We need to ensure free tier keys do not get overwhelmed.' },
+    { role: 'assistant', content: 'We can implement a dual-tier L1 in-memory LRU cache with L2 SQLite WAL persistence for 0ms repeat requests, along with exponential lockout circuit breakers and multi-key rotation.' },
+    { role: 'user', content: 'How should Universal Agent HP connect to this server seamlessly?' },
+    { role: 'assistant', content: 'We can configure EXTRA_LLM_X_BASE_URL to point to http://localhost:3000/v1 and generate cryptographic elx-... system keys with instant OpenAI SDK drop-in compatibility.' },
+    { role: 'user', content: 'Can we add live web search grounding without paying for external search APIs?' },
+    { role: 'assistant', content: 'Yes! We built FreeSearchEngine using direct DuckDuckGo HTML and instant answer parsers with automated citation prompt grounding.' },
+    { role: 'user', content: 'Now summarize the entire architecture and implementation status.' }
+  ];
+
+  loadBtn?.addEventListener('click', () => {
+    currentMessages = JSON.parse(JSON.stringify(sampleDialog));
+    previewOrig.textContent = JSON.stringify(currentMessages, null, 2);
+    countOrig.textContent = currentMessages.length;
+    showToast('Loaded sample 10-turn conversation history', 'info');
+  });
+
+  runBtn?.addEventListener('click', async () => {
+    if (currentMessages.length === 0) {
+      loadBtn?.click();
+    }
+
+    const maxTokens = parseInt(maxInput?.value || '150', 10);
+    runBtn.disabled = true;
+    runBtn.innerHTML = '<span>⏳ Compacting...</span>';
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/compactor/compact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+        },
+        body: JSON.stringify({
+          messages: currentMessages,
+          maxTokens,
+          keepRecent: 2
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      valBefore.textContent = data.tokensBefore;
+      valAfter.textContent = data.tokensAfter;
+      valSaved.textContent = `${data.tokensSaved || 0} (${data.tokensBefore ? Math.round(((data.tokensSaved || 0) / data.tokensBefore) * 100) : 0}%)`;
+      valStatus.textContent = data.compacted ? 'YES' : 'NO';
+      valStatus.className = data.compacted ? 'stat-val highlight-neon' : 'stat-val';
+
+      countCompact.textContent = data.messages.length;
+      previewCompact.textContent = JSON.stringify(data.messages, null, 2);
+
+      showToast(`Context compacted! Saved ${data.tokensSaved || 0} tokens`, 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      runBtn.disabled = false;
+      runBtn.innerHTML = '<span>🗜️ Run Smart Compaction</span>';
+    }
+  });
+}
