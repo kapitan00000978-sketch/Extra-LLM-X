@@ -75,3 +75,37 @@
   - `tests/gateway.test.js`
   - Barcha 15 ta test 100% yashil o'tdi (`15 passed, 0 failed`).
 - **Natija:** Ishonchlilik to'liq tasdiqlandi.
+
+---
+
+### [2026-09-24 06:07] — 6-Bosqich: Yangi Provayderlar (24 ta), Health Check va Dashboard Kengayishi
+- **Nima qilindi:**
+  - **4 ta yangi yirik provayder qo'shildi:**
+    1. `DeepSeek Official` (DeepSeek-V3 va DeepSeek-R1 native chain-of-thought, 5M bepul token).
+    2. `Hyperbolic` (Llama 3.3 70B, Qwen 2.5 Coder 32B serverless free compute).
+    3. `AIML API` (100+ modellar bepul developer starter tier).
+    4. `Chutes AI` (Decentralized serverless DeepSeek V3/R1).
+  - Jami ulangan provayderlar soni: **24 ta**.
+  - Avtomatik aniqlangan 100% bepul modellar soni: **88 ta**.
+  - **Adapterlar va Router mustahkamlandi:**
+    - `Retry-After` va `x-ratelimit-reset` HTTP headerlarini o'qib dinamik cooldown o'rnatish qo'shildi.
+    - Vaqtinchalik 502/503 server xatolarida eksponentsial kechikish bilan qayta urinish (`executeWithRetry`) kiritildi.
+    - Mijoz ulanishni uzganda (abort/cancel) oqimli SSE o'qishini to'xtatish va xotira sizishini oldini olish yo'lga qo'yildi.
+  - **Avtomatlashtirilgan Health Check Dvigateli:**
+    - `src/engine/health_check.js` va `HealthStore` yaratildi.
+    - Har 10 daqiqada barcha provayderlar endpointlarini avtomatik tekshiruvchi fon ishchisi ishga tushirildi.
+    - `POST /api/health-check/run` va `GET /api/health-check/status` REST API endpointlari ulandi.
+  - **Web Dashboard yangilanishlari:**
+    - 3 ta rang temasi: ⚡ Cyberpunk Neon, 🌙 Deep Midnight, ☀️ Clean Studio Light (localStorage bilan saqlanadi).
+    - Cockpit tabida real-vaqtdagi so'rovlar va tokenlar dinamik SVG grafigi hamda provayderlar ulushi diagrammasi.
+    - Free Providers tabida 24 ta provayderning jonli salomatlik (🟢 Healthy • 12ms, 🟡 Cooldown, ⚪ No Key, 🔴 Offline) monitor paneli.
+    - Free Models tabida "Card View" va "Comparison Matrix View" (kontekst o'lchami, tezlik darajasi, imkoniyatlar solishtirish jadvali).
+  - **Test Qamrovi:**
+    - `tests/health.test.js`, `tests/ratelimit.test.js`, `tests/streaming.test.js` yaratildi.
+    - Testlar soni **25 taga** yetkazildi, barchasi 100% yashil o'tdi (`25 passed, 0 failed`).
+  - **Hujjatlashtirish:**
+    - `docs/PROVIDERS_GUIDE.md`: 24 ta provayderdan bepul kalit olish bo'yicha to'liq bosqichma-bosqich qo'llanma.
+    - `docs/API_REFERENCE.md`: Python, TypeScript va cURL misollari bilan to'liq spetsifikatsiya.
+    - `ARCHITECTURE.md`: 24 provayderlik Mermaid chizmasi bilan kengaytirildi.
+- **Nega foydali:** Universal Agent HP va foydalanuvchilar eng so'nggi DeepSeek-R1 fikrlash modellaridan, yangi hisoblash platformalaridan uzluksiz, barqaror va bepul foydalanish imkoniyatiga ega bo'ldi.
+
