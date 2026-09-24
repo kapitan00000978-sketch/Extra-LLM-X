@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { initDatabase, KeyStore, ModelStore } from './db/database.js';
 import { discoveryEngine } from './engine/discovery.js';
+import { healthCheckEngine } from './engine/health_check.js';
 import { openaiRouter } from './routes/openai.js';
 import { adminRouter } from './routes/admin.js';
 
@@ -75,6 +76,7 @@ app.listen(config.port, config.host, async () => {
 
   try {
     await discoveryEngine.scanAll();
+    healthCheckEngine.startPeriodic(600000);
   } catch (err) {
     console.warn(`[Server] Initial scan warning: ${err.message}`);
   }

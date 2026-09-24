@@ -80,7 +80,7 @@ export class RouterEngine {
           console.log(`[Router] Failover routing to target ${i + 1}/${plan.targets.length}: ${target.provider}/${target.model}`);
         }
 
-        const res = await adapter.executeChat({
+        const res = await adapter.executeWithRetry(() => adapter.executeChat({
           apiKey,
           model: target.model,
           messages,
@@ -89,7 +89,7 @@ export class RouterEngine {
           max_tokens,
           tools,
           tool_choice
-        });
+        }), 1, 250);
 
         if (keyRecord) {
           KeyStore.touchProviderKey(keyRecord.id);
@@ -111,10 +111,11 @@ export class RouterEngine {
 
         if (keyRecord) {
           if (isRateLimit) {
-            console.warn(`[Router] Rate limit (429) hit on ${target.provider}. Cooling down key for 60s.`);
-            KeyStore.markKeyCooldown(keyRecord.id, 60);
+            const cooldownSec = adapter.parseCooldownSeconds(err.headers, 60);
+            console.warn(`[Router] Rate limit (429) hit on ${target.provider}. Cooling down key for ${cooldownSec}s.`);
+            KeyStore.markKeyCooldown(keyRecord.id, cooldownSec);
           } else if (isAuth) {
-            console.warn(`[Router] Auth failure (401/403) on ${target.provider}. Pausing key.`);
+            console.warn(`[Router] Auth failure (401/403) on ${target.provider}. Pausing key for 1h.`);
             KeyStore.markKeyCooldown(keyRecord.id, 3600);
           } else {
             KeyStore.markKeyCooldown(keyRecord.id, 15);
@@ -163,7 +164,7 @@ export class RouterEngine {
 
     const errorMsg = lastError
       ? `All free providers in chain failed. Last error: ${lastError.message}`
-      : `No active free provider keys found. Add keys for Groq, Gemini, OpenRouter, or SambaNova in the Extra LLM X dashboard at http://localhost:3000`;
+      : `No active free provider keys found. Add keys for Groq, Gemini, OpenRouter, DeepSeek, or SambaNova in the Extra LLM X dashboard at http://localhost:3000`;
 
     const err = new Error(errorMsg);
     err.status = 503;

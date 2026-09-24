@@ -70,6 +70,14 @@ export function initDatabase() {
       error_message TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS provider_health (
+      provider TEXT PRIMARY KEY,
+      status TEXT DEFAULT 'unknown',
+      latency_ms INTEGER DEFAULT 0,
+      last_checked_at INTEGER DEFAULT 0,
+      error_message TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT
@@ -280,5 +288,62 @@ export const LogStore = {
       activeModelsCount: (db.prepare('SELECT COUNT(*) as c FROM cached_models WHERE is_active = 1 AND is_free = 1').get()).c,
       activeKeysCount: (db.prepare('SELECT COUNT(*) as c FROM providers WHERE active = 1').get()).c
     };
+  },
+
+  getTimeSeries() {
+    try {
+      const rows = db.prepare(`
+        SELECT 
+          strftime('%H:00', datetime(timestamp / 1000, 'unixepoch', 'localtime')) as time_label,
+          COUNT(*) as request_count,
+          SUM(prompt_tokens + completion_tokens) as token_count,
+          ROUND(AVG(latency_ms), 1) as avg_latency
+        FROM request_logs
+        GROUP BY time_label
+        ORDER BY timestamp DESC
+        LIMIT 10
+      `).all();
+      return rows.reverse();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  getProviderDistribution() {
+    try {
+      return db.prepare(`
+        SELECT provider, COUNT(*) as count
+        FROM request_logs
+        WHERE provider IS NOT NULL AND provider != 'none'
+        GROUP BY provider
+        ORDER BY count DESC
+        LIMIT 8
+      `).all();
+    } catch (e) {
+      return [];
+    }
   }
 };
+
+export const HealthStore = {
+  upsertHealth(provider, status, latencyMs = 0, errorMessage = null) {
+    db.prepare(`
+      INSERT INTO provider_health (provider, status, latency_ms, last_checked_at, error_message)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(provider) DO UPDATE SET
+        status = excluded.status,
+        latency_ms = excluded.latency_ms,
+        last_checked_at = excluded.last_checked_at,
+        error_message = excluded.error_message
+    `).run(provider, status, latencyMs, Date.now(), errorMessage || null);
+  },
+
+  getAllHealth() {
+    return db.prepare('SELECT * FROM provider_health ORDER BY provider ASC').all();
+  },
+
+  getHealth(provider) {
+    return db.prepare('SELECT * FROM provider_health WHERE provider = ?').get(provider) || null;
+  }
+};
+

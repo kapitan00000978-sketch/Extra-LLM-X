@@ -13,19 +13,26 @@ const tabPanes = document.querySelectorAll('.tab-pane');
 const toastContainer = document.getElementById('toast-container');
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   initTabs();
   initCopyButtons();
   initModals();
   initFilters();
   initPlayground();
+  initMatrixView();
+  initHealthCheck();
 
   loadStats();
+  loadCharts();
   loadProviders();
+  loadHealth();
   loadModels();
   loadSystemKeys();
   loadLogs();
 
   setInterval(loadStats, 4000);
+  setInterval(loadCharts, 10000);
+  setInterval(loadHealth, 30000);
   setInterval(loadLogs, 6000);
 });
 
@@ -321,6 +328,8 @@ function renderModels(models) {
       </div>
     </div>
   `).join('');
+
+  renderModelsMatrix(filtered);
 }
 
 function initFilters() {
@@ -765,3 +774,243 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// Theme Manager
+function initTheme() {
+  const currentTheme = localStorage.getItem('elx_theme') || 'neon';
+  applyTheme(currentTheme);
+
+  document.getElementById('btn-theme-toggle')?.addEventListener('click', () => {
+    const cur = localStorage.getItem('elx_theme') || 'neon';
+    let next = 'midnight';
+    if (cur === 'midnight') next = 'light';
+    else if (cur === 'light') next = 'neon';
+    applyTheme(next);
+  });
+}
+
+function applyTheme(theme) {
+  document.body.classList.remove('theme-midnight', 'theme-light');
+  const btn = document.getElementById('btn-theme-toggle');
+
+  if (theme === 'midnight') {
+    document.body.classList.add('theme-midnight');
+    if (btn) btn.innerHTML = '🌙 Midnight';
+  } else if (theme === 'light') {
+    document.body.classList.add('theme-light');
+    if (btn) btn.innerHTML = '☀️ Light';
+  } else {
+    if (btn) btn.innerHTML = '⚡ Neon';
+  }
+  localStorage.setItem('elx_theme', theme);
+}
+
+// Analytics & Charts
+async function loadCharts() {
+  try {
+    const res = await fetch(`${API_BASE}/api/analytics/charts`);
+    if (!res.ok) return;
+    const { timeSeries, distribution } = await res.json();
+
+    renderTimeSeriesChart(timeSeries);
+    renderDistributionBars(distribution);
+  } catch (err) {
+    console.warn('Charts load error:', err.message);
+  }
+}
+
+function renderTimeSeriesChart(data) {
+  const container = document.getElementById('chart-requests-canvas');
+  if (!container) return;
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `
+      <div style="width: 100%; text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 2rem 0;">
+        Awaiting live requests... Telemetry activates on prompt execution.
+      </div>
+    `;
+    return;
+  }
+
+  const maxReq = Math.max(...data.map(d => d.request_count || 1), 1);
+  let totalReqs = 0;
+
+  const barsHtml = data.map(d => {
+    totalReqs += d.request_count || 0;
+    const heightPercent = Math.max(12, Math.round(((d.request_count || 0) / maxReq) * 100));
+    return `
+      <div class="chart-bar-group" title="${d.time_label}: ${d.request_count} reqs, ${d.token_count || 0} tokens">
+        <span class="chart-bar-val">${d.request_count || 0}</span>
+        <div class="chart-bar-column" style="height: ${heightPercent}%;"></div>
+        <span class="chart-bar-label">${d.time_label || ''}</span>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = barsHtml;
+  const tag = document.getElementById('chart-hourly-total');
+  if (tag) tag.textContent = `${totalReqs} reqs recorded`;
+}
+
+function renderDistributionBars(dist) {
+  const container = document.getElementById('chart-provider-bars');
+  if (!container) return;
+
+  if (!dist || dist.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.82rem; padding: 2rem 0;">
+        No requests dispatched yet. Try sending a prompt in the Playground!
+      </div>
+    `;
+    return;
+  }
+
+  const maxCount = Math.max(...dist.map(d => d.count || 1), 1);
+  const rowsHtml = dist.map(d => {
+    const pct = Math.round(((d.count || 0) / maxCount) * 100);
+    return `
+      <div class="provider-bar-row">
+        <div class="provider-bar-meta">
+          <span class="provider-bar-name">${escapeHtml(d.provider)}</span>
+          <span class="provider-bar-count">${d.count} calls</span>
+        </div>
+        <div class="provider-bar-track">
+          <div class="provider-bar-fill" style="width: ${pct}%;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = rowsHtml;
+  const tag = document.getElementById('chart-providers-count');
+  if (tag) tag.textContent = `${dist.length} active providers`;
+}
+
+// Health Monitor
+function initHealthCheck() {
+  document.getElementById('btn-run-health-check')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-run-health-check');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Probing endpoints...';
+    }
+    showToast('Probing all 24 connected AI providers...', 'success');
+    try {
+      await fetch(`${API_BASE}/api/health-check/run`, { method: 'POST' });
+      showToast('Health diagnostics completed!', 'success');
+      loadHealth();
+    } catch (err) {
+      showToast('Diagnostics failed: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="btn-icon">⚡</span> Run Full Diagnostics';
+      }
+    }
+  });
+}
+
+async function loadHealth() {
+  try {
+    const res = await fetch(`${API_BASE}/api/health-check/status`);
+    if (!res.ok) return;
+    const records = await res.json();
+    renderHealthGrid(records);
+  } catch (err) {
+    console.warn('Health load error:', err.message);
+  }
+}
+
+function renderHealthGrid(records) {
+  const container = document.getElementById('health-monitor-grid');
+  if (!container) return;
+
+  if (!records || records.length === 0) {
+    container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.85rem; padding: 1rem 0;">Click 'Run Full Diagnostics' to probe connected providers.</div>`;
+    return;
+  }
+
+  container.innerHTML = records.map(r => {
+    let statusClass = 'offline';
+    let statusLabel = 'Offline';
+
+    if (r.status === 'healthy') {
+      statusClass = 'healthy';
+      statusLabel = `${r.latency_ms || 10}ms`;
+    } else if (r.status === 'degraded') {
+      statusClass = 'degraded';
+      statusLabel = 'Cooldown';
+    } else if (r.status === 'unconfigured') {
+      statusClass = 'unconfigured';
+      statusLabel = 'No Key';
+    }
+
+    return `
+      <div class="health-card" title="${escapeHtml(r.error_message || '')}">
+        <div class="health-card-left">
+          <span class="health-status-dot ${statusClass}"></span>
+          <span class="health-name">${escapeHtml(r.provider)}</span>
+        </div>
+        <span class="health-latency">${statusLabel}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+// Matrix View for Models
+function initMatrixView() {
+  const btnCards = document.getElementById('btn-view-cards');
+  const btnMatrix = document.getElementById('btn-view-matrix');
+  const cardsWrapper = document.getElementById('models-grid');
+  const matrixWrapper = document.getElementById('models-matrix-wrapper');
+
+  btnCards?.addEventListener('click', () => {
+    btnCards.classList.add('active');
+    btnMatrix?.classList.remove('active');
+    cardsWrapper.style.display = 'grid';
+    matrixWrapper.style.display = 'none';
+  });
+
+  btnMatrix?.addEventListener('click', () => {
+    btnMatrix.classList.add('active');
+    btnCards?.classList.remove('active');
+    cardsWrapper.style.display = 'none';
+    matrixWrapper.style.display = 'block';
+  });
+}
+
+function renderModelsMatrix(modelsToRender) {
+  const tbody = document.getElementById('tbody-models-matrix');
+  if (!tbody) return;
+
+  const list = modelsToRender || allModels;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-muted);">No models match this filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(m => {
+    const contextFormatted = m.context_window >= 1000000
+      ? `${(m.context_window / 1000000).toFixed(1)}M tokens`
+      : `${Math.round((m.context_window || 8192) / 1024)}k tokens`;
+
+    const capsBadges = (m.capabilities || 'chat').split(',').map(c => 
+      `<span class="model-tag">${c.trim()}</span>`
+    ).join(' ');
+
+    return `
+      <tr>
+        <td style="font-weight: 600; color: var(--text-primary);">${escapeHtml(m.display_name)}</td>
+        <td style="text-transform: capitalize;"><span class="provider-badge-pill">${escapeHtml(m.provider)}</span></td>
+        <td><code style="font-family: var(--font-mono); color: var(--accent-cyan);">${contextFormatted}</code></td>
+        <td>${capsBadges}</td>
+        <td><span class="model-tag free-tag">100% FREE</span></td>
+        <td>
+          <button class="btn-copy-code" onclick="copyText('${escapeHtml(m.id)}')" title="Copy model ID">Copy ID</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+

@@ -1,9 +1,9 @@
 import express from 'express';
-import { KeyStore, ModelStore, LogStore } from '../db/database.js';
+import { KeyStore, ModelStore, LogStore, HealthStore } from '../db/database.js';
 import { adapterRegistry } from '../adapters/index.js';
 import { discoveryEngine } from '../engine/discovery.js';
 import { getAllCombos } from '../engine/combos.js';
-import { routerEngine } from '../engine/router.js';
+import { healthCheckEngine } from '../engine/health_check.js';
 
 export const adminRouter = express.Router();
 
@@ -11,6 +11,43 @@ adminRouter.get('/stats', (req, res) => {
   try {
     const stats = LogStore.getStats();
     res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.get('/analytics/charts', (req, res) => {
+  try {
+    const timeSeries = LogStore.getTimeSeries();
+    const distribution = LogStore.getProviderDistribution();
+    res.json({ timeSeries, distribution });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.get('/health-check/status', (req, res) => {
+  try {
+    const health = HealthStore.getAllHealth();
+    res.json(health);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.post('/health-check/run', async (req, res) => {
+  try {
+    const results = await healthCheckEngine.checkAll();
+    res.json({ success: true, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.post('/health-check/provider/:id', async (req, res) => {
+  try {
+    const result = await healthCheckEngine.checkProvider(req.params.id);
+    res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -28,4 +28,49 @@ export class BaseAdapter {
     const isServer = status >= 500;
     return { isRateLimit, isAuth, isServer };
   }
+
+  parseCooldownSeconds(headers, defaultSeconds = 60) {
+    if (!headers) return defaultSeconds;
+
+    const retryAfter = headers.get ? headers.get('retry-after') : headers['retry-after'];
+    if (retryAfter) {
+      const parsed = parseInt(retryAfter, 10);
+      if (!isNaN(parsed) && parsed > 0) return Math.min(300, Math.max(5, parsed));
+    }
+
+    const resetHeader = headers.get ? headers.get('x-ratelimit-reset') : headers['x-ratelimit-reset'];
+    if (resetHeader) {
+      const resetTime = parseFloat(resetHeader);
+      if (!isNaN(resetTime) && resetTime > 0) {
+        // Could be epoch seconds or delta seconds
+        const delta = resetTime > 1000000000 ? Math.ceil(resetTime - (Date.now() / 1000)) : Math.ceil(resetTime);
+        if (delta > 0 && delta < 600) return Math.min(300, Math.max(5, delta));
+      }
+    }
+
+    return defaultSeconds;
+  }
+
+  async executeWithRetry(operation, maxRetries = 1, baseDelayMs = 300) {
+    let lastErr;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (err) {
+        lastErr = err;
+        const status = err.status || 500;
+        const { isServer } = this.classifyError(err, status);
+
+        // Only retry on transient server errors (500, 502, 503, 504) or network errors
+        if (!isServer || attempt >= maxRetries) {
+          throw err;
+        }
+
+        const delay = baseDelayMs * Math.pow(2, attempt) + Math.random() * 100;
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+    throw lastErr;
+  }
 }
+

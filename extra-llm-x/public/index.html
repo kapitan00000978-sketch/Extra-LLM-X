@@ -57,6 +57,7 @@
     </div>
 
     <div class="header-right">
+      <button class="theme-toggle-btn" id="btn-theme-toggle" title="Switch Theme">⚡ Neon</button>
       <div class="quick-endpoint-box">
         <span class="endpoint-label">Base URL:</span>
         <code class="endpoint-code" id="display-base-url">http://localhost:3000/v1</code>
@@ -129,6 +130,37 @@
         </div>
       </div>
 
+      <!-- Real-Time Activity & Analytics -->
+      <div class="section-container mt-4">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">📈 Real-Time Activity & Throughput</h2>
+            <p class="section-subtitle">Live request volume, token throughput, and provider load distribution</p>
+          </div>
+          <span class="badge-live-stream"><span class="pulse-dot"></span> LIVE TELEMETRY</span>
+        </div>
+        <div class="analytics-charts-grid">
+          <div class="glass-card chart-card">
+            <div class="chart-header">
+              <span class="chart-title">REQUEST VOLUME & TOKENS (HOURLY)</span>
+              <span class="chart-metric-tag" id="chart-hourly-total">Live Stream</span>
+            </div>
+            <div class="chart-canvas-wrapper" id="chart-requests-canvas">
+              <div class="chart-placeholder">Loading real-time throughput metrics...</div>
+            </div>
+          </div>
+          <div class="glass-card chart-card">
+            <div class="chart-header">
+              <span class="chart-title">PROVIDER LOAD BREAKDOWN</span>
+              <span class="chart-metric-tag" id="chart-providers-count">Active Distribution</span>
+            </div>
+            <div class="provider-bars-wrapper" id="chart-provider-bars">
+              <div class="chart-placeholder">Analyzing provider distribution...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Virtual Combos -->
       <div class="section-container">
         <div class="section-header">
@@ -159,10 +191,24 @@ TITAN_MODEL=extra/auto-free</code></pre>
 
     <!-- TAB 2: FREE PROVIDERS HUB -->
     <section class="tab-pane" id="tab-providers">
+      <!-- Health Monitor Panel -->
       <div class="section-container">
         <div class="section-header flex-between">
           <div>
-            <h2 class="section-title">🔌 16+ Free Provider Portals</h2>
+            <h2 class="section-title">🏥 Provider Health & Diagnostic Ping</h2>
+            <p class="section-subtitle">Real-time endpoint availability, ping latency, and rate-limit cooldown status</p>
+          </div>
+          <button class="btn-primary" id="btn-run-health-check">
+            <span class="btn-icon">⚡</span> Run Full Diagnostics
+          </button>
+        </div>
+        <div class="health-monitor-grid" id="health-monitor-grid"></div>
+      </div>
+
+      <div class="section-container mt-4">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">🔌 24+ Free Provider Portals</h2>
             <p class="section-subtitle">Add your free API keys below. Supports multiple keys per provider for automatic load balancing.</p>
           </div>
           <button class="btn-secondary" id="btn-scan-all-providers">
@@ -204,6 +250,10 @@ TITAN_MODEL=extra/auto-free</code></pre>
             <p class="section-subtitle">Real-time discovered zero-cost models ready for your agents</p>
           </div>
           <div class="filter-controls">
+            <div class="view-mode-toggle">
+              <button class="view-toggle-btn active" id="btn-view-cards" title="Cards View">🎴 Cards</button>
+              <button class="view-toggle-btn" id="btn-view-matrix" title="Comparison Matrix View">📊 Matrix</button>
+            </div>
             <input type="text" class="input-search" id="input-model-search" placeholder="🔍 Search free models...">
             <div class="filter-pills" id="model-filter-pills">
               <button class="filter-pill active" data-filter="all">All</button>
@@ -215,6 +265,23 @@ TITAN_MODEL=extra/auto-free</code></pre>
           </div>
         </div>
         <div class="models-grid" id="models-grid"></div>
+        <div class="models-matrix-wrapper" id="models-matrix-wrapper" style="display: none;">
+          <div class="glass-table-wrapper">
+            <table class="glass-table matrix-table">
+              <thead>
+                <tr>
+                  <th>Model Name</th>
+                  <th>Provider</th>
+                  <th>Context Window</th>
+                  <th>Capabilities</th>
+                  <th>Free Tier Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-models-matrix"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 

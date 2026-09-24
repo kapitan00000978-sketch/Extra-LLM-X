@@ -146,17 +146,25 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
       if (upstreamBody) {
         const reader = upstreamBody.getReader();
         const decoder = new TextDecoder();
+        let clientClosed = false;
+
+        req.on('close', () => {
+          clientClosed = true;
+          reader.cancel().catch(() => {});
+        });
 
         try {
-          while (true) {
+          while (!clientClosed) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done || clientClosed) break;
             const textChunk = decoder.decode(value, { stream: true });
             completionTokens += Math.max(1, Math.round(textChunk.length / 4));
             res.write(textChunk);
           }
         } catch (streamErr) {
-          console.warn(`[OpenAI Route] Stream error: ${streamErr.message}`);
+          if (!clientClosed) {
+            console.warn(`[OpenAI Route] Stream error: ${streamErr.message}`);
+          }
         } finally {
           res.end();
         }

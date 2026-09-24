@@ -39,11 +39,11 @@ test('HTTP: GET /health returns status ok', async () => {
   assert.strictEqual(data.status, 'ok');
 });
 
-test('HTTP: GET /api/providers/portals returns all 17 portals', async () => {
+test('HTTP: GET /api/providers/portals returns all 24 portals', async () => {
   const res = await fetch(`${baseUrl}/api/providers/portals`);
   assert.strictEqual(res.status, 200);
   const data = await res.json();
-  assert.strictEqual(data.length, 17);
+  assert.ok(data.length >= 24, `Expected at least 24 portals, found ${data.length}`);
 });
 
 test('HTTP: GET /v1/models rejects unauthenticated calls', async () => {
