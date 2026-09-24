@@ -4,6 +4,7 @@ import { adapterRegistry } from '../adapters/index.js';
 import { discoveryEngine } from '../engine/discovery.js';
 import { getAllCombos } from '../engine/combos.js';
 import { healthCheckEngine } from '../engine/health_check.js';
+import { responseCache } from '../engine/cache.js';
 import { OMNIROUTE_FREE_MODELS } from '../catalog/omniroute_catalog.js';
 
 export const adminRouter = express.Router();
@@ -327,3 +328,22 @@ adminRouter.get('/handshake', (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+adminRouter.get('/cache/stats', (req, res) => {
+  try {
+    const stats = responseCache.getStats();
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.post('/cache/clear', (req, res) => {
+  try {
+    responseCache.clear();
+    res.json({ success: true, message: 'Response cache purged successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+

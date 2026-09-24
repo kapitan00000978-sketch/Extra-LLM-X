@@ -105,6 +105,18 @@ async function loadStats() {
       ? Math.round((stats.successfulRequests / stats.totalRequests) * 100)
       : 100;
     document.getElementById('stat-resilience').textContent = `${resilienceRate}%`;
+
+    // Semantic Cache stats
+    try {
+      const cRes = await fetch(`${API_BASE}/api/cache/stats`);
+      if (cRes.ok) {
+        const cStats = await cRes.json();
+        const hitRateEl = document.getElementById('stat-cache-hit-rate');
+        const savedTokensEl = document.getElementById('stat-cache-saved-tokens');
+        if (hitRateEl) hitRateEl.textContent = cStats.hitRate || '0.0%';
+        if (savedTokensEl) savedTokensEl.textContent = Number(cStats.tokensSaved || 0).toLocaleString();
+      }
+    } catch (e) {}
   } catch (err) {
     console.warn('Stats error:', err.message);
   }
@@ -811,37 +823,385 @@ function initPlayground() {
     showToast('System prompt reset', 'success');
   });
 
-  msgInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendPlaygroundMessage();
+  // Purge Cache button
+  document.getElementById('btn-purge-cache')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/cache/clear`, { method: 'POST' });
+      if (res.ok) {
+        showToast('Response cache purged successfully!', 'success');
+        loadStats();
+      }
+    } catch (err) {
+      showToast('Failed to purge cache: ' + err.message, 'error');
     }
   });
+
+  // Playground Sub-Mode Switching (Chat / Arena / Images / Embeddings)
+  const modeBtns = document.querySelectorAll('#playground-mode-tabs .mode-tab-btn');
+  const modePanels = document.querySelectorAll('.playground-mode-panel');
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.getAttribute('data-pmode');
+      modeBtns.forEach(b => b.classList.remove('active'));
+      modePanels.forEach(p => p.classList.add('hidden'));
+
+      btn.classList.add('active');
+      const targetPanel = document.getElementById(`panel-pmode-${mode}`);
+      if (targetPanel) {
+        targetPanel.classList.remove('hidden');
+        targetPanel.classList.add('active');
+      }
+    });
+  });
+
+  initArena();
+  initImageStudio();
+  initEmbeddingsStudio();
 }
 
 function populatePlaygroundModels(combos, models) {
   const optCombos = document.getElementById('optgroup-combos');
   const optModels = document.getElementById('optgroup-models');
-  if (!optCombos || !optModels) return;
+  const arenaSelectA = document.getElementById('select-arena-model-a');
+  const arenaSelectB = document.getElementById('select-arena-model-b');
 
-  optCombos.innerHTML = combos.map(c => `
-    <option value="${c.id}">${c.display_name} (${c.id})</option>
-  `).join('');
+  if (optCombos && optModels) {
+    optCombos.innerHTML = combos.map(c => `
+      <option value="${c.id}">${c.display_name} (${c.id})</option>
+    `).join('');
 
-  optModels.innerHTML = models.map(m => `
-    <option value="${m.id}">${m.display_name}</option>
-  `).join('');
+    optModels.innerHTML = models.map(m => `
+      <option value="${m.id}">${m.display_name}</option>
+    `).join('');
+  }
+
+  // Populate Arena Selectors
+  if (arenaSelectA && arenaSelectB) {
+    const allOptionsHtml = [
+      ...combos.map(c => `<option value="${c.id}">${c.display_name}</option>`),
+      ...models.slice(0, 50).map(m => `<option value="${m.id}">${m.display_name} [${m.provider}]</option>`)
+    ].join('');
+
+    arenaSelectA.innerHTML = allOptionsHtml;
+    arenaSelectB.innerHTML = allOptionsHtml;
+
+    if (combos.length >= 2) {
+      arenaSelectA.value = combos[0].id;
+      arenaSelectB.value = combos[1].id;
+    }
+  }
 }
 
-window.useModelInPlayground = function(modelId) {
-  switchTab('tab-playground');
-  const select = document.getElementById('select-play-model');
-  if (select) {
-    select.value = modelId;
-    const pill = document.getElementById('play-active-model-pill');
-    if (pill) pill.textContent = `⚡ ${modelId}`;
-  }
-};
+// ⚔️ Model Arena (Battle Side-by-Side) Controller
+let arenaAbortController = null;
+let isArenaBattling = false;
+
+function initArena() {
+  const selectA = document.getElementById('select-arena-model-a');
+  const selectB = document.getElementById('select-arena-model-b');
+  const titleA = document.getElementById('arena-title-a');
+  const titleB = document.getElementById('arena-title-b');
+
+  selectA?.addEventListener('change', () => {
+    if (titleA) titleA.textContent = selectA.value;
+  });
+  selectB?.addEventListener('change', () => {
+    if (titleB) titleB.textContent = selectB.value;
+  });
+
+  document.getElementById('btn-arena-send')?.addEventListener('click', startArenaBattle);
+  document.getElementById('btn-arena-stop')?.addEventListener('click', () => {
+    if (arenaAbortController) {
+      arenaAbortController.abort();
+      arenaAbortController = null;
+      showToast('Arena battle stopped', 'info');
+    }
+  });
+
+  document.getElementById('input-arena-prompt')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      startArenaBattle();
+    }
+  });
+}
+
+async function startArenaBattle() {
+  if (isArenaBattling) return;
+  const promptInput = document.getElementById('input-arena-prompt');
+  const prompt = (promptInput?.value || '').trim();
+  if (!prompt) return;
+
+  const modelA = document.getElementById('select-arena-model-a')?.value || 'extra/auto-free';
+  const modelB = document.getElementById('select-arena-model-b')?.value || 'extra/free-fast';
+
+  const bodyA = document.getElementById('arena-body-a');
+  const bodyB = document.getElementById('arena-body-b');
+  const statsA = document.getElementById('arena-stats-a');
+  const statsB = document.getElementById('arena-stats-b');
+  const sendBtn = document.getElementById('btn-arena-send');
+  const stopBtn = document.getElementById('btn-arena-stop');
+
+  if (statsA) { statsA.className = 'arena-stats-pill'; statsA.textContent = 'Streaming...'; }
+  if (statsB) { statsB.className = 'arena-stats-pill'; statsB.textContent = 'Streaming...'; }
+
+  if (bodyA) bodyA.innerHTML = '<div class="chat-bubble assistant"><div class="bubble-content"><span class="streaming-cursor"></span></div></div>';
+  if (bodyB) bodyB.innerHTML = '<div class="chat-bubble assistant"><div class="bubble-content"><span class="streaming-cursor"></span></div></div>';
+
+  isArenaBattling = true;
+  arenaAbortController = new AbortController();
+
+  if (sendBtn) sendBtn.classList.add('hidden');
+  if (stopBtn) stopBtn.classList.remove('hidden');
+
+  let timeA = 0;
+  let timeB = 0;
+  let tokA = 0;
+  let tokB = 0;
+  let doneA = false;
+  let doneB = false;
+
+  const runStream = async (model, bodyEl, statsEl, onDone) => {
+    const start = Date.now();
+    let text = '';
+    const contentEl = bodyEl.querySelector('.bubble-content');
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          stream: true,
+          temperature: 0.7
+        }),
+        signal: arenaAbortController.signal
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const delta = parsed.choices?.[0]?.delta?.content || '';
+              text += delta;
+              if (contentEl) contentEl.innerHTML = formatMarkdown(text) + '<span class="streaming-cursor"></span>';
+              bodyEl.scrollTop = bodyEl.scrollHeight;
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (contentEl) contentEl.innerHTML = formatMarkdown(text);
+      const latency = Date.now() - start;
+      const tokEst = Math.max(1, Math.round(text.length / 4));
+      const tokPerSec = Math.round((tokEst / (latency / 1000)));
+      statsEl.textContent = `${latency}ms • ${tokPerSec} tok/s`;
+      onDone(latency, tokPerSec);
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        if (contentEl) contentEl.innerHTML += '<div style="color:var(--accent-amber);font-size:0.75rem;">[Cancelled]</div>';
+        statsEl.textContent = 'Cancelled';
+      } else {
+        if (contentEl) contentEl.innerHTML = `<span style="color:#ef4444;">Error: ${escapeHtml(err.message)}</span>`;
+        statsEl.textContent = 'Error';
+      }
+      onDone(999999, 0);
+    }
+  };
+
+  const evaluateBattle = () => {
+    if (doneA && doneB) {
+      isArenaBattling = false;
+      arenaAbortController = null;
+      if (sendBtn) sendBtn.classList.remove('hidden');
+      if (stopBtn) stopBtn.classList.add('hidden');
+
+      if (timeA < timeB && timeA < 900000) {
+        statsA.classList.add('winner');
+        statsA.innerHTML = `👑 FASTEST (${timeA}ms • ${tokA} tok/s)`;
+      } else if (timeB < timeA && timeB < 900000) {
+        statsB.classList.add('winner');
+        statsB.innerHTML = `👑 FASTEST (${timeB}ms • ${tokB} tok/s)`;
+      }
+    }
+  };
+
+  runStream(modelA, bodyA, statsA, (t, tok) => {
+    timeA = t;
+    tokA = tok;
+    doneA = true;
+    evaluateBattle();
+  });
+
+  runStream(modelB, bodyB, statsB, (t, tok) => {
+    timeB = t;
+    tokB = tok;
+    doneB = true;
+    evaluateBattle();
+  });
+}
+
+// 🎨 Flux Image Studio Controller
+function initImageStudio() {
+  const genBtn = document.getElementById('btn-generate-image');
+  const promptInput = document.getElementById('input-image-prompt');
+  const modelSelect = document.getElementById('select-image-model');
+  const sizeSelect = document.getElementById('select-image-size');
+  const placeholder = document.getElementById('image-placeholder');
+  const resultBox = document.getElementById('image-result-box');
+  const displayImg = document.getElementById('img-result-display');
+  const copyUrlBtn = document.getElementById('btn-copy-image-url');
+  const downloadLink = document.getElementById('btn-download-image');
+
+  let lastGeneratedUrl = '';
+
+  genBtn?.addEventListener('click', async () => {
+    const prompt = (promptInput?.value || '').trim();
+    if (!prompt) {
+      showToast('Please enter an image prompt', 'error');
+      return;
+    }
+
+    genBtn.disabled = true;
+    genBtn.innerHTML = '🎨 Generating via Pollinations Flux...';
+    placeholder?.classList.remove('hidden');
+    resultBox?.classList.add('hidden');
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+        },
+        body: JSON.stringify({
+          prompt,
+          model: modelSelect?.value || 'flux',
+          size: sizeSelect?.value || '1024x1024',
+          n: 1
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      const imageUrl = data.data?.[0]?.url;
+
+      if (!imageUrl) throw new Error('No image URL returned');
+
+      lastGeneratedUrl = imageUrl;
+      displayImg.src = imageUrl;
+
+      displayImg.onload = () => {
+        placeholder?.classList.add('hidden');
+        resultBox?.classList.remove('hidden');
+        showToast('Free image generated successfully!', 'success');
+      };
+
+      if (downloadLink) {
+        downloadLink.href = imageUrl;
+      }
+    } catch (err) {
+      showToast('Image generation failed: ' + err.message, 'error');
+    } finally {
+      genBtn.disabled = false;
+      genBtn.innerHTML = '<span>🎨 Generate Free Image ($0)</span>';
+    }
+  });
+
+  copyUrlBtn?.addEventListener('click', () => {
+    if (lastGeneratedUrl) {
+      copyText(lastGeneratedUrl, copyUrlBtn);
+    }
+  });
+}
+
+// 🧬 Embeddings Studio Controller
+function initEmbeddingsStudio() {
+  const computeBtn = document.getElementById('btn-compute-embeddings');
+  const text1El = document.getElementById('input-emb-text1');
+  const text2El = document.getElementById('input-emb-text2');
+  const panel = document.getElementById('emb-result-panel');
+  const scoreEl = document.getElementById('emb-similarity-score');
+  const barEl = document.getElementById('emb-similarity-bar');
+  const previewEl = document.getElementById('emb-vector-preview');
+
+  computeBtn?.addEventListener('click', async () => {
+    const text1 = (text1El?.value || '').trim();
+    const text2 = (text2El?.value || '').trim();
+    if (!text1 || !text2) {
+      showToast('Please provide both text samples', 'error');
+      return;
+    }
+
+    computeBtn.disabled = true;
+    computeBtn.innerHTML = '🧬 Computing 1536-dim embeddings...';
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/embeddings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+        },
+        body: JSON.stringify({
+          input: [text1, text2],
+          model: 'extra/free-embedding'
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      const vecA = data.data?.[0]?.embedding;
+      const vecB = data.data?.[1]?.embedding;
+
+      if (!vecA || !vecB) throw new Error('Invalid embeddings format');
+
+      // Calculate Cosine Similarity
+      let dot = 0, normA = 0, normB = 0;
+      for (let i = 0; i < vecA.length; i++) {
+        dot += vecA[i] * vecB[i];
+        normA += vecA[i] * vecA[i];
+        normB += vecB[i] * vecB[i];
+      }
+      const similarity = dot / (Math.sqrt(normA) * Math.sqrt(normB));
+      const simPercent = Math.max(0, Math.min(100, Math.round(similarity * 100)));
+
+      panel?.classList.remove('hidden');
+      if (scoreEl) scoreEl.textContent = similarity.toFixed(3);
+      if (barEl) barEl.style.width = `${simPercent}%`;
+
+      if (previewEl) {
+        previewEl.textContent = `[${vecA.slice(0, 10).map(v => v.toFixed(5)).join(', ')}, ... +${vecA.length - 10} dimensions]`;
+      }
+
+      showToast(`Computed Cosine Similarity: ${similarity.toFixed(3)}`, 'success');
+    } catch (err) {
+      showToast('Embedding calculation failed: ' + err.message, 'error');
+    } finally {
+      computeBtn.disabled = false;
+      computeBtn.innerHTML = '<span>🧬 Calculate Embeddings & Cosine Similarity</span>';
+    }
+  });
+}
 
 function stopPlaygroundGeneration() {
   if (currentAbortController) {

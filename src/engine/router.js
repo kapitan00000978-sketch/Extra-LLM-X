@@ -3,55 +3,140 @@ import { getCombo, VirtualCombos } from './combos.js';
 import { KeyStore, ModelStore, LogStore } from '../db/database.js';
 import { lockoutPolicy } from './lockout.js';
 import { promptCompression } from './compression.js';
+import { responseCache } from './cache.js';
 import { config } from '../config.js';
 
 export class RouterEngine {
-  resolvePlan(requestedModel) {
+  detectRequirements(messages = [], tools = []) {
+    let hasVision = false;
+    let totalChars = 0;
+
+    for (const m of messages) {
+      if (Array.isArray(m.content)) {
+        for (const part of m.content) {
+          if (part.type === 'image_url' || part.image_url || part.type === 'image') {
+            hasVision = true;
+          }
+          if (typeof part.text === 'string') {
+            totalChars += part.text.length;
+          }
+        }
+      } else if (typeof m.content === 'string') {
+        totalChars += m.content.length;
+      }
+    }
+
+    const estimatedTokens = Math.max(1, Math.round(totalChars / 3.8));
+    const hasTools = Boolean(tools && Array.isArray(tools) && tools.length > 0);
+
+    return { hasVision, hasTools, estimatedTokens };
+  }
+
+  resolvePlan(requestedModel, requirements = {}) {
+    const { hasVision, hasTools, estimatedTokens = 0 } = requirements;
     const model = (requestedModel || 'extra/auto-free').trim();
 
+    let baseTargets = [];
+    let comboName = null;
+
+    if (hasVision && (model === 'auto' || model === 'default' || model === 'extra/auto-free')) {
+      return { combo: 'extra/free-vision', targets: VirtualCombos['extra/free-vision'].targets };
+    }
+
     if (model === 'auto' || model === 'default' || model === 'extra/auto-free') {
-      return { combo: 'extra/auto-free', targets: VirtualCombos['extra/auto-free'].targets };
+      baseTargets = VirtualCombos['extra/auto-free'].targets;
+      comboName = 'extra/auto-free';
+    } else {
+      const combo = getCombo(model);
+      if (combo) {
+        baseTargets = combo.targets;
+        comboName = model;
+      } else {
+        const slashIdx = model.indexOf('/');
+        if (slashIdx !== -1) {
+          const prefix = model.substring(0, slashIdx);
+          const rest = model.substring(slashIdx + 1);
+
+          if (adapterRegistry.get(prefix)) {
+            baseTargets = [
+              { provider: prefix, model: rest },
+              ...VirtualCombos['extra/auto-free'].targets.filter(t => t.provider !== prefix)
+            ];
+          }
+        }
+
+        if (baseTargets.length === 0) {
+          const freeModels = ModelStore.getFreeModels();
+          const match = freeModels.find(m => m.model_id === model || m.id === model);
+          if (match) {
+            baseTargets = [
+              { provider: match.provider, model: match.model_id },
+              ...VirtualCombos['extra/auto-free'].targets.filter(t => t.provider !== match.provider)
+            ];
+          } else {
+            baseTargets = VirtualCombos['extra/auto-free'].targets;
+            comboName = 'extra/auto-free';
+          }
+        }
+      }
     }
 
-    const combo = getCombo(model);
-    if (combo) {
-      return { combo: model, targets: combo.targets };
+    // Apply Capability & Context Guards
+    let filtered = [...baseTargets];
+
+    if (hasVision) {
+      const visionProviders = new Set(['gemini', 'openrouter', 'github', 'sambanova', 'pollinations', 'mock']);
+      filtered = filtered.filter(t => visionProviders.has(t.provider));
+      if (filtered.length === 0) filtered = VirtualCombos['extra/free-vision'].targets;
     }
 
-    const slashIdx = model.indexOf('/');
-    if (slashIdx !== -1) {
-      const prefix = model.substring(0, slashIdx);
-      const rest = model.substring(slashIdx + 1);
+    if (hasTools) {
+      // Prioritize providers known for reliable tool/function calling support
+      const toolOrder = ['groq', 'gemini', 'sambanova', 'cerebras', 'mistral', 'nvidia', 'deepseek', 'github', 'mock'];
+      filtered.sort((a, b) => {
+        const idxA = toolOrder.indexOf(a.provider);
+        const idxB = toolOrder.indexOf(b.provider);
+        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+      });
+    }
 
-      if (adapterRegistry.get(prefix)) {
+    return { combo: comboName, targets: filtered.length > 0 ? filtered : baseTargets };
+  }
+
+  async dispatch({ clientKey, requestedModel, messages, stream = false, temperature = 0.7, max_tokens, tools, tool_choice, compression = 'lite', skipCache = false }) {
+    const startTime = Date.now();
+    const requirements = this.detectRequirements(messages, tools);
+
+    // Compute semantic cache hash for request
+    const cacheHash = responseCache.computeHash({
+      requestedModel,
+      messages,
+      temperature,
+      max_tokens,
+      tools
+    });
+
+    // Check Cache for non-streaming requests
+    if (!stream && !skipCache) {
+      const cached = responseCache.get(cacheHash);
+      if (cached) {
         return {
-          combo: null,
-          targets: [
-            { provider: prefix, model: rest },
-            ...VirtualCombos['extra/auto-free'].targets.filter(t => t.provider !== prefix)
-          ]
+          isCached: true,
+          cachedData: cached.data,
+          cacheHash,
+          provider: 'cache',
+          model: requestedModel,
+          promptTokens: cached.promptTokens,
+          completionTokens: cached.completionTokens,
+          hitCount: cached.hitCount,
+          fallbackOccurred: false,
+          startTime,
+          compression: { compressed: false, tokensSaved: 0 }
         };
       }
     }
 
-    const freeModels = ModelStore.getFreeModels();
-    const match = freeModels.find(m => m.model_id === model || m.id === model);
-    if (match) {
-      return {
-        combo: null,
-        targets: [
-          { provider: match.provider, model: match.model_id },
-          ...VirtualCombos['extra/auto-free'].targets.filter(t => t.provider !== match.provider)
-        ]
-      };
-    }
-
-    return { combo: 'extra/auto-free', targets: VirtualCombos['extra/auto-free'].targets };
-  }
-
-  async dispatch({ clientKey, requestedModel, messages, stream = false, temperature, max_tokens, tools, tool_choice, compression = 'lite' }) {
-    const startTime = Date.now();
-    const plan = this.resolvePlan(requestedModel);
+    const plan = this.resolvePlan(requestedModel, requirements);
     let lastError = null;
     let fallbackOccurred = false;
 
@@ -123,7 +208,8 @@ export class RouterEngine {
           model: target.model,
           fallbackOccurred,
           startTime,
-          compression: compressionResult
+          compression: compressionResult,
+          cacheHash
         };
       } catch (err) {
         lastError = err;
@@ -172,7 +258,8 @@ export class RouterEngine {
           model: 'extra-demo-model',
           fallbackOccurred: true,
           startTime,
-          compression: compressionResult
+          compression: compressionResult,
+          cacheHash
         };
       }
     }

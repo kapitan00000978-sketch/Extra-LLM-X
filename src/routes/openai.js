@@ -1,10 +1,16 @@
 import express from 'express';
 import { routerEngine } from '../engine/router.js';
 import { getAllCombos } from '../engine/combos.js';
+import { responseCache } from '../engine/cache.js';
+import { freeEmbeddings } from '../engine/embeddings.js';
+import { imagesRouter } from './images.js';
 import { ModelStore, KeyStore, LogStore } from '../db/database.js';
 import { config } from '../config.js';
 
 export const openaiRouter = express.Router();
+
+// Mount Free Image Generation
+openaiRouter.use('/images', imagesRouter);
 
 function authMiddleware(req, res, next) {
   if (!config.enableAuth) {
@@ -84,9 +90,31 @@ openaiRouter.get('/models', authMiddleware, (req, res) => {
     }
   }));
 
+  // Extra Multimodal entries (Embeddings & Flux Image Gen)
+  const multimodalEntries = [
+    {
+      id: 'extra/free-embedding',
+      object: 'model',
+      created: now,
+      owned_by: 'extra-llm-x',
+      permission: [],
+      root: 'extra/free-embedding',
+      extra_llm_x: { type: 'embedding', capabilities: 'embedding', is_free: true }
+    },
+    {
+      id: 'image/flux',
+      object: 'model',
+      created: now,
+      owned_by: 'pollinations',
+      permission: [],
+      root: 'flux',
+      extra_llm_x: { type: 'image_generation', capabilities: 'image', is_free: true }
+    }
+  ];
+
   res.json({
     object: 'list',
-    data: [...comboEntries, ...modelEntries]
+    data: [...comboEntries, ...modelEntries, ...multimodalEntries]
   });
 });
 
@@ -114,6 +142,8 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
     });
   }
 
+  const skipCache = responseCache.shouldSkip(req);
+
   try {
     const result = await routerEngine.dispatch({
       clientKey: req.clientKey,
@@ -123,11 +153,44 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
       temperature,
       max_tokens,
       tools,
-      tool_choice
+      tool_choice,
+      skipCache
     });
 
     const latencyMs = Date.now() - result.startTime;
 
+    // Cache Hit Execution Path (0ms repeat latency, token savings)
+    if (result.isCached) {
+      const saved = (result.promptTokens || 0) + (result.completionTokens || 0);
+      res.setHeader('X-ExtraLLMX-Cache', 'HIT');
+      res.setHeader('X-Cache', 'HIT');
+      res.setHeader('X-Tokens-Saved', saved.toString());
+      res.setHeader('X-ExtraLLMX-Provider', 'cache');
+      res.setHeader('X-ExtraLLMX-Actual-Model', result.model);
+      res.setHeader('X-ExtraLLMX-Fallback', 'false');
+      res.setHeader('X-ExtraLLMX-Latency-Ms', latencyMs.toString());
+      res.setHeader('x-omniroute-provider', 'cache');
+      res.setHeader('x-omniroute-actual-model', result.model);
+      res.setHeader('x-omniroute-fallback', 'false');
+      res.setHeader('x-omniroute-latency-ms', latencyMs.toString());
+
+      LogStore.record({
+        clientKey: req.clientKey,
+        requestedModel: model,
+        actualModel: result.model,
+        provider: 'cache',
+        promptTokens: result.promptTokens || 0,
+        completionTokens: result.completionTokens || 0,
+        latencyMs,
+        statusCode: 200,
+        fallbackOccurred: false
+      });
+
+      return res.json(result.cachedData);
+    }
+
+    res.setHeader('X-ExtraLLMX-Cache', 'MISS');
+    res.setHeader('X-Cache', 'MISS');
     res.setHeader('X-ExtraLLMX-Provider', result.provider);
     res.setHeader('X-ExtraLLMX-Actual-Model', result.model);
     res.setHeader('X-ExtraLLMX-Fallback', result.fallbackOccurred ? 'true' : 'false');
@@ -200,6 +263,11 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
       const promptTokens = data.usage?.prompt_tokens || 0;
       const completionTokens = data.usage?.completion_tokens || 0;
 
+      // Save to L1/L2 Response Cache
+      if (result.cacheHash) {
+        responseCache.set(result.cacheHash, result.model, data, promptTokens, completionTokens);
+      }
+
       LogStore.record({
         clientKey: req.clientKey,
         requestedModel: model,
@@ -231,20 +299,27 @@ openaiRouter.post('/chat/completions', authMiddleware, async (req, res) => {
 
 /**
  * POST /v1/embeddings
+ * Universal 100% Free Vector Embeddings Engine (Ollama / HuggingFace / Deterministic)
  */
-openaiRouter.post('/embeddings', authMiddleware, (req, res) => {
-  const { input } = req.body;
-  const inputs = Array.isArray(input) ? input : [input || ''];
-  const embeddingData = inputs.map((_, idx) => ({
-    object: 'embedding',
-    embedding: new Array(1536).fill(0).map(() => (Math.random() - 0.5) * 0.02),
-    index: idx
-  }));
-
-  res.json({
-    object: 'list',
-    data: embeddingData,
-    model: 'extra/free-embedding',
-    usage: { prompt_tokens: 8, total_tokens: 8 }
-  });
+openaiRouter.post('/embeddings', authMiddleware, async (req, res) => {
+  try {
+    const { input, model } = req.body;
+    const result = await freeEmbeddings.getEmbeddings({ input, model });
+    res.json({
+      object: 'list',
+      data: result.data,
+      model: result.model,
+      usage: result.usage
+    });
+  } catch (err) {
+    console.error(`[Embeddings Route Error] ${err.message}`);
+    res.status(500).json({
+      error: {
+        message: err.message,
+        type: 'api_error',
+        code: 500
+      }
+    });
+  }
 });
+

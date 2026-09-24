@@ -103,3 +103,53 @@ test('HTTP: POST /api/system-keys generates and persists key', async () => {
   });
   assert.strictEqual(verifyRes.status, 200);
 });
+
+test('HTTP: POST /v1/embeddings returns valid OpenAI embedding format', async () => {
+  const res = await fetch(`${baseUrl}/v1/embeddings`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+    },
+    body: JSON.stringify({ input: ['Universal Agent HP vector memory'] })
+  });
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.strictEqual(data.object, 'list');
+  assert.strictEqual(data.data.length, 1);
+  assert.strictEqual(data.data[0].object, 'embedding');
+  assert.strictEqual(data.data[0].embedding.length, 1536);
+  assert.ok(data.usage && data.usage.prompt_tokens > 0);
+});
+
+test('HTTP: POST /v1/images/generations returns valid image generation url', async () => {
+  const res = await fetch(`${baseUrl}/v1/images/generations`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+    },
+    body: JSON.stringify({ prompt: 'A futuristic cybernetic agent', model: 'flux' })
+  });
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.ok(data.created);
+  assert.ok(Array.isArray(data.data));
+  assert.strictEqual(data.data.length, 1);
+  assert.ok(data.data[0].url.includes('image.pollinations.ai'));
+});
+
+test('HTTP: GET /api/cache/stats and POST /api/cache/clear manage semantic cache', async () => {
+  const statsRes = await fetch(`${baseUrl}/api/cache/stats`);
+  assert.strictEqual(statsRes.status, 200);
+  const stats = await statsRes.json();
+  assert.ok('entries' in stats);
+  assert.ok('hitRate' in stats);
+  assert.ok('tokensSaved' in stats);
+
+  const clearRes = await fetch(`${baseUrl}/api/cache/clear`, { method: 'POST' });
+  assert.strictEqual(clearRes.status, 200);
+  const clearData = await clearRes.json();
+  assert.strictEqual(clearData.success, true);
+});
+

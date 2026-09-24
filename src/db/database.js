@@ -82,6 +82,18 @@ export function initDatabase() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS response_cache (
+      hash TEXT PRIMARY KEY,
+      requested_model TEXT NOT NULL,
+      response_json TEXT NOT NULL,
+      prompt_tokens INTEGER DEFAULT 0,
+      completion_tokens INTEGER DEFAULT 0,
+      hit_count INTEGER DEFAULT 1,
+      created_at INTEGER NOT NULL,
+      expires_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_response_cache_expires ON response_cache(expires_at);
   `);
 
   // Ensure default key exists for immediate out-of-the-box use
@@ -350,4 +362,100 @@ export const HealthStore = {
     return db.prepare('SELECT * FROM provider_health WHERE provider = ?').get(provider) || null;
   }
 };
+
+export const CacheStore = {
+  get(hash) {
+    try {
+      const now = Date.now();
+      const row = db.prepare('SELECT * FROM response_cache WHERE hash = ? AND expires_at > ?').get(hash, now);
+      if (!row) return null;
+      db.prepare('UPDATE response_cache SET hit_count = hit_count + 1 WHERE hash = ?').run(hash);
+      return {
+        data: JSON.parse(row.response_json),
+        promptTokens: row.prompt_tokens,
+        completionTokens: row.completion_tokens,
+        hitCount: row.hit_count + 1
+      };
+    } catch (e) {
+      return null;
+    }
+  },
+
+  incrementHit(hash) {
+    try {
+      db.prepare('UPDATE response_cache SET hit_count = hit_count + 1 WHERE hash = ?').run(hash);
+    } catch (e) {}
+  },
+
+  set(hash, requestedModel, responseData, promptTokens = 0, completionTokens = 0, ttlSeconds = 3600) {
+    try {
+      const now = Date.now();
+      const expiresAt = now + (ttlSeconds * 1000);
+      const jsonStr = JSON.stringify(responseData);
+      db.prepare(`
+        INSERT INTO response_cache (hash, requested_model, response_json, prompt_tokens, completion_tokens, hit_count, created_at, expires_at)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+        ON CONFLICT(hash) DO UPDATE SET
+          response_json = excluded.response_json,
+          prompt_tokens = excluded.prompt_tokens,
+          completion_tokens = excluded.completion_tokens,
+          expires_at = excluded.expires_at
+      `).run(hash, requestedModel, jsonStr, promptTokens, completionTokens, now, expiresAt);
+    } catch (e) {
+      console.warn(`[CacheStore] set error: ${e.message}`);
+    }
+  },
+
+  deleteExpired() {
+    try {
+      return db.prepare('DELETE FROM response_cache WHERE expires_at <= ?').run(Date.now());
+    } catch (e) {
+      return null;
+    }
+  },
+
+  clear() {
+    try {
+      return db.prepare('DELETE FROM response_cache').run();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  getStats() {
+    try {
+      const now = Date.now();
+      const stats = db.prepare(`
+        SELECT 
+          COUNT(*) as total_entries,
+          COALESCE(SUM(hit_count), 0) as total_requests,
+          COALESCE(SUM(CASE WHEN hit_count > 1 THEN hit_count - 1 ELSE 0 END), 0) as cache_hits,
+          COALESCE(SUM((prompt_tokens + completion_tokens) * (CASE WHEN hit_count > 1 THEN hit_count - 1 ELSE 0 END)), 0) as tokens_saved
+        FROM response_cache
+        WHERE expires_at > ?
+      `).get(now);
+
+      const total = stats.total_requests || 0;
+      const hits = stats.cache_hits || 0;
+      const hitRate = total > 0 ? ((hits / total) * 100).toFixed(1) : '0.0';
+
+      return {
+        entries: stats.total_entries || 0,
+        hits,
+        totalRequests: total,
+        hitRate: `${hitRate}%`,
+        tokensSaved: stats.tokens_saved || 0
+      };
+    } catch (e) {
+      return {
+        entries: 0,
+        hits: 0,
+        totalRequests: 0,
+        hitRate: '0.0%',
+        tokensSaved: 0
+      };
+    }
+  }
+};
+
 
