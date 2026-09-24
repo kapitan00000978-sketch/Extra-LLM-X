@@ -5,6 +5,7 @@ import { lockoutPolicy } from './lockout.js';
 import { promptCompression } from './compression.js';
 import { responseCache } from './cache.js';
 import { speculativeHedging } from './hedging.js';
+import { webhookEngine } from './webhooks.js';
 import { config } from '../config.js';
 
 export class RouterEngine {
@@ -167,6 +168,7 @@ export class RouterEngine {
           const cooldownSec = adapter.parseCooldownSeconds(err.headers, 60);
           console.warn(`[Router] Rate limit (429) hit on ${target.provider}. Cooling down key for ${cooldownSec}s.`);
           KeyStore.markKeyCooldown(keyRecord.id, cooldownSec);
+          webhookEngine.dispatch('rate_limit', { provider: target.provider, cooldownSec }).catch(() => {});
         } else if (isAuth) {
           console.warn(`[Router] Auth failure (401/403) on ${target.provider}. Pausing key for 1h.`);
           KeyStore.markKeyCooldown(keyRecord.id, 3600);
@@ -266,6 +268,12 @@ export class RouterEngine {
         if (i > 0) {
           fallbackOccurred = true;
           console.log(`[Router] Failover routing to target ${i + 1}/${plan.targets.length}: ${target.provider}/${target.model}`);
+          webhookEngine.dispatch('failover', {
+            requestedModel,
+            failedProvider: plan.targets[i - 1]?.provider,
+            targetProvider: target.provider,
+            targetModel: target.model
+          }).catch(() => {});
         }
 
         const resObj = await this.executeSingleTarget(target, activeMessages, stream, temperature, max_tokens, tools, tool_choice);

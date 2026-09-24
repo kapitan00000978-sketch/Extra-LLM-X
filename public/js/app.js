@@ -9,6 +9,7 @@ let allPortals = [];
 let allKeys = [];
 let allRankings = [];
 let allLogs = [];
+let allWebhooks = [];
 
 let activeFilter = 'all';
 let activeProviderFilter = 'all';
@@ -72,6 +73,7 @@ function initTabs() {
       if (targetId === 'tab-keys') loadSystemKeys();
       if (targetId === 'tab-rankings') loadRankings();
       if (targetId === 'tab-logs') loadLogs();
+      if (targetId === 'tab-webhooks') loadWebhooks();
     });
   });
 
@@ -1662,6 +1664,27 @@ function initModals() {
     loadLogs();
     showToast('Logs refreshed', 'success');
   });
+
+  const modalWebhook = document.getElementById('modal-create-webhook');
+  document.getElementById('btn-open-create-webhook')?.addEventListener('click', () => {
+    const urlInput = document.getElementById('input-webhook-url');
+    const evInput = document.getElementById('input-webhook-events');
+    const secInput = document.getElementById('input-webhook-secret');
+    const outBox = document.getElementById('webhook-test-output');
+    if (urlInput) urlInput.value = '';
+    if (evInput) evInput.value = 'all';
+    if (secInput) secInput.value = '';
+    outBox?.classList.add('hidden');
+    modalWebhook?.classList.add('active');
+  });
+  document.getElementById('btn-close-webhook-modal')?.addEventListener('click', () => modalWebhook?.classList.remove('active'));
+  document.getElementById('btn-cancel-webhook')?.addEventListener('click', () => modalWebhook?.classList.remove('active'));
+  document.getElementById('btn-save-webhook')?.addEventListener('click', saveModalWebhook);
+  document.getElementById('btn-modal-test-webhook')?.addEventListener('click', testModalWebhook);
+  document.getElementById('btn-refresh-webhooks')?.addEventListener('click', () => {
+    loadWebhooks();
+    showToast('Webhooks refreshed', 'success');
+  });
 }
 
 window.openAddKeyModal = function(providerId, providerName, guide) {
@@ -1873,8 +1896,8 @@ function initKeyboardShortcuts() {
       return;
     }
 
-    // Number keys 1-8 switch tabs when not typing
-    if (!isTyping && e.key >= '1' && e.key <= '8') {
+    // Number keys 1-9 switch tabs when not typing
+    if (!isTyping && e.key >= '1' && e.key <= '9') {
       const tabs = [
         'tab-cockpit',
         'tab-providers',
@@ -1883,7 +1906,8 @@ function initKeyboardShortcuts() {
         'tab-universal',
         'tab-playground',
         'tab-rankings',
-        'tab-logs'
+        'tab-logs',
+        'tab-webhooks'
       ];
       const targetTab = tabs[parseInt(e.key, 10) - 1];
       if (targetTab) {
@@ -2213,3 +2237,200 @@ function initRoiCalculator() {
 
   updateCalculations(parseInt(slider.value || '5000000', 10));
 }
+
+// 🔔 Webhooks & Alert Subscriptions Controller
+async function loadWebhooks() {
+  try {
+    const res = await fetch(`${API_BASE}/api/webhooks`);
+    if (!res.ok) return;
+    const data = await res.json();
+    allWebhooks = data.webhooks || [];
+    renderWebhooksTable();
+  } catch (err) {
+    console.warn('Webhooks load error:', err.message);
+  }
+}
+
+function renderWebhooksTable() {
+  const tbody = document.getElementById('tbody-webhooks');
+  if (!tbody) return;
+
+  if (allWebhooks.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+          No alert webhooks registered yet. Click <strong>"+ Add Webhook"</strong> to stream real-time events to Discord, Slack, or Universal Agent!
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = allWebhooks.map(w => {
+    const eventsBadges = (w.events || 'all').split(',').map(e => 
+      `<span class="model-tag">${escapeHtml(e.trim())}</span>`
+    ).join(' ');
+
+    const lastTriggered = w.last_triggered_at 
+      ? new Date(w.last_triggered_at).toLocaleTimeString() 
+      : 'Never';
+
+    return `
+      <tr>
+        <td><code>${escapeHtml(w.id)}</code></td>
+        <td style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <a href="${escapeHtml(w.url)}" target="_blank" rel="noopener" style="color: var(--accent-cyan); text-decoration: none;">
+            ${escapeHtml(w.url)}
+          </a>
+        </td>
+        <td><div style="display: flex; gap: 4px; flex-wrap: wrap;">${eventsBadges}</div></td>
+        <td>
+          <span class="tag-status ${w.active ? 'live' : 'standby'}">
+            ${w.active ? '● Active' : '○ Paused'}
+          </span>
+        </td>
+        <td>
+          <span style="color: ${w.failure_count > 0 ? '#ef4444' : 'var(--text-muted)'}; font-weight: ${w.failure_count > 0 ? '700' : '400'};">
+            ${w.failure_count}
+          </span>
+        </td>
+        <td>
+          <div style="display: flex; gap: 6px;">
+            <button class="btn-secondary btn-sm" onclick="testSingleWebhook('${escapeHtml(w.url)}')" title="Send test ping">
+              🧪 Ping
+            </button>
+            <button class="btn-secondary btn-sm" onclick="toggleWebhookActive('${escapeHtml(w.id)}', ${w.active ? 0 : 1})">
+              ${w.active ? '⏸ Pause' : '▶ Resume'}
+            </button>
+            <button class="btn-danger-outline btn-sm" onclick="deleteWebhook('${escapeHtml(w.id)}')" title="Delete webhook">
+              🗑️
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function saveModalWebhook() {
+  const url = (document.getElementById('input-webhook-url')?.value || '').trim();
+  const events = (document.getElementById('input-webhook-events')?.value || 'all').trim();
+  const secret = (document.getElementById('input-webhook-secret')?.value || '').trim();
+
+  if (!url || !url.startsWith('http')) {
+    showToast('Please enter a valid HTTP/HTTPS webhook URL', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/webhooks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, events, secret: secret || null })
+    });
+
+    if (res.ok) {
+      showToast('Webhook registered successfully!', 'success');
+      document.getElementById('modal-create-webhook')?.classList.remove('active');
+      loadWebhooks();
+    } else {
+      const err = await res.json();
+      showToast('Error: ' + (err.error || 'Failed to save'), 'error');
+    }
+  } catch (err) {
+    showToast('Failed to save webhook: ' + err.message, 'error');
+  }
+}
+
+async function testModalWebhook() {
+  const url = (document.getElementById('input-webhook-url')?.value || '').trim();
+  const secret = (document.getElementById('input-webhook-secret')?.value || '').trim();
+  const outputEl = document.getElementById('webhook-test-output');
+
+  if (!url || !url.startsWith('http')) {
+    showToast('Please enter a valid webhook URL to test', 'error');
+    return;
+  }
+
+  if (outputEl) {
+    outputEl.classList.remove('hidden');
+    outputEl.className = 'modal-test-output';
+    outputEl.textContent = 'Dispatching test alert payload...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/webhooks/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, secret: secret || null })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      if (outputEl) {
+        outputEl.className = 'modal-test-output success';
+        outputEl.textContent = `✅ Webhook ping delivered! Target HTTP status: ${data.result?.status}`;
+      }
+      showToast('Webhook ping delivered successfully!', 'success');
+    } else {
+      if (outputEl) {
+        outputEl.className = 'modal-test-output error';
+        outputEl.textContent = `❌ Ping failed: ${data.result?.error || 'HTTP ' + data.result?.status}`;
+      }
+      showToast('Ping failed: ' + (data.result?.error || 'Server error'), 'error');
+    }
+  } catch (err) {
+    if (outputEl) {
+      outputEl.className = 'modal-test-output error';
+      outputEl.textContent = `❌ Error: ${err.message}`;
+    }
+  }
+}
+
+window.testSingleWebhook = async function(url) {
+  showToast('Sending test ping to webhook...', 'info');
+  try {
+    const res = await fetch(`${API_BASE}/api/webhooks/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Webhook test delivered successfully!', 'success');
+    } else {
+      showToast(`Ping failed: ${data.result?.error || 'HTTP ' + data.result?.status}`, 'error');
+    }
+  } catch (err) {
+    showToast('Ping error: ' + err.message, 'error');
+  }
+};
+
+window.toggleWebhookActive = async function(id, newActive) {
+  try {
+    const res = await fetch(`${API_BASE}/api/webhooks/${id}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: Boolean(newActive) })
+    });
+    if (res.ok) {
+      showToast(`Webhook ${newActive ? 'activated' : 'paused'}`, 'success');
+      loadWebhooks();
+    }
+  } catch (err) {
+    showToast('Failed to update webhook: ' + err.message, 'error');
+  }
+};
+
+window.deleteWebhook = async function(id) {
+  if (!confirm('Are you sure you want to delete this webhook subscription?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/webhooks/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Webhook deleted', 'success');
+      loadWebhooks();
+    }
+  } catch (err) {
+    showToast('Failed to delete webhook: ' + err.message, 'error');
+  }
+};

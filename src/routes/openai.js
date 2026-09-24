@@ -6,6 +6,7 @@ import { freeEmbeddings } from '../engine/embeddings.js';
 import { imagesRouter } from './images.js';
 import { audioRouter } from './audio.js';
 import { moderationsRouter } from './moderations.js';
+import { batchRouter } from './batches.js';
 import { ModelStore, KeyStore, LogStore } from '../db/database.js';
 import { config } from '../config.js';
 
@@ -19,6 +20,9 @@ openaiRouter.use('/audio', audioRouter);
 
 // Mount Free Content Moderations
 openaiRouter.use('/moderations', moderationsRouter);
+
+// Mount OpenAI Batch API
+openaiRouter.use(batchRouter);
 
 function authMiddleware(req, res, next) {
   if (!config.enableAuth) {

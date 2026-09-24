@@ -104,6 +104,29 @@ export function initDatabase() {
       sample_count INTEGER DEFAULT 0,
       last_benchmarked_at INTEGER DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS webhooks (
+      id TEXT PRIMARY KEY,
+      url TEXT NOT NULL,
+      events TEXT NOT NULL,
+      active INTEGER DEFAULT 1,
+      secret TEXT,
+      created_at INTEGER NOT NULL,
+      last_triggered_at INTEGER,
+      failure_count INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS batch_jobs (
+      id TEXT PRIMARY KEY,
+      status TEXT NOT NULL,
+      total_requests INTEGER DEFAULT 0,
+      completed_requests INTEGER DEFAULT 0,
+      failed_requests INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      completed_at INTEGER,
+      requests_json TEXT NOT NULL,
+      results_json TEXT
+    );
   `);
 
   // Ensure default key exists for immediate out-of-the-box use
@@ -510,6 +533,95 @@ export const BenchmarkStore = {
     } catch (e) {
       return [];
     }
+  }
+};
+
+export const WebhookStore = {
+  createWebhook({ url, events = 'all', secret = null }) {
+    const id = `whk_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
+    const now = Date.now();
+    db.prepare(`
+      INSERT INTO webhooks (id, url, events, active, secret, created_at, failure_count)
+      VALUES (?, ?, ?, 1, ?, ?, 0)
+    `).run(id, url.trim(), events.trim(), secret, now);
+    return { id, url: url.trim(), events: events.trim(), active: 1, created_at: now };
+  },
+
+  getAllWebhooks() {
+    try {
+      return db.prepare('SELECT * FROM webhooks ORDER BY created_at DESC').all();
+    } catch (e) {
+      return [];
+    }
+  },
+
+  getWebhook(id) {
+    return db.prepare('SELECT * FROM webhooks WHERE id = ?').get(id);
+  },
+
+  deleteWebhook(id) {
+    return db.prepare('DELETE FROM webhooks WHERE id = ?').run(id);
+  },
+
+  toggleWebhook(id, active) {
+    return db.prepare('UPDATE webhooks SET active = ? WHERE id = ?').run(active ? 1 : 0, id);
+  },
+
+  recordTrigger(id, success) {
+    const now = Date.now();
+    if (success) {
+      db.prepare('UPDATE webhooks SET last_triggered_at = ?, failure_count = 0 WHERE id = ?').run(now, id);
+    } else {
+      db.prepare('UPDATE webhooks SET last_triggered_at = ?, failure_count = failure_count + 1 WHERE id = ?').run(now, id);
+    }
+  },
+
+  getWebhooksForEvent(event) {
+    try {
+      const allActive = db.prepare('SELECT * FROM webhooks WHERE active = 1').all();
+      return allActive.filter(w => {
+        if (!w.events || w.events === 'all' || w.events === '*') return true;
+        const evList = w.events.split(',').map(e => e.trim().toLowerCase());
+        return evList.includes(event.toLowerCase()) || evList.includes('*');
+      });
+    } catch (e) {
+      return [];
+    }
+  }
+};
+
+export const BatchStore = {
+  createBatch({ id, totalRequests, requestsJson }) {
+    const now = Date.now();
+    db.prepare(`
+      INSERT INTO batch_jobs (id, status, total_requests, completed_requests, failed_requests, created_at, requests_json)
+      VALUES (?, 'in_progress', ?, 0, 0, ?, ?)
+    `).run(id, totalRequests, now, requestsJson);
+    return { id, status: 'in_progress', total_requests: totalRequests, created_at: now };
+  },
+
+  getBatch(id) {
+    return db.prepare('SELECT * FROM batch_jobs WHERE id = ?').get(id);
+  },
+
+  updateBatchProgress(id, { completedRequests, failedRequests, status, resultsJson, completedAt }) {
+    db.prepare(`
+      UPDATE batch_jobs 
+      SET completed_requests = ?, failed_requests = ?, status = ?, results_json = ?, completed_at = ?
+      WHERE id = ?
+    `).run(completedRequests, failedRequests, status, resultsJson, completedAt || null, id);
+  },
+
+  getAllBatches(limit = 50) {
+    try {
+      return db.prepare('SELECT id, status, total_requests, completed_requests, failed_requests, created_at, completed_at FROM batch_jobs ORDER BY created_at DESC LIMIT ?').all(limit);
+    } catch (e) {
+      return [];
+    }
+  },
+
+  cancelBatch(id) {
+    db.prepare(`UPDATE batch_jobs SET status = 'cancelled', completed_at = ? WHERE id = ? AND status = 'in_progress'`).run(Date.now(), id);
   }
 };
 

@@ -157,3 +157,63 @@ test('ProviderBenchmarkingEngine: returns dynamically ranked providers', async (
   assert.ok(rankings.some(r => r.id === 'cerebras' && r.speedTokPerSec > 1000), 'Identifies Cerebras ultra-high throughput');
 });
 
+test('WebhookStore & WebhookEngine: registers, formats alerts, and tracks triggers', async (t) => {
+  const { WebhookStore } = await import('../src/db/database.js');
+  const { webhookEngine } = await import('../src/engine/webhooks.js');
+
+  const whk = WebhookStore.createWebhook({
+    url: 'https://example.com/webhook-test',
+    events: 'failover,rate_limit'
+  });
+  assert.ok(whk.id && whk.id.startsWith('whk_'));
+  assert.strictEqual(whk.url, 'https://example.com/webhook-test');
+
+  const matching = WebhookStore.getWebhooksForEvent('failover');
+  assert.ok(matching.some(w => w.id === whk.id));
+
+  const nonMatching = WebhookStore.getWebhooksForEvent('milestone');
+  assert.ok(!nonMatching.some(w => w.id === whk.id));
+
+  // Format message test
+  const msg = webhookEngine.formatDiscordMessage('failover', {
+    requestedModel: 'extra/auto-free',
+    failedProvider: 'groq',
+    targetProvider: 'gemini',
+    targetModel: 'gemini-2.0-flash',
+    latencyMs: 120
+  });
+  assert.ok(msg.includes('Failover'));
+  assert.ok(msg.includes('gemini'));
+
+  WebhookStore.deleteWebhook(whk.id);
+  assert.strictEqual(WebhookStore.getWebhook(whk.id), undefined);
+});
+
+test('BatchStore: manages asynchronous batch job state and progress', async (t) => {
+  const { BatchStore } = await import('../src/db/database.js');
+
+  const batchId = `batch_test_${Date.now()}`;
+  const batch = BatchStore.createBatch({
+    id: batchId,
+    totalRequests: 5,
+    requestsJson: JSON.stringify([{ custom_id: 'req_1' }])
+  });
+
+  assert.strictEqual(batch.id, batchId);
+  assert.strictEqual(batch.status, 'in_progress');
+
+  BatchStore.updateBatchProgress(batchId, {
+    completedRequests: 4,
+    failedRequests: 1,
+    status: 'completed',
+    resultsJson: JSON.stringify([{ id: 'res_1' }]),
+    completedAt: Date.now()
+  });
+
+  const updated = BatchStore.getBatch(batchId);
+  assert.strictEqual(updated.status, 'completed');
+  assert.strictEqual(updated.completed_requests, 4);
+  assert.strictEqual(updated.failed_requests, 1);
+});
+
+

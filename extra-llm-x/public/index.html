@@ -56,6 +56,9 @@
         <button class="nav-btn" data-tab="tab-logs" id="btn-nav-logs">
           <span class="icon">📜</span> Telemetry
         </button>
+        <button class="nav-btn" data-tab="tab-webhooks" id="btn-nav-webhooks">
+          <span class="icon">🔔</span> Alerts & Webhooks
+        </button>
       </nav>
     </div>
 
@@ -912,6 +915,39 @@ Model Name:   extra/free-coding</code></pre>
             <tbody id="tbody-logs"></tbody>
           </table>
         </div>
+    <!-- TAB 9: WEBHOOKS & ALERTS -->
+    <section class="tab-pane" id="tab-webhooks">
+      <div class="section-container">
+        <div class="section-header flex-between">
+          <div>
+            <h2 class="section-title">🔔 Real-Time Webhooks & Alert Subscriptions</h2>
+            <p class="section-subtitle">Stream instant notifications to Discord, Slack, or Universal Agent on failover, rate limits, and milestones</p>
+          </div>
+          <div class="flex-actions-gap">
+            <button class="btn-primary" id="btn-open-create-webhook">
+              <span>+ Add Webhook</span>
+            </button>
+            <button class="btn-secondary" id="btn-refresh-webhooks">
+              <span>🔄 Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="glass-table-wrapper mt-3">
+          <table class="glass-table">
+            <thead>
+              <tr>
+                <th>Webhook ID</th>
+                <th>Target Endpoint URL</th>
+                <th>Subscribed Events</th>
+                <th>Status</th>
+                <th>Failures</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-webhooks"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -1029,6 +1065,41 @@ Model Name:   extra/free-coding</code></pre>
       </div>
       <div class="modal-footer">
         <button class="btn-primary" id="btn-close-shortcuts-ft">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Webhook Modal -->
+  <div class="modal-overlay" id="modal-create-webhook">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🔔 Add Webhook & Alert Subscriber</h3>
+        <button class="modal-close" id="btn-close-webhook-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="input-webhook-url">Webhook URL (Discord, Slack, or HTTP Server):</label>
+          <input type="url" class="input-text" id="input-webhook-url" placeholder="https://discord.com/api/webhooks/... or https://your-server.com/callback">
+        </div>
+        <div class="form-group">
+          <label for="input-webhook-events">Trigger Events (comma-separated or 'all'):</label>
+          <input type="text" class="input-text" id="input-webhook-events" value="all" placeholder="failover, rate_limit, lockout, benchmark">
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Supported: <code>failover</code>, <code>rate_limit</code>, <code>lockout</code>, <code>benchmark</code>, <code>all</code>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="input-webhook-secret">Secret Signature (Optional):</label>
+          <input type="password" class="input-text" id="input-webhook-secret" placeholder="Optional HMAC or authorization token">
+        </div>
+        <div id="webhook-test-output" class="modal-test-output hidden"></div>
+      </div>
+      <div class="modal-footer flex-between">
+        <button class="btn-secondary" id="btn-modal-test-webhook">🧪 Test Ping</button>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn-secondary" id="btn-cancel-webhook">Cancel</button>
+          <button class="btn-primary" id="btn-save-webhook">Save Webhook</button>
+        </div>
       </div>
     </div>
   </div>

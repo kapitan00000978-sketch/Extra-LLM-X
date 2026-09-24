@@ -8,6 +8,7 @@ import { discoveryEngine } from './engine/discovery.js';
 import { healthCheckEngine } from './engine/health_check.js';
 import { openaiRouter } from './routes/openai.js';
 import { adminRouter } from './routes/admin.js';
+import { webhookRouter } from './routes/webhooks.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +47,7 @@ app.use('/', openaiRouter);
 
 // Mount Admin REST Endpoints
 app.use('/api', adminRouter);
+app.use('/api', webhookRouter);
 
 // SPA fallback
 app.get('*', (req, res) => {

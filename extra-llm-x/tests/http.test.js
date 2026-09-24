@@ -5,6 +5,7 @@ import cors from 'cors';
 import { initDatabase, KeyStore, ModelStore } from '../src/db/database.js';
 import { openaiRouter } from '../src/routes/openai.js';
 import { adminRouter } from '../src/routes/admin.js';
+import { webhookRouter } from '../src/routes/webhooks.js';
 
 initDatabase();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/v1', openaiRouter);
 app.use('/api', adminRouter);
+app.use('/api', webhookRouter);
 
 let server;
 let baseUrl;
@@ -204,6 +206,94 @@ test('HTTP: GET /api/benchmarks/results and /api/free-provider-rankings return d
   assert.ok(Array.isArray(rankData.rankings));
   assert.strictEqual(rankData.rankings[0].rank, 1);
 });
+
+test('HTTP: POST /v1/batches and GET /v1/batches/:id process asynchronous requests', async () => {
+  const batchBody = {
+    requests: [
+      {
+        custom_id: 'batch_item_1',
+        method: 'POST',
+        url: '/v1/chat/completions',
+        body: {
+          model: 'extra/auto-free',
+          messages: [{ role: 'user', content: 'Say Batch Alpha' }]
+        }
+      },
+      {
+        custom_id: 'batch_item_2',
+        method: 'POST',
+        url: '/v1/chat/completions',
+        body: {
+          model: 'extra/auto-free',
+          messages: [{ role: 'user', content: 'Say Batch Beta' }]
+        }
+      }
+    ]
+  };
+
+  const createRes = await fetch(`${baseUrl}/v1/batches`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+    },
+    body: JSON.stringify(batchBody)
+  });
+
+  assert.strictEqual(createRes.status, 201);
+  const createData = await createRes.json();
+  assert.ok(createData.id && createData.id.startsWith('batch_'));
+  assert.strictEqual(createData.status, 'in_progress');
+  assert.strictEqual(createData.request_counts.total, 2);
+
+  // Poll status
+  const getRes = await fetch(`${baseUrl}/v1/batches/${createData.id}`, {
+    headers: { 'Authorization': 'Bearer elx-live-universal-agent-free-hub' }
+  });
+  assert.strictEqual(getRes.status, 200);
+  const getData = await getRes.json();
+  assert.strictEqual(getData.id, createData.id);
+  assert.ok(['in_progress', 'completed'].includes(getData.status));
+});
+
+test('HTTP: Webhooks REST API registers, lists, toggles, and deletes webhooks', async () => {
+  // Create
+  const addRes = await fetch(`${baseUrl}/api/webhooks`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url: 'https://webhook.site/test-integration',
+      events: 'failover,rate_limit'
+    })
+  });
+  assert.strictEqual(addRes.status, 201);
+  const addData = await addRes.json();
+  assert.strictEqual(addData.success, true);
+  assert.ok(addData.webhook.id);
+
+  const whkId = addData.webhook.id;
+
+  // List
+  const listRes = await fetch(`${baseUrl}/api/webhooks`);
+  assert.strictEqual(listRes.status, 200);
+  const listData = await listRes.json();
+  assert.ok(listData.webhooks.some(w => w.id === whkId));
+
+  // Toggle
+  const toggleRes = await fetch(`${baseUrl}/api/webhooks/${whkId}/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active: false })
+  });
+  assert.strictEqual(toggleRes.status, 200);
+
+  // Delete
+  const delRes = await fetch(`${baseUrl}/api/webhooks/${whkId}`, { method: 'DELETE' });
+  assert.strictEqual(delRes.status, 200);
+  const delData = await delRes.json();
+  assert.strictEqual(delData.deleted, whkId);
+});
+
 
 
 
