@@ -1,3 +1,5 @@
+import { PuterAdapter } from './puter.js';
+import { KiloAdapter } from './kilo.js';
 import { OpenRouterAdapter } from './openrouter.js';
 import { GroqAdapter } from './groq.js';
 import { GeminiAdapter } from './gemini.js';
@@ -34,6 +36,8 @@ class AdapterRegistry {
 
   initDefaultAdapters() {
     this.register(new OpenCodeAdapter());
+    this.register(new PuterAdapter());
+    this.register(new KiloAdapter());
     this.register(new PollinationsAdapter());
     this.register(new OpenRouterAdapter());
     this.register(new GroqAdapter());
@@ -78,7 +82,7 @@ class AdapterRegistry {
     return this.getAll().map(a => {
       const providerKeys = keys.filter(k => k.provider === a.id);
       const activeKeys = providerKeys.filter(k => k.active === 1);
-      const isNoAuth = a.id === 'ollama' || a.id === 'lmstudio' || a.id === 'mock' || a.id === 'opencode' || a.id === 'pollinations';
+      const isNoAuth = a.id === 'ollama' || a.id === 'lmstudio' || a.id === 'mock' || a.id === 'opencode' || a.id === 'pollinations' || a.id === 'puter' || a.id === 'kilo';
 
       return {
         id: a.id,

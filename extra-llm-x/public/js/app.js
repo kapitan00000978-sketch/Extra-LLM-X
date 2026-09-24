@@ -221,19 +221,20 @@ function renderProvidersGrid() {
 
           <div class="provider-card-actions">
             ${!isLocalOrMock && !p.isNoAuth ? `
-              <button class="btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" onclick="openAddKeyModal('${p.id}', '${p.name}', '${p.guide}')">
-                + Add Key
+              <button class="btn-action-signup" onclick="openAutoRegistration('${p.id}', '${escapeHtml(p.name)}', '${p.getKeyUrl}', '${escapeHtml(p.guide)}')">
+                🚀 Ro'yxatdan O'tish ↗
+              </button>
+              <button class="btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" onclick="openAddKeyModal('${p.id}', '${escapeHtml(p.name)}', '${escapeHtml(p.guide)}')">
+                + Kalit Qo'shish
               </button>
             ` : `
               <button class="btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" onclick="testProviderPing('${p.id}', this)">
                 🧪 Ping
               </button>
+              <button class="btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #00f5d4, #7b2cbf);" onclick="switchPlaygroundModel('${p.id}')">
+                💬 Sinash (Zero-Key)
+              </button>
             `}
-            ${p.getKeyUrl && p.getKeyUrl !== '#' ? `
-              <a href="${p.getKeyUrl}" target="_blank" rel="noopener noreferrer" class="btn-get-free-key">
-                Get Free Key ↗
-              </a>
-            ` : `<span style="font-size: 0.78rem; color: var(--accent-cyan); font-weight: 600;">No Auth Required</span>`}
           </div>
         </div>
       </div>
@@ -2730,3 +2731,50 @@ function initCompactorStudio() {
     }
   });
 }
+
+window.openAutoRegistration = function(providerId, providerName, portalUrl, guide) {
+  // 1. Automatically launch the free provider portal in a new tab
+  if (portalUrl && portalUrl !== '#') {
+    window.open(portalUrl, '_blank');
+  }
+
+  // 2. Open Add Key Modal pre-configured with guided assistance
+  const modal = document.getElementById('modal-add-key');
+  document.getElementById('modal-key-provider').value = providerId;
+  document.getElementById('modal-provider-badge').textContent = providerName;
+  document.getElementById('modal-field-help').textContent = guide || 'Get your free key from the opened tab';
+  document.getElementById('modal-input-key').value = '';
+  document.getElementById('modal-input-label').value = `${providerName} Free Key`;
+  document.getElementById('modal-test-output').classList.add('hidden');
+
+  const portalLinkEl = document.getElementById('modal-btn-open-portal');
+  if (portalLinkEl) {
+    portalLinkEl.href = (portalUrl && portalUrl !== '#') ? portalUrl : '#';
+  }
+
+  modal.classList.add('active');
+  showToast(`${providerName} ro'yxatdan o'tish portali yangi oynada ochildi!`, 'info');
+};
+
+window.switchPlaygroundModel = function(providerId) {
+  // Switch to Playground tab
+  const btnPlayground = document.getElementById('btn-nav-playground');
+  btnPlayground?.click();
+
+  // Switch to Single Chat mode
+  const btnChat = document.getElementById('btn-pmode-chat');
+  btnChat?.click();
+
+  // Try to select model
+  const selectModel = document.getElementById('select-play-model');
+  if (selectModel) {
+    for (const opt of selectModel.options) {
+      if (opt.value.startsWith(providerId + '/') || opt.value === providerId) {
+        selectModel.value = opt.value;
+        break;
+      }
+    }
+  }
+
+  showToast(`${providerId.toUpperCase()} modeli tanlandi! Savol yozib sinab ko'ring.`, 'success');
+};

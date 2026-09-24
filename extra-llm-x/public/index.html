@@ -1131,6 +1131,21 @@ console.log(`Executed in ${Date.now() - start}ms`);
           <label>Provider:</label>
           <div class="provider-pill-display" id="modal-provider-badge">Groq Cloud</div>
         </div>
+
+        <!-- 1-Click Auto Registration Helper Card -->
+        <div class="registration-portal-card mb-3" id="modal-registration-card">
+          <div class="flex-between align-center mb-1">
+            <span class="portal-badge-label">⚡ 1-Bosqichli Bepul Ro'yxatdan O'tish</span>
+            <a href="#" target="_blank" rel="noopener noreferrer" class="btn-portal-open-link" id="modal-btn-open-portal">
+              🌐 Saytga O'tish ↗
+            </a>
+          </div>
+          <p class="portal-guide-uz" id="modal-portal-steps">
+            1. Yuqoridagi tugma orqali bepul hisob oching (Google/GitHub orqali 10 soniya).<br>
+            2. "API Keys" bo'limiga kirib yangi bepul kalit nusxalang.<br>
+            3. Kalitni quyiga qo'ying va <strong>"Tekshirish va Saqlash"</strong> tugmasini bosing.
+          </p>
+        </div>
         <div class="form-group">
           <label for="modal-input-label">Key Label (Optional):</label>
           <input type="text" class="input-text" id="modal-input-label" placeholder="e.g. My Groq Personal Key">

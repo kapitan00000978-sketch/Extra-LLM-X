@@ -2895,3 +2895,63 @@ body.theme-light .glow-bg-bottom {
   color: var(--accent-cyan);
   border-color: var(--accent-cyan);
 }
+
+/* ==========================================================================
+   AUTO REGISTRATION ASSISTANT STYLES
+   ========================================================================== */
+.registration-portal-card {
+  background: rgba(0, 240, 255, 0.05);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+
+.portal-badge-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-portal-open-link {
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-portal-open-link:hover {
+  background: var(--accent-cyan);
+  color: #0d1117;
+  transform: translateY(-1px);
+}
+
+.portal-guide-uz {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.btn-action-signup {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(123, 44, 191, 0.2));
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-action-signup:hover {
+  background: var(--accent-cyan);
+  color: #0b0f19;
+}

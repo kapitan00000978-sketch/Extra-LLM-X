@@ -203,3 +203,32 @@ test('HTTP Endpoints: /v1/search and /v1/sandbox/eval respond correctly', async 
 
   await new Promise(resolve => server.close(resolve));
 });
+
+// 6. Zero-Key Adapters: Puter & Kilo Tests
+test('PuterAdapter & KiloAdapter: discovery and no-auth registration', async () => {
+  const { adapterRegistry } = await import('../src/adapters/index.js');
+  
+  const puter = adapterRegistry.get('puter');
+  assert.ok(puter, 'Puter adapter must be registered');
+  assert.strictEqual(puter.isNoAuth, true);
+  const puterModels = await puter.discoverModels();
+  assert.ok(puterModels.length >= 4);
+  assert.ok(puterModels.some(m => m.model_id === 'gpt-4o-mini'));
+  assert.ok(puterModels.some(m => m.model_id === 'claude-3-5-sonnet'));
+
+  const kilo = adapterRegistry.get('kilo');
+  assert.ok(kilo, 'Kilo adapter must be registered');
+  assert.strictEqual(kilo.isNoAuth, true);
+  const kiloModels = await kilo.discoverModels();
+  assert.ok(kiloModels.length >= 4);
+  assert.ok(kiloModels.some(m => m.model_id === 'kilo-auto/free'));
+  assert.ok(kiloModels.some(m => m.model_id === 'qwen-2.5-coder-32b'));
+
+  const portals = adapterRegistry.getPortals();
+  const puterPortal = portals.find(p => p.id === 'puter');
+  const kiloPortal = portals.find(p => p.id === 'kilo');
+  assert.strictEqual(puterPortal.isNoAuth, true);
+  assert.strictEqual(kiloPortal.isNoAuth, true);
+  assert.strictEqual(puterPortal.status, 'ready');
+  assert.strictEqual(kiloPortal.status, 'ready');
+});
