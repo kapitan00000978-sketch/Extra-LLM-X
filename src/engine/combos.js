@@ -1,15 +1,17 @@
-﻿// Virtual combos with instant automatic failover across 58+ providers
+﻿// Virtual combos with instant automatic failover across 70+ providers
 
 export const VirtualCombos = {
   'extra/auto-free': {
     id: 'extra/auto-free',
     display_name: '⚡ Extra Auto Free Tier (#free)',
-    description: 'Auto-routes to the best free model with instant failover across all 58+ providers',
+    description: 'Auto-routes to the best free model with instant failover across all 70+ providers',
     capabilities: 'chat,code,general',
     targets: [
       { provider: 'deepseek', model: 'deepseek-chat' },
       { provider: 'groq', model: 'llama-3.3-70b-versatile' },
       { provider: 'sambanova', model: 'Meta-Llama-3.3-70B-Instruct' },
+      { provider: 'duckduckgo', model: 'gpt-4o-mini' },
+      { provider: 'blackbox', model: 'deepseek-v3' },
       { provider: 'xai', model: 'grok-2-1212' },
       { provider: 'perplexity', model: 'sonar' },
       { provider: 'dashscope', model: 'qwen-plus' },
@@ -26,6 +28,9 @@ export const VirtualCombos = {
       { provider: 'lepton', model: 'llama3-3-70b' },
       { provider: 'poe', model: 'Llama-3.3-70B-T' },
       { provider: 'zhipu', model: 'glm-4-flash' },
+      { provider: 'baichuan', model: 'Baichuan3-Turbo' },
+      { provider: 'hunyuan', model: 'hunyuan-standard' },
+      { provider: 'sensenova', model: 'SenseChat-5' },
       { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct:free' },
       { provider: 'cerebras', model: 'llama-3.3-70b' },
       { provider: 'aimlapi', model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo' },
@@ -51,11 +56,19 @@ export const VirtualCombos = {
       { provider: 'openai', model: 'gpt-4o' },
       { provider: 'kilo', model: 'claude-3-7-sonnet' },
       { provider: 'puter', model: 'claude-3-7-sonnet' },
+      { provider: 'blackbox', model: 'claude-3-5-sonnet' },
       { provider: 'kilo', model: 'gpt-4o' },
       { provider: 'puter', model: 'gpt-4o' },
+      { provider: 'blackbox', model: 'gpt-4o' },
+      { provider: 'duckduckgo', model: 'claude-3-haiku-20240307' },
+      { provider: 'shuttleai', model: 'claude-3-5-sonnet' },
       { provider: 'openai', model: 'o3-mini' },
       { provider: 'kilo', model: 'o3-mini' },
       { provider: 'puter', model: 'o3-mini' },
+      { provider: 'upstage', model: 'solar-pro' },
+      { provider: 'baichuan', model: 'Baichuan4' },
+      { provider: 'hunyuan', model: 'hunyuan-large' },
+      { provider: 'sensenova', model: 'SenseChat-5' },
       { provider: 'openrouter', model: 'anthropic/claude-3.7-sonnet' },
       { provider: 'github', model: 'gpt-4o' },
       { provider: 'pollinations', model: 'openai' },
@@ -66,10 +79,12 @@ export const VirtualCombos = {
   'extra/free-coding': {
     id: 'extra/free-coding',
     display_name: '💻 Extra Free Coding Specialist (#coding)',
-    description: 'High-precision free coding chain (Codestral, DeepSeek-V3, Qwen 2.5 Coder, Llama 3.3 70B, Granite)',
+    description: 'High-precision free coding chain (Codestral, DeepSeek-V3, Qwen 2.5 Coder, Llama 3.3 70B, Blackbox)',
     capabilities: 'chat,code',
     targets: [
       { provider: 'mistral', model: 'codestral-latest' },
+      { provider: 'blackbox', model: 'blackbox-coder' },
+      { provider: 'blackbox', model: 'deepseek-v3' },
       { provider: 'deepseek', model: 'deepseek-chat' },
       { provider: 'dashscope', model: 'qwen2.5-coder-32b-instruct' },
       { provider: 'nebius', model: 'Qwen/Qwen2.5-Coder-32B-Instruct' },
@@ -98,11 +113,13 @@ export const VirtualCombos = {
   'extra/free-fast': {
     id: 'extra/free-fast',
     display_name: '⚡ Extra Free Fast (#fast, 500-2000 tok/s)',
-    description: 'Sub-second agent execution loops via Cerebras, Groq, Spark Lite, and ERNIE Speed LPUs',
+    description: 'Sub-second agent execution loops via Cerebras, Groq, DuckDuckGo, Spark Lite, and ERNIE Speed LPUs',
     capabilities: 'chat,fast',
     targets: [
       { provider: 'cerebras', model: 'llama3.1-8b' },
       { provider: 'groq', model: 'llama-3.1-8b-instant' },
+      { provider: 'duckduckgo', model: 'gpt-4o-mini' },
+      { provider: 'upstage', model: 'solar-mini' },
       { provider: 'iflytek', model: 'lite' },
       { provider: 'qianfan', model: 'ernie-speed-8k' },
       { provider: 'segmind', model: 'llama-3-8b-instruct' },

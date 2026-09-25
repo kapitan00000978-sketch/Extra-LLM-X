@@ -30,7 +30,7 @@ import { OllamaAdapter } from './ollama.js';
 import { LMStudioAdapter } from './lmstudio.js';
 import { MockDemoAdapter } from './mock.js';
 
-// 30 New Production Adapters
+// 30 Production Adapters
 import { XaiAdapter } from './xai.js';
 import { PerplexityAdapter } from './perplexity.js';
 import { MoonshotAdapter } from './moonshot.js';
@@ -62,6 +62,18 @@ import { InferenceNetAdapter } from './inference_net.js';
 import { GmiCloudAdapter } from './gmicloud.js';
 import { LeptonAdapter } from './lepton.js';
 
+// 10 Next-Gen Frontier & Zero-Key Aggregators
+import { DuckDuckGoAdapter } from './duckduckgo.js';
+import { BlackboxAdapter } from './blackbox.js';
+import { ShuttleAIAdapter } from './shuttleai.js';
+import { UpstageAdapter } from './upstage.js';
+import { RunPodAdapter } from './runpod.js';
+import { LambdaAdapter } from './lambda.js';
+import { BaichuanAdapter } from './baichuan.js';
+import { HunyuanAdapter } from './hunyuan.js';
+import { SenseNovaAdapter } from './sensenova.js';
+import { MonsterApiAdapter } from './monsterapi.js';
+
 import { KeyStore } from '../db/database.js';
 
 class AdapterRegistry {
@@ -76,10 +88,22 @@ class AdapterRegistry {
     this.register(new PuterAdapter());
     this.register(new KiloAdapter());
     this.register(new PollinationsAdapter());
+    this.register(new DuckDuckGoAdapter());
+    this.register(new BlackboxAdapter());
 
     // Official Paid & BYOK Frontier Providers
     this.register(new OpenAIAdapter());
     this.register(new AnthropicAdapter());
+
+    // Extended Multi-LLM Aggregators & Clouds
+    this.register(new ShuttleAIAdapter());
+    this.register(new UpstageAdapter());
+    this.register(new RunPodAdapter());
+    this.register(new LambdaAdapter());
+    this.register(new BaichuanAdapter());
+    this.register(new HunyuanAdapter());
+    this.register(new SenseNovaAdapter());
+    this.register(new MonsterApiAdapter());
 
     // Core LPU & Hyperscaler Providers
     this.register(new OpenRouterAdapter());
@@ -159,7 +183,7 @@ class AdapterRegistry {
     return this.getAll().map(a => {
       const providerKeys = keys.filter(k => k.provider === a.id);
       const activeKeys = providerKeys.filter(k => k.active === 1);
-      const isNoAuth = a.id === 'ollama' || a.id === 'lmstudio' || a.id === 'mock' || a.id === 'opencode' || a.id === 'pollinations' || a.id === 'puter' || a.id === 'kilo';
+      const isNoAuth = a.id === 'ollama' || a.id === 'lmstudio' || a.id === 'mock' || a.id === 'opencode' || a.id === 'pollinations' || a.id === 'puter' || a.id === 'kilo' || a.id === 'duckduckgo' || a.id === 'blackbox';
 
       return {
         id: a.id,
