@@ -1,8 +1,10 @@
+﻿// Virtual combos with instant automatic failover across 58+ providers
+
 export const VirtualCombos = {
   'extra/auto-free': {
     id: 'extra/auto-free',
-    display_name: '⚡ Extra Auto Free (OmniRoute Free Autopilot)',
-    description: 'Auto-routes to the best free model with instant failover across all 56+ providers',
+    display_name: '⚡ Extra Auto Free Tier (#free)',
+    description: 'Auto-routes to the best free model with instant failover across all 58+ providers',
     capabilities: 'chat,code,general',
     targets: [
       { provider: 'deepseek', model: 'deepseek-chat' },
@@ -36,6 +38,28 @@ export const VirtualCombos = {
       { provider: 'opencode', model: 'deepseek-v3' },
       { provider: 'kilo', model: 'kilo-auto/free' },
       { provider: 'puter', model: 'gpt-4o-mini' },
+      { provider: 'mock', model: 'extra-demo-model' }
+    ]
+  },
+  'extra/frontier': {
+    id: 'extra/frontier',
+    display_name: '👑 Extra Frontier Ultra (#frontier, Paid & Zero-Key)',
+    description: 'Ultra flagship cascade (Claude 3.7 Sonnet, GPT-4o, o3-mini, o1, DeepSeek-R1) via zero-key proxies and direct paid BYOK keys',
+    capabilities: 'chat,code,reasoning,vision',
+    targets: [
+      { provider: 'anthropic', model: 'claude-3-7-sonnet-20250219' },
+      { provider: 'openai', model: 'gpt-4o' },
+      { provider: 'kilo', model: 'claude-3-7-sonnet' },
+      { provider: 'puter', model: 'claude-3-7-sonnet' },
+      { provider: 'kilo', model: 'gpt-4o' },
+      { provider: 'puter', model: 'gpt-4o' },
+      { provider: 'openai', model: 'o3-mini' },
+      { provider: 'kilo', model: 'o3-mini' },
+      { provider: 'puter', model: 'o3-mini' },
+      { provider: 'openrouter', model: 'anthropic/claude-3.7-sonnet' },
+      { provider: 'github', model: 'gpt-4o' },
+      { provider: 'pollinations', model: 'openai' },
+      { provider: 'deepseek', model: 'deepseek-reasoner' },
       { provider: 'mock', model: 'extra-demo-model' }
     ]
   },
@@ -141,6 +165,10 @@ export const VirtualCombos = {
 };
 
 export const OMNIROUTE_TAG_MAP = {
+  '#frontier': 'extra/frontier',
+  '#paid': 'extra/frontier',
+  'frontier': 'extra/frontier',
+  'paid': 'extra/frontier',
   '#coding': 'extra/free-coding',
   '#reasoning': 'extra/free-reasoning',
   '#fast': 'extra/free-fast',

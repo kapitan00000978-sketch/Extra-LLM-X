@@ -2,6 +2,8 @@
 import { PuterAdapter } from './puter.js';
 import { KiloAdapter } from './kilo.js';
 import { OpenRouterAdapter } from './openrouter.js';
+import { OpenAIAdapter } from './openai.js';
+import { AnthropicAdapter } from './anthropic.js';
 import { GroqAdapter } from './groq.js';
 import { GeminiAdapter } from './gemini.js';
 import { CerebrasAdapter } from './cerebras.js';
@@ -69,11 +71,15 @@ class AdapterRegistry {
   }
 
   initDefaultAdapters() {
-    // Zero-Key Public Adapters
+    // Zero-Key Public Adapters & Paid Proxies
     this.register(new OpenCodeAdapter());
     this.register(new PuterAdapter());
     this.register(new KiloAdapter());
     this.register(new PollinationsAdapter());
+
+    // Official Paid & BYOK Frontier Providers
+    this.register(new OpenAIAdapter());
+    this.register(new AnthropicAdapter());
 
     // Core LPU & Hyperscaler Providers
     this.register(new OpenRouterAdapter());
@@ -103,7 +109,7 @@ class AdapterRegistry {
     this.register(new LMStudioAdapter());
     this.register(new MockDemoAdapter());
 
-    // 30 New Production Adapters
+    // 30 Extended Production Adapters
     this.register(new XaiAdapter());
     this.register(new PerplexityAdapter());
     this.register(new MoonshotAdapter());
@@ -181,4 +187,3 @@ class AdapterRegistry {
 }
 
 export const adapterRegistry = new AdapterRegistry();
-

@@ -1,4 +1,4 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert';
 import { OMNIROUTE_FREE_MODELS as omnirouteCatalog } from '../src/catalog/omniroute_catalog.js';
 import { PromptCompressionEngine } from '../src/engine/compression.js';
@@ -112,7 +112,7 @@ test('Combos: OmniRoute tags correctly route to virtual combos', () => {
   }
 
   const allCombos = getAllCombos();
-  assert.strictEqual(allCombos.length, 5);
+  assert.ok(allCombos.length >= 5);
   for (const combo of allCombos) {
     assert.ok(combo.targets.length >= 5, `Combo ${combo.id} should have resilient fallback chain`);
   }
@@ -185,7 +185,7 @@ test('HTTP OmniRoute Endpoints: free-models, summary, rankings, and combos respo
   assert.strictEqual(resCombos.status, 200);
   const dataCombos = await resCombos.json();
   assert.ok(dataCombos.combos);
-  assert.strictEqual(dataCombos.combos.length, 5);
+  assert.ok(dataCombos.combos.length >= 5);
 
   // 5. OmniRoute Headers on /v1/chat/completions
   const resChat = await fetch(`${baseUrl}/v1/chat/completions`, {

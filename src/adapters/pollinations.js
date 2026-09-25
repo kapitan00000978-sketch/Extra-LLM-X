@@ -1,15 +1,15 @@
-import { BaseAdapter } from './base.js';
+﻿import { BaseAdapter } from './base.js';
 
 export class PollinationsAdapter extends BaseAdapter {
   constructor() {
     super({
       id: 'pollinations',
-      name: 'Pollinations AI (NoAuth)',
+      name: 'Pollinations AI (Zero-Key Public Gateway)',
       badge: 'Zero-Key Public Endpoint',
       getKeyUrl: 'https://pollinations.ai',
-      guide: 'No API key needed! Connects directly to Pollinations public free OpenAI endpoint.',
-      freeTierInfo: '100% Free Public Endpoint for Open Models',
-      popularModels: 'openai, qwen, mistral',
+      guide: 'No API key needed! Connects directly to Pollinations public free OpenAI & Claude endpoint.',
+      freeTierInfo: '100% Free Public Endpoint for Claude, OpenAI, and DeepSeek Models',
+      popularModels: 'openai, claude, deepseek, qwen, mistral',
       keyPrefix: '',
       keyPlaceholder: 'No key required'
     });
@@ -17,9 +17,10 @@ export class PollinationsAdapter extends BaseAdapter {
     this.isNoAuth = true;
     this.freeModels = [
       { id: 'openai', name: 'Pollinations GPT-4o-Mini', context: 128000, caps: 'chat,fast' },
+      { id: 'claude', name: 'Pollinations Claude 3.5/3.7', context: 200000, caps: 'chat,code,reasoning' },
+      { id: 'deepseek', name: 'Pollinations DeepSeek R1/V3', context: 65536, caps: 'chat,code,reasoning' },
       { id: 'qwen', name: 'Pollinations Qwen 2.5 72B', context: 32768, caps: 'chat,code' },
-      { id: 'mistral', name: 'Pollinations Mistral Nemo', context: 32768, caps: 'chat,code' },
-      { id: 'deepseek', name: 'Pollinations DeepSeek V3', context: 65536, caps: 'chat,code,reasoning' }
+      { id: 'mistral', name: 'Pollinations Mistral Nemo', context: 32768, caps: 'chat,code' }
     ];
   }
 
@@ -38,7 +39,8 @@ export class PollinationsAdapter extends BaseAdapter {
 
   async executeChat({ apiKey, model, messages, stream = false, temperature, max_tokens, tools, tool_choice }) {
     let rawModel = model.replace(/^pollinations\//, '');
-    if (rawModel !== 'openai' && rawModel !== 'mistral') {
+    const allowed = ['openai', 'claude', 'deepseek', 'qwen', 'mistral'];
+    if (!allowed.includes(rawModel)) {
       rawModel = 'openai';
     }
     const body = {
@@ -56,7 +58,7 @@ export class PollinationsAdapter extends BaseAdapter {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(6000)
+      signal: AbortSignal.timeout(10000)
     });
 
     if (!res.ok) {
