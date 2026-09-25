@@ -1,4 +1,12 @@
-﻿// Core & Extended Adapter Registry
+﻿import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+const indexJsContent = `// Core & Extended Adapter Registry
 import { PuterAdapter } from './puter.js';
 import { KiloAdapter } from './kilo.js';
 import { OpenRouterAdapter } from './openrouter.js';
@@ -167,7 +175,6 @@ class AdapterRegistry {
         keyPlaceholder: a.keyPlaceholder,
         isNoAuth,
         hasKey: activeKeys.length > 0,
-        status: isNoAuth ? 'ready' : (activeKeys.length > 0 ? 'configured' : 'unconfigured'),
         keys: providerKeys.map(k => ({
           id: k.id,
           label: k.label,
@@ -181,4 +188,7 @@ class AdapterRegistry {
 }
 
 export const adapterRegistry = new AdapterRegistry();
+`;
 
+fs.writeFileSync(path.join(rootDir, 'src', 'adapters', 'index.js'), indexJsContent, 'utf8');
+console.log('src/adapters/index.js updated with all 56+ adapters!');

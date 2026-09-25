@@ -1,4 +1,12 @@
-export const VirtualCombos = {
+﻿import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+const combosContent = `export const VirtualCombos = {
   'extra/auto-free': {
     id: 'extra/auto-free',
     display_name: '⚡ Extra Auto Free (OmniRoute Free Autopilot)',
@@ -161,3 +169,7 @@ export function getCombo(comboId) {
 export function getAllCombos() {
   return Object.values(VirtualCombos);
 }
+`;
+
+fs.writeFileSync(path.join(rootDir, 'src', 'engine', 'combos.js'), combosContent, 'utf8');
+console.log('src/engine/combos.js updated with all 30 new providers in combos!');

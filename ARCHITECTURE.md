@@ -1,4 +1,4 @@
-# 🏛️ Extra LLM X — System Architecture & Design Specification
+﻿# рџЏ›пёЏ Extra LLM X вЂ” System Architecture & Design Specification
 
 > **Next-Generation 100% Free LLM Gateway, Dynamic Discovery Engine, and API Key Provider Server for Universal Agent HP and Autonomous AI Systems.**
 
@@ -186,3 +186,4 @@ graph TD
   - `extra/free-reasoning`: Deep reasoning chain (DeepSeek-R1 native chain-of-thought).
   - `extra/free-vision`: Multimodal image reasoning (Gemini Flash, GPT-4o).
 - Native compatibility with `universal --provider omni --model extra/auto-free`.
+
