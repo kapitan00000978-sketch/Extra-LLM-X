@@ -1,3 +1,32 @@
+
+function openCreateKeyModal() {
+  const modal = document.getElementById('modal-create-client-key');
+  if (!modal) return;
+  const formView = document.getElementById('client-key-form-view');
+  const successView = document.getElementById('client-key-success-view');
+  if (formView) formView.style.display = 'block';
+  if (successView) successView.style.display = 'none';
+
+  const randSuffix = Math.floor(1000 + Math.random() * 9000);
+  const inputName = document.getElementById('input-client-key-name');
+  if (inputName) inputName.value = 'Agent Client #' + randSuffix;
+  modal.classList.add('active');
+}
+
+async function quickGenerateRandomKey() {
+  try {
+    const res = await fetch('/api/system-keys/random', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to generate key');
+    
+    await navigator.clipboard?.writeText(data.key);
+    showToast('Random key generated: ' + data.key + ' (Copied!)', 'success');
+    await loadSystemKeys();
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
 /**
  * Extra LLM X — Core Frontend Engine
  * Enterprise multi-provider gateway controller
@@ -40,9 +69,13 @@ function initNavigation() {
   });
 
   document.getElementById('btn-header-add-key')?.addEventListener('click', () => {
-    switchTab('tab-providers');
-    const firstAddBtn = document.querySelector('.btn-add-key');
-    if (firstAddBtn) firstAddBtn.scrollIntoView({ behavior: 'smooth' });
+    openCreateKeyModal();
+  });
+  document.getElementById('btn-quick-random-key')?.addEventListener('click', () => {
+    quickGenerateRandomKey();
+  });
+  document.getElementById('btn-done-create-client-key')?.addEventListener('click', () => {
+    document.getElementById('modal-create-client-key').classList.remove('active');
   });
 
   document.getElementById('btn-overview-open-playground')?.addEventListener('click', () => switchTab('tab-playground'));
@@ -405,7 +438,7 @@ function initModals() {
   document.getElementById('btn-save-custom-provider')?.addEventListener('click', saveCustomProvider);
 
   const modalClient = document.getElementById('modal-create-client-key');
-  document.getElementById('btn-open-create-key-modal')?.addEventListener('click', () => modalClient.classList.add('active'));
+  document.getElementById('btn-open-create-key-modal')?.addEventListener('click', () => openCreateKeyModal());
   document.getElementById('btn-close-create-client-key')?.addEventListener('click', () => modalClient.classList.remove('active'));
   document.getElementById('btn-cancel-create-client-key')?.addEventListener('click', () => modalClient.classList.remove('active'));
   document.getElementById('btn-confirm-create-client-key')?.addEventListener('click', createClientKey);
@@ -502,11 +535,13 @@ async function saveCustomProvider() {
 }
 
 async function createClientKey() {
-  const name = document.getElementById('input-client-key-name').value.trim() || 'Client Application Key';
-  const rateLimit = parseInt(document.getElementById('input-client-key-rpm').value || '120', 10);
+  const name = document.getElementById('input-client-key-name')?.value.trim() || 'Client Application Key';
+  const rateLimit = parseInt(document.getElementById('input-client-key-rpm')?.value || '120', 10);
+  const confirmBtn = document.getElementById('btn-confirm-create-client-key');
+  if (confirmBtn) confirmBtn.textContent = 'Generating...';
 
   try {
-    const res = await fetch('/api/system-keys', {
+    const res = await fetch('/api/system-keys/random', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, rateLimit })
@@ -515,11 +550,34 @@ async function createClientKey() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to generate key');
 
-    document.getElementById('modal-create-client-key').classList.remove('active');
-    showToast('Client key generated successfully!', 'success');
-    loadSystemKeys();
+    const newKey = data.key;
+    const formView = document.getElementById('client-key-form-view');
+    const successView = document.getElementById('client-key-success-view');
+    if (formView) formView.style.display = 'none';
+    if (successView) successView.style.display = 'block';
+
+    const displayKeyEl = document.getElementById('display-new-key-value');
+    if (displayKeyEl) displayKeyEl.textContent = newKey;
+
+    const curlExample = document.getElementById('code-example-new-key');
+    if (curlExample) {
+      curlExample.textContent = "curl http://localhost:3000/v1/chat/completions \\\n  -H \\\"Authorization: Bearer " + newKey + "\\\" \\\n  -d '{\\\"model\\\":\\\"extra/frontier\\\",\\\"messages\\\":[{\\\"role\\\":\\\"user\\\",\\\"content\\\":\\\"Hi\\\"}]}'";
+    }
+
+    const copyBtn = document.getElementById('btn-copy-new-key');
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        copyToClipboard(newKey, 'New API Key copied to clipboard!');
+      };
+    }
+
+    try { await navigator.clipboard?.writeText(newKey); } catch {}
+    showToast('Random key generated & copied to clipboard!', 'success');
+    await loadSystemKeys();
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
+  } finally {
+    if (confirmBtn) confirmBtn.textContent = '⚡ Generate Random Key Now';
   }
 }
 

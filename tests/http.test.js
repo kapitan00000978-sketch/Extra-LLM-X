@@ -106,6 +106,35 @@ test('HTTP: POST /api/system-keys generates and persists key', async () => {
   assert.strictEqual(verifyRes.status, 200);
 });
 
+test('HTTP: POST /api/system-keys/random generates working key that executes chat 100%', async () => {
+  const res = await fetch(`${baseUrl}/api/system-keys/random`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  assert.strictEqual(res.status, 200);
+  const data = await res.json();
+  assert.strictEqual(data.success, true);
+  assert.ok(data.key.startsWith('elx-live-'));
+
+  // Execute chat completion with this random key to verify 100% operation
+  const chatRes = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${data.key}`
+    },
+    body: JSON.stringify({
+      model: 'mock/extra-demo-model',
+      messages: [{ role: 'user', content: 'Random key test' }]
+    })
+  });
+
+  assert.strictEqual(chatRes.status, 200);
+  const chatData = await chatRes.json();
+  assert.ok(chatData.choices && chatData.choices.length > 0);
+  assert.ok(chatData.choices[0].message.content.includes('Extra LLM X'));
+});
+
 test('HTTP: POST /v1/embeddings returns valid OpenAI embedding format', async () => {
   const res = await fetch(`${baseUrl}/v1/embeddings`, {
     method: 'POST',

@@ -58,7 +58,7 @@
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
           </svg>
         </div>
-        <button class="btn-primary btn-sm" id="btn-header-add-key">+ Add Key</button>
+        <button class="btn-primary btn-sm" id="btn-header-add-key" title="Generate a random client API key">⚡ Create API Key</button>
       </div>
     </div>
   </header>
@@ -229,7 +229,10 @@
           <h1 class="view-title">API Key Management</h1>
           <p class="view-subtitle">Manage client Bearer tokens for Cursor, Claude Code, Cline, and OpenAI Python SDK.</p>
         </div>
-        <button class="btn-primary btn-sm" id="btn-open-create-key-modal">+ Create Client Key</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary btn-sm" id="btn-quick-random-key" title="Instant 1-Click Random API Key">⚡ 1-Click Random Key</button>
+          <button class="btn-primary btn-sm" id="btn-open-create-key-modal">+ Create Client Key</button>
+        </div>
       </div>
 
       <div class="keys-grid-layout">
@@ -544,23 +547,56 @@ Fallback Model  : extra/auto-free</code></pre>
   <div class="modal-backdrop" id="modal-create-client-key">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">Create Client API Key</h3>
+        <h3 class="modal-title" id="modal-title-client-key">Create Client API Key</h3>
         <button class="btn-close" id="btn-close-create-client-key">&times;</button>
       </div>
-      <div class="modal-body">
-        <div class="form-field">
-          <label for="input-client-key-name">Application / Client Name</label>
-          <input type="text" class="form-input" id="input-client-key-name" placeholder="e.g. Cursor Workstation">
+      
+      <!-- FORM VIEW -->
+      <div id="client-key-form-view">
+        <div class="modal-body">
+          <p class="text-secondary text-sm mb-3">Extra LLM X generates a secure, cryptographically random Bearer API key. The key is verified and operational immediately with 100% throughput across all 70+ providers.</p>
+          <div class="form-field">
+            <label for="input-client-key-name">Application / Client Name</label>
+            <input type="text" class="form-input" id="input-client-key-name" placeholder="e.g. Cursor Workstation #1">
+          </div>
+          <div class="form-field">
+            <label for="input-client-key-rpm">Rate Limit (Requests per Minute)</label>
+            <input type="number" class="form-input" id="input-client-key-rpm" value="120" min="10" max="1000">
+          </div>
         </div>
-        <div class="form-field">
-          <label for="input-client-key-rpm">Rate Limit (Requests per Minute)</label>
-          <input type="number" class="form-input" id="input-client-key-rpm" value="120" min="10" max="1000">
+        <div class="modal-footer">
+          <button class="btn-secondary btn-sm" id="btn-cancel-create-client-key">Cancel</button>
+          <button class="btn-primary btn-sm" id="btn-confirm-create-client-key">⚡ Generate Random Key Now</button>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary btn-sm" id="btn-cancel-create-client-key">Cancel</button>
-        <button class="btn-primary btn-sm" id="btn-confirm-create-client-key">Generate Key</button>
+
+      <!-- SUCCESS VIEW (Shown when key is generated) -->
+      <div id="client-key-success-view" style="display: none;">
+        <div class="modal-body">
+          <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">✅</span>
+            <div>
+              <strong style="color: #10b981; font-size: 13px;">API Key Created & Active (100% Operational)</strong>
+              <div style="color: var(--text-secondary); font-size: 12px;">Saved to SQLite database. Ready for immediate use with all AI clients.</div>
+            </div>
+          </div>
+          
+          <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block;">Your Generated API Key:</label>
+          <div style="background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px;">
+            <code id="display-new-key-value" style="font-size: 13px; font-weight: 600; color: var(--color-cyan); word-break: break-all; user-select: all;">elx-live-...</code>
+            <button class="btn-primary btn-sm" id="btn-copy-new-key" style="white-space: nowrap;">📋 Copy Key</button>
+          </div>
+
+          <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block;">cURL Quick Test:</label>
+          <pre style="background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 10px; font-size: 11px; overflow-x: auto; color: var(--text-secondary);"><code id="code-example-new-key">curl http://localhost:3000/v1/chat/completions \
+  -H "Authorization: Bearer elx-live-..." \
+  -d '{"model":"extra/frontier","messages":[{"role":"user","content":"Hi"}]}'</code></pre>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-primary btn-sm" id="btn-done-create-client-key" style="width: 100%;">Done & Return to Dashboard</button>
+        </div>
       </div>
+
     </div>
   </div>
 

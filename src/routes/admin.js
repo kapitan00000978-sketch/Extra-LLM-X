@@ -404,6 +404,18 @@ adminRouter.get('/system-keys', (req, res) => {
   }
 });
 
+adminRouter.post('/system-keys/random', (req, res) => {
+  try {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const name = (req.body && req.body.name) || ('Agent Key #' + randomSuffix);
+    const rateLimit = parseInt((req.body && req.body.rateLimit) || 120, 10);
+    const newKey = KeyStore.createSystemKey(name, rateLimit);
+    res.json({ success: true, key: newKey.key, details: newKey });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 adminRouter.post('/system-keys', (req, res) => {
   try {
     const { name, rateLimit } = req.body;
