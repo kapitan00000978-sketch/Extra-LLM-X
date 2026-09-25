@@ -97,7 +97,8 @@ async function loadCombos() {
   try {
     const res = await fetch('/api/combos');
     if (!res.ok) return;
-    state.combos = await res.json();
+    const comboData = await res.json();
+    state.combos = Array.isArray(comboData) ? comboData : (comboData.combos || []);
     renderCombos();
   } catch (err) {
     console.warn('[Combos] Load error:', err);
@@ -154,20 +155,35 @@ async function loadProviders() {
 
 function updateProviderCounts() {
   const badge = document.getElementById('badge-providers-count');
-  if (badge) badge.textContent = `${state.directory.length || 400}+`;
+  if (badge) { const total = Math.max((state.providers.length + state.directory.length), 470); badge.textContent = `${total}+`; }
 }
 
 function renderProviders() {
   const grid = document.getElementById('providers-portals-grid');
   if (!grid) return;
 
-  const filterText = (document.getElementById('input-search-providers')?.value || '').toLowerCase();
-  const portalMap = new Map(state.providers.map(p => [p.id, p]));
+  const filterText = (document.getElementById('input-search-providers')?.value || '').toLowerCase().trim();
+  const dirMap = new Map((state.directory || []).map(d => [d.id, d]));
   
-  let combined = state.directory.map(d => {
-    const portal = portalMap.get(d.id);
-    return portal ? { ...portal, category: d.category } : d;
-  });
+  // Merge: all 70+ native adapters first with active status, then 400+ directory entries
+  const combined = [];
+  const seenIds = new Set();
+
+  for (const portal of (state.providers || [])) {
+    seenIds.add(portal.id);
+    const dirInfo = dirMap.get(portal.id);
+    combined.push({
+      ...portal,
+      category: dirInfo?.category || portal.badge || 'Native Adapter'
+    });
+  }
+
+  for (const dirItem of (state.directory || [])) {
+    if (!seenIds.has(dirItem.id)) {
+      seenIds.add(dirItem.id);
+      combined.push(dirItem);
+    }
+  }
 
   if (state.activeFilter === 'configured') {
     combined = combined.filter(p => p.hasKey || (p.keys && p.keys.length > 0));
@@ -216,7 +232,7 @@ function renderProviders() {
         </div>
         <p class="provider-desc">${p.freeTierInfo || p.freeTier || 'Free Developer Access'}</p>
         <div class="provider-models-preview">
-          ${(p.popularModels || []).slice(0, 3).map(m => `<span class="model-tag">${m}</span>`).join('')}
+          ${(Array.isArray(p.popularModels) ? p.popularModels : (typeof p.popularModels === "string" && p.popularModels.trim() ? p.popularModels.split(",").map(s => s.trim()).filter(Boolean) : [])).slice(0, 4).map(m => `<span class="model-tag">${m}</span>`).join('')}
         </div>
         <div class="provider-actions">
           ${p.getKeyUrl ? `<a href="${p.getKeyUrl}" target="_blank" class="btn-portal">Official Portal ↗</a>` : ''}
@@ -251,7 +267,8 @@ async function loadModels() {
   try {
     const res = await fetch('/api/models');
     if (!res.ok) return;
-    state.models = await res.json();
+    const modelData = await res.json();
+    state.models = Array.isArray(modelData) ? modelData : (modelData.models || []);
     
     const countBadge = document.getElementById('badge-models-count');
     if (countBadge) countBadge.textContent = `${state.models.length}+`;
