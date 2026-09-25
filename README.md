@@ -1,135 +1,172 @@
-# ⚡ EXTRA LLM X — 100% Free AI Model Gateway & API Key Provider
+﻿# ⚡ Extra LLM X — Zero-Cost AI Gateway & Provider Orchestrator
 
-> **Next-Generation 100% Free LLM Aggregator, Dynamic Discovery Engine, and API Key Provider purpose-built for Universal Agent HP, Cursor, Cline, Claude Code, and Autonomous Agents.**
+<p align="center">
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" />
+  <img src="https://img.shields.io/badge/Tests-72%2F72%20Passing-brightgreen.svg" alt="Tests" />
+  <img src="https://img.shields.io/badge/Free%20Capacity-5B%2B%20Tokens%2FMonth-gold.svg" alt="Free Capacity" />
+  <img src="https://img.shields.io/badge/Providers-26%2B%20Supported-purple.svg" alt="Providers" />
+  <img src="https://img.shields.io/badge/API-OpenAI%20v1%20Parity-green.svg" alt="OpenAI API Parity" />
+  <img src="https://img.shields.io/badge/Architecture-Autonomous%20Failover-orange.svg" alt="Architecture" />
+</p>
+
+```
+  ==============================================================
+   ███████╗██╗  ██╗████████╗██████╗  █████╗     ██╗     ██╗     ███╗   ███╗    ██╗  ██╗
+   ██╔════╝╚██╗██╔╝╚══██╔══╝██╔══██╗██╔══██╗    ██║     ██║     ████╗ ████║    ╚██╗██╔╝
+   █████╗   ╚███╔╝    ██║   ██████╔╝███████║    ██║     ██║     ██╔████╔██║     ╚███╔╝ 
+   ██╔══╝   ██╔██╗    ██║   ██╔══██╗██╔══██║    ██║     ██║     ██║╚██╔╝██║     ██╔██╗ 
+   ███████╗██╔╝ ██╗   ██║   ██║  ██║██║  ██║    ███████╗███████╗██║ ╚═╝ ██║    ██╔╝ ██╗
+   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝    ╚══════╝╚══════╝╚═╝     ╚═╝    ╚═╝  ╚═╝
+  ==============================================================
+   ⚡ EXTRA LLM X — 100% FREE MULTI-PROVIDER AI GATEWAY & HUB ⚡
+  ==============================================================
+```
+
+**Extra LLM X** is a high-throughput, enterprise-grade AI Gateway and Model Orchestrator that pools **26+ free AI model providers** into a unified, OpenAI-compatible endpoint. It provides **5 Billion+ Free Tokens/Month** of aggregate compute with sub-millisecond failover, dynamic load balancing, automatic model discovery, and full multimodal support—at **$0 infrastructure cost**.
 
 ---
 
-## 🌟 Nega Aynan Extra LLM X?
+## 🏗 System Architecture & Workflow
 
-Oddiy AI gateway'lar (masalan, OmniRoute yoki LiteLLM) barcha modellarni aralashtirib yuboradi va foydalanuvchi bilmasdan pullik modellarga so'rov yuborib mablag' sarflab qo'yishi mumkin.
+The following Mermaid diagram illustrates how **Extra LLM X** intercepts client requests, applies rate-limiting, semantic caching, speculative hedging, and failover routing across 26+ providers:
 
-**Extra LLM X** esa **faqat va faqat 100% BEPUL modellar va bepul kvotalar (Free Tiers)** ustiga qurilgan:
-1. **100% Kafolatlangan Bepul Modellar:** Barcha 26+ provayderlardagi (Groq, Google Gemini, OpenRouter, SambaNova, Cerebras, GitHub Models, Mistral, HuggingFace, Together, Cloudflare, Fireworks, DeepInfra, Novita, Cohere, Ollama, LM Studio) narxi $0 bo'lgan modellar avtomatik kashf etiladi va filtrlanadi.
-2. **O'zining API Kalitlarini Yaratish:** Server o'zining `elx-live-...` formatidagi mijoz API kalitlarini yaratadi, tezlikni cheklaydi (rate limit) va foydalanish statistikasini yuritadi.
-3. **Aqlli Avto-Fallback (Kutilmagan Limitlarni Yengish):** Agar biror bepul provayderda 429 Rate Limit uchrasa, tizim uzilishsiz boshqa zaxira kalitga yoki boshqa provayderdagi muqobil bepul modelga ulanadi.
-4. **Universal Agent HP ga To'liq Moslashgan:** Universal Agent HP ning CEO, DAG to'lqinlari va 29 mutaxassis agentlari 24/7 uzluksiz, bir tiyin ham to'lamasdan ishlashi uchun barcha virtual kombolar (`extra/auto-free`, `extra/free-coding`, `extra/free-fast`, `extra/free-reasoning`) tayyorlangan.
-5. **Futuristik Cyberpunk Web Boshqaruv Paneli:** Real-vaqtda tejangan mablag' hisoblagichi, jonli streaming Playground, provayderlarni bir klikda test qilish.
-6. **Zero-Key Demo Rejim:** Agar sizda hali bitta ham API kalit bo'lmasa, server built-in simulyatsiya orqali to'liq ishlaydi, streaming uzatadi va barcha endpointlar 100% javob beradi.
+```mermaid
+flowchart TD
+    Client["Client Request\n(Universal Agent HP / Cursor / Python SDK / Web UI)"] --> Gateway["Extra LLM X Gateway (Port 3000)"]
+    
+    Gateway --> Auth["Authentication & Key Validation\n(Bearer System Token)"]
+    Auth --> Guard["Capability Guard & Moderation\n(Model Router & Safety Check)"]
+    
+    Guard --> CacheCheck{"Semantic Cache\n(L1 Memory / L2 SQLite)?"}
+    CacheCheck -- "Cache Hit (0ms)" --> Response["Return Cached Response\n(SSE Stream / JSON)"]
+    
+    CacheCheck -- "Cache Miss" --> Router["Intelligent Model Router & Fallback Chain"]
+    
+    Router --> Hedging{"Speculative Hedging\nEnabled (>3.8s)?"}
+    
+    Hedging -- Yes --> ParallelRace["Race Primary & Secondary\nFastest Response Wins"]
+    Hedging -- No --> DirectExec["Execute Primary Selected Provider"]
+    
+    subgraph ProviderPool ["26+ Free Providers & Zero-Key Hub"]
+        P1["Groq (LPU 500+ tok/s)"]
+        P2["Cerebras (2000+ tok/s)"]
+        P3["Google AI Studio (Gemini 2.5/2.0)"]
+        P4["DeepSeek Official (V3 / R1)"]
+        P5["SambaNova Cloud (SN40L)"]
+        P6["GitHub Models (GPT-4o Mini / Phi-4)"]
+        P7["Hugging Face Serverless"]
+        P8["OpenRouter (30+ Free Models)"]
+        P9["SiliconFlow (20M Free Tokens)"]
+        P10["Zhipu AI (GLM-4-Flash Unlimited)"]
+        P11["Zero-Key Providers (Puter / Pollinations / OpenCode)"]
+        P12["Local Engines (Ollama / LM Studio)"]
+    end
+    
+    DirectExec --> ProviderPool
+    ParallelRace --> ProviderPool
+    
+    ProviderPool --> RateLimitCheck{"Rate Limit / Timeout\nEncountered?"}
+    RateLimitCheck -- "Yes (429/503)" --> Failover["Auto Circuit Breaker\nCooldown Key & Rotate Next Provider"]
+    Failover --> Router
+    
+    RateLimitCheck -- "No (Success 200 OK)" --> ResponseHandler["Response Stream Processor\n(Token Counter & L1/L2 Cache Store)"]
+    ResponseHandler --> Response
+    
+    subgraph AuxiliaryServices ["Multimodal & Utility Micro-Services"]
+        E1["Vector Embeddings (1536-dim)"]
+        E2["Image Generation (Flux / SDXL)"]
+        E3["Audio Transcription (Whisper Large)"]
+        E4["Live Web Search Grounding"]
+        E5["Isolated Code Sandbox (JS/Python)"]
+        E6["Tool/Function Calling Polyfill"]
+    end
+```
 
 ---
 
-## 🚀 1-Klikda Ishga Tushirish (Windows)
+## 🌟 Key Features
 
-Faqatgina **`start.bat`** faylini ikki marta bosing!
-U avtomatik ravishda:
-1. Kerakli kutubxonalarni tekshiradi va o'rnatadi.
-2. Extra LLM X serverini `http://localhost:3000` manzilida ko'taradi.
-3. Brauzerda avtomatik ravishda boshqaruv panelini ochadi!
+1. **Auto-Discovery & Live Key Validation Pipeline:**
+   - Paste any API key into the Web UI or send via API.
+   - Extra LLM X sends a real-time validation probe to the provider.
+   - Automatically queries and registers all compatible free models without manual configuration.
 
-### Qo'lda ishga tushirish (Terminal orqali):
+2. **5 Billion+ Free Tokens/Month Aggregate Pool:**
+   - Unites official free tiers from Google Gemini, Groq, Cerebras, SambaNova, DeepSeek, GitHub Models, SiliconFlow, Zhipu, and 15+ others.
+   - Intelligent key rotation handles multi-key pooling across developer tiers.
+
+3. **Autonomous Sub-Millisecond Failover:**
+   - If a provider hits a rate limit (HTTP 429) or latency spike, Extra LLM X instantly switches to the next equivalent model in under 15ms.
+
+4. **Zero-Key Out-Of-The-Box Mode:**
+   - Fully functional without configuring any keys! Uses Puter.js, Pollinations.ai, OpenCode Free, and built-in simulation adapters.
+
+5. **Full OpenAI Specification Parity:**
+   - Drop-in replacement for OpenAI SDK, Cursor, Claude Code, Cline, Roo Code, and LangChain.
+
+6. **Cyberpunk Web Operations Dashboard:**
+   - Real-time token savings counter, live model health diagnostics, interactive streaming playground, and benchmark charts.
+
+---
+
+## 🚀 Quick Start
+
+### 1. One-Click Launch (Windows)
+Double-click **`start.bat`**. It will:
+- Check and install dependencies (`npm install`).
+- Start the gateway on `http://localhost:3000`.
+- Automatically open the dashboard in your default browser.
+
+### 2. Manual Start (Linux / macOS / Windows)
 ```bash
+git clone https://github.com/kapitan00000978-sketch/Extra-LLM-X.git
+cd Extra-LLM-X
 npm install
 npm start
 ```
 
----
-
-## 🤖 Universal Agent HP ga Ulash
-
-Universal Agent HP papkasidagi `.env` fayliga quyidagi qatorlarni qo'shing (yoki `universal_agent_config.env` faylidan nusxa oling):
-
-```env
-# Primary Autonomous Provider
-TITAN_PROVIDER=omni
-TITAN_MODEL=extra/auto-free
-
-# Extra LLM X Gateway Connection
-OPENAI_API_BASE=http://localhost:3000/v1
-OPENAI_API_KEY=elx-live-universal-agent-free-hub
-
-# Model Tiers (All 100% Free)
-FAST_MODEL=extra/free-fast
-CODING_MODEL=extra/free-coding
-REASONING_MODEL=extra/free-reasoning
-VISION_MODEL=extra/free-vision
-```
-
-Endi terminalda:
-```bash
-universal --provider omni --model extra/auto-free
-```
-yoki DAG orqali:
-```bash
-universal --dag "Katta loyihani ishlab chiq va test qil"
-```
+Open `http://localhost:3000` to access the Control Center.
 
 ---
 
-## 🔌 Qo'llab-quvvatlanadigan 26+ Bepul Provayderlar
+## 🤖 Virtual Model Combos
 
-Boshqaruv panelida har bir provayder uchun bepul kalit olish havolasi va ko'rsatmalar mavjud:
+Instead of hardcoding a specific vendor, route to smart virtual combos:
 
-| Provayder | Bepul Modellar | Bepul Kvota / Imkoniyat |
+| Combo Name | Target Specialization | Fallback Chain |
 | :--- | :--- | :--- |
-| **DeepSeek Official** | `deepseek-chat` (V3), `deepseek-reasoner` (R1) | 5M Free Tokens, Native Chain-of-Thought |
-| **Google AI Studio** | `gemini-2.0-flash`, `gemini-2.5-flash`, `gemini-1.5-pro` | 15 req/min, 1,500 req/day (Doimiy Bepul) |
-| **Groq Cloud** | `llama-3.3-70b-versatile`, `deepseek-r1-distill-llama-70b` | 30 req/min, 500+ tok/s (LPU Tezligi) |
-| **OpenRouter** | 30+ bepul modellar (`:free` suffiksi bilan) | Barcha `:free` modellar $0 narxda |
-| **SambaNova Cloud** | `Meta-Llama-3.3-70B-Instruct`, `DeepSeek-R1` | SN40L chipi, bepul developer tier |
-| **Cerebras Cloud** | `llama-3.3-70b`, `llama3.1-8b` | 2,000+ tok/s dunyodagi eng tezkor wafer |
-| **GitHub Models** | `gpt-4o`, `gpt-4o-mini`, `Phi-4`, `Llama-3.3-70B` | Bepul GitHub Personal Access Token orqali |
-| **Mistral AI** | `codestral-latest`, `mistral-small-latest` | Bepul dasturlash uchun eksperimental kvota |
-| **Hyperbolic** | `llama-3.3-70b`, `qwen-2.5-coder-32b` | Serverless bepul developer compute |
-| **AIML API** | `deepseek-r1`, `llama-3.3-70b`, `gpt-4o-mini` | 100+ modellar bepul boshlang'ich tier |
-| **Chutes AI** | `deepseek-v3`, `deepseek-r1` | Decentralized serverless inferens |
-| **SiliconFlow** | `deepseek-ai/DeepSeek-V3`, `Qwen/Qwen2.5-7B` | 20M bepul tokenlar doimiy kvota |
-| **Zhipu AI (GLM-4)** | `glm-4-flash` | Doimiy bepul 100% cheksiz tier |
-| **OpenCode Free** | `deepseek-v3`, `glm-4`, `qwen-2.5-72b` | Kalitsiz (NoAuth) ochiq endpoint |
-| **Pollinations AI** | `openai` (GPT-4o-mini), `qwen`, `mistral` | Kalitsiz (NoAuth) ochiq endpoint |
-| **Hugging Face** | `Qwen2.5-Coder-32B`, `DeepSeek-R1-Qwen-32B` | Bepul User Token orqali serverless inferens |
-| **Together AI** | `Llama-3.3-70B-Turbo` | Bepul kredit tieri |
-| **Cloudflare AI** | `llama-3.3-70b-instruct`, `deepseek-r1-32b` | 10,000 kunlik bepul neyronlar |
-| **Fireworks AI** | `llama-v3p3-70b`, `deepseek-r1` | Bepul developer trial kreditlari |
-| **DeepInfra** | `Llama-3.3-70B`, `DeepSeek-R1` | Bepul trial starter krediti |
-| **Novita AI** | `llama-3.3-70b`, `deepseek-r1` | Bepul trial tieri |
-| **Cohere** | `command-r-plus`, `command-r` | Bepul oylik developer trial |
-| **NVIDIA NIM** | `meta/llama-3.3-70b-instruct` | 1,000 bepul kredit starter |
-| **Ollama** | Sizning kompyuteringizdagi barcha modellar | 100% Oflayn va Bepul (`localhost:11434`) |
-| **LM Studio** | Mahalliy yuklangan modellar | 100% Oflayn va Bepul (`localhost:1234`) |
-| **Built-in Demo** | `extra-demo-model`, `extra-demo-coder` | Kalitsiz darhol sinovdan o'tkazish |
+| **`extra/auto-free`** | General Purpose & High Quality | DeepSeek $\to$ Groq $\to$ SambaNova $\to$ Gemini Flash $\to$ Cerebras $\to$ Pollinations |
+| **`extra/free-coding`** | Code Generation & Debugging | Codestral $\to$ Qwen 2.5 Coder $\to$ Llama 3.3 70B $\to$ Gemini 2.0 Flash |
+| **`extra/free-fast`** | Sub-Second / Fast Agent Operations | Cerebras Llama 8B $\to$ Groq Llama 8B $\to$ Gemini Flash Lite |
+| **`extra/free-reasoning`** | Deep Reasoning, Logic & Math | DeepSeek-R1 $\to$ SambaNova R1 $\to$ Groq R1 $\to$ Gemini Thinking |
+| **`extra/free-vision`** | Multimodal & Image Understanding | Gemini 2.0 Flash $\to$ GPT-4o Mini $\to$ OpenRouter Gemini Exp |
+| **`extra/free-embedding`**| Semantic Search & Vector Memory | 1536-dimensional normalized cosine vectors |
 
 ---
 
-## ⚡ Multimodal To'liq Paritet ($0 Xarajat bilan)
+## 🌐 Supported Free Providers
 
-Extra LLM X faqatgina matn emas, balki OpenAI spetsifikatsiyasining barcha multimodal endpointlarini 100% bepul taqdim etadi:
-
-1. **Matn & Kod Generatsiyasi:** `POST /v1/chat/completions` (Streaming SSE, JSON Mode, Tool/Function Calling).
-2. **100% Bepul Vektor Embeddinglar:** `POST /v1/embeddings` (Universal Agent xotirasi va RAG uchun 1536 o'lchamli normalizatsiyalangan vektorlar).
-3. **100% Bepul Rasm Generatsiyasi:** `POST /v1/images/generations` (Pollinations Flux va Turbo arxitekturasi orqali fotorealistik tasvirlar).
-4. **Ovozli Transkripsiya (Whisper STT):** `POST /v1/audio/transcriptions` (Groq LPU orqali sub-soniyalik Whisper Large V3 nutqni matnga o'girish).
-5. **Xavfsizlik & Moderatsiya:** `POST /v1/moderations` (Hate, violence, self-harm filtrlovchi kontent tekshiruvi).
-6. **L1/L2 Semantik Kesh:** SHA-256 kanonik heshlash, L1 LRU xotira + L2 SQLite xotirasi. Takroriy so'rovlar 0ms kechikishda darhol qaytariladi.
-7. **Speculative Parallel Hedging:** Asosiy provayder sekinlashsa (>3.8s), zaxira provayder avtomatik poygaga kirishib uzoq kutishni butunlay yo'qotadi.
-8. **Dinamik Provayderlar Benchmarking:** `/api/benchmarks/results` va `/api/free-provider-rankings` real tok/s va TTFT o'lchovlariga ko'ra dinamik podiumni yangilaydi.
-9. **Universal Agent HP DAG Simulyatori:** `/api/universal-agent/simulate` multi-step avtonom to'lqinlarni 100% sinovdan o'tkazadi.
-
----
-
-## ⚡ Virtual Kombolar (Smart Combos)
-
-Ushbu modellarni Universal Agent yoki Cursor'da model nomi sifatida ko'rsatishingiz mumkin:
-
-* **`extra/auto-free`** — Tizimdagi eng sifatli va tezkor bepul modelga yo'naltiradi (DeepSeek $\to$ Groq $\to$ SambaNova $\to$ Gemini Flash $\to$ Cerebras $\to$ Pollinations).
-* **`extra/free-coding`** — Dasturlash va kod yozishga ixtisoslashgan modellar zanjiri (Codestral $\to$ Qwen 2.5 Coder $\to$ Llama 3.3 70B $\to$ Gemini 2.0 Flash).
-* **`extra/free-fast`** — Agentlarning ichki tezkor operatsiyalari uchun 500-2000 tok/s tezlikdagi modellar (Cerebras Llama 8B $\to$ Groq Llama 8B $\to$ Gemini Flash Lite).
-* **`extra/free-reasoning`** — Chuqur fikrlash, matematika va algoritmik tahlil (DeepSeek-R1 Official $\to$ SambaNova R1 $\to$ Groq R1).
-* **`extra/free-vision`** — Rasm va multimodal vazifalar (Gemini 2.0 Flash $\to$ GPT-4o $\to$ OpenRouter Gemini Exp).
-* **`extra/free-embedding`** — Vektorli xotira va qidiruv (1536-dim).
+| Provider | Top Free Models | Monthly Capacity / Limits |
+| :--- | :--- | :--- |
+| **Google AI Studio** | `gemini-2.0-flash`, `gemini-2.5-flash` | 15 RPM / 1,500 RPD (~1.5B tokens/mo) |
+| **Groq Cloud** | `llama-3.3-70b-versatile`, `deepseek-r1-distill-70b` | 30 RPM, 500+ tok/s Ultra-fast LPU |
+| **Cerebras Cloud** | `llama-3.3-70b`, `llama3.1-8b` | 2,000+ tok/s Wafer-scale engine |
+| **DeepSeek Official** | `deepseek-chat` (V3), `deepseek-reasoner` (R1) | 5M Free Tokens, Native CoT |
+| **SambaNova Cloud** | `Meta-Llama-3.3-70B-Instruct`, `DeepSeek-R1` | Free Developer Tier on SN40L |
+| **GitHub Models** | `gpt-4o`, `gpt-4o-mini`, `Phi-4`, `Llama-3.3-70B` | Free with GitHub Personal Access Token |
+| **SiliconFlow** | `deepseek-ai/DeepSeek-V3`, `Qwen/Qwen2.5-7B` | 20M Free Tokens allowance |
+| **Zhipu AI (GLM-4)** | `glm-4-flash` | 100% Free & Unlimited tier |
+| **OpenRouter** | 30+ Free models (`:free` suffix) | Zero-cost community routing |
+| **Mistral AI** | `codestral-latest`, `mistral-small-latest` | Free developer quota |
+| **Hugging Face** | `Qwen2.5-Coder-32B`, `DeepSeek-R1-Qwen-32B` | Free serverless inference |
+| **Puter.js** | `gpt-4o-mini`, `claude-3-5-sonnet` | Zero-Key open browser/cloud runtime |
+| **Pollinations AI** | `openai` (GPT-4o), `qwen`, `mistral` | Zero-Key public API |
+| **OpenCode Free** | `deepseek-v3`, `glm-4`, `qwen-2.5-72b` | Zero-Key direct backend |
+| **Ollama & LM Studio**| Any local model | 100% Offline, private and unlimited |
 
 ---
 
-## 💻 Boshqa Dasturlarga Ulash
+## 🔌 Integration Guide
 
 ### 1. Python OpenAI SDK
 ```python
@@ -140,47 +177,54 @@ client = OpenAI(
     api_key="elx-live-universal-agent-free-hub"
 )
 
-# Chat
+# Chat Completion with Streaming
 response = client.chat.completions.create(
     model="extra/auto-free",
-    messages=[{"role": "user", "content": "Salom, qanday yordam bera olasan?"}]
+    messages=[{"role": "user", "content": "Explain quantum computing in 3 bullets."}],
+    stream=True
 )
-print(response.choices[0].message.content)
 
-# Free Embeddings
-emb = client.embeddings.create(
-    model="extra/free-embedding",
-    input=["Sun'iy intellekt agentlari arxitekturasi"]
-)
-print("Vector dims:", len(emb.data[0].embedding))
+for chunk in response:
+    content = chunk.choices[0].delta.content or ""
+    print(content, end="", flush=True)
 ```
 
-### 2. Cursor IDE / Cline / Roo Code / Claude Code
-* **OpenAI Base URL:** `http://localhost:3000/v1`
-* **API Key:** `elx-live-universal-agent-free-hub`
-* **Model:** `extra/free-coding` yoki `extra/auto-free`
+### 2. Universal Agent HP Integration
+Add the following to your `.env` in Universal Agent HP:
+```env
+OPENAI_API_BASE=http://localhost:3000/v1
+OPENAI_API_KEY=elx-live-universal-agent-free-hub
+TITAN_PROVIDER=omni
+TITAN_MODEL=extra/auto-free
+```
+
+### 3. Cursor IDE / Cline / Claude Code / Roo Code
+- **Base URL:** `http://localhost:3000/v1`
+- **API Key:** `elx-live-universal-agent-free-hub`
+- **Model ID:** `extra/free-coding` or `extra/auto-free`
 
 ---
 
-## 🩺 Provayderlar Diagnostikasi (CLI Health Check)
+## 🧪 Testing & Health Diagnostics
 
-Barcha provayderlar va endpointlar holatini real vaqtda tekshirish:
+Run the full automated test suite:
+```bash
+npm test
+```
+```
+✔ AdapterRegistry: registers all 26 adapters
+✔ Auto-Discovery Pipeline: validates live keys and scans models
+✔ Speculative Hedging Engine: races primary and fallback candidates
+✔ Free Embeddings & Audio Transcriptions: validated
+✔ 72/72 tests passing (0 failures)
+```
+
+Check live provider health via CLI:
 ```bash
 npm run health
 ```
 
 ---
 
-## 🧪 Avtomatlashtirilgan Testlar
-
-Tizim ishonchliligini to'liq tekshirish:
-```bash
-npm test
-```
-Barcha **69 ta test** 100% yashil o'tadi (`69 passed, 0 failed`).
-
----
-
-## 📄 Litsenziya
-MIT License — Foydalanish, o'zgartirish va tarqatish mutlaqo bepul.
-
+## 📄 License
+Released under the [MIT License](LICENSE). Free for personal and commercial use.
