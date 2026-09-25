@@ -1,11 +1,17 @@
 ﻿{
   "name": "extra-llm-x",
-  "version": "1.0.0",
-  "description": "Next-Gen 100% Free LLM Gateway, Dynamic Discovery Engine, and API Key Provider for Universal Agent HP",
+  "version": "1.2.0",
+  "description": "Next-Gen 100% Free LLM Gateway, Dynamic Discovery Engine, and API Key Provider",
   "main": "src/server.js",
+  "bin": {
+    "extra-llm": "./bin/extra-llm.js",
+    "extra-llm-x": "./bin/extra-llm.js",
+    "extra": "./bin/extra-llm.js"
+  },
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
+    "cli": "node bin/extra-llm.js",
     "dev": "node --watch src/server.js",
     "test": "node --test tests/*.test.js",
     "health": "node scripts/health_check.js"
@@ -29,4 +35,3 @@
     "express": "^4.21.2"
   }
 }
-
