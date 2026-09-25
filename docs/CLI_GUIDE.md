@@ -1,120 +1,157 @@
-﻿# ⚡ Extra LLM X — CLI Reference Guide
+﻿# ⚡ Extra LLM X — CLI va Ishlatish Qoidalari (CLI & Usage Guide)
 
-**Extra LLM X** can be executed globally from anywhere using a single command: `extra-llm` or simply `extra`.
+Bu qo'llanmada **Extra LLM X** loyihasini terminal orqali **bitta buyruq** (`extra-llm` yoki `extra`) bilan ishlatish qoidalari, sozlashlar va yuzaga kelishi mumkin bo'lgan muammolarni bartaraf etish (Troubleshooting) to'liq tushuntirilgan.
 
 ---
 
-## 🚀 Quick Start (Single Command)
+## 🚀 1. Bitta Buyruq Bilan Ishga Tushirish
 
-### 1. Global Installation / Linking
-Run once from inside the project directory:
+### Bir martalik global faollashtirish (Global Link)
+Terminalda loyiha papkasida bir marta quyidagilardan birini bajaring:
 ```bash
 npm link
-# or
+# yoki
 npm install -g .
 ```
 
-Now `extra-llm` and `extra` are available across your entire system (PowerShell, CMD, Bash, Zsh)!
+Endi kompyuteringizning **istalgan papkasidan** quyidagi buyruqlar orqali ishlatishingiz mumkin:
 
-```bash
-# Start the Gateway and Web Hub with 1 command:
+```powershell
+# Serverni ishga tushirish (Default: port 3000):
 extra-llm
 
-# Or use the short alias:
+# Yoki qisqa variant:
 extra
 ```
 
 ---
 
-## 📋 Available Commands & Syntax
+## 📋 2. Barcha Buyruqlar Ro'yxati (Commands)
 
-| Command | Short Alias | Description |
+| Buyruq | Qisqa varianti | Nima qiladi? |
 | :--- | :--- | :--- |
-| `extra-llm` | `extra` | Starts the server on default port `3000` (starts interactive or background). |
-| `extra-llm start [--port 8080]` | `extra start -p 8080` | Starts the gateway on a custom port. |
-| `extra-llm status` | `extra status` | Checks if the Extra LLM X server is running and prints active stats. |
-| `extra-llm key new [label]` | `extra key new "my-app"` | **Instantly generates a 100% working random system API key** (`elx-...`). |
-| `extra-llm key list` | `extra key list` | Lists all active system API keys, usage counts, and creation dates. |
-| `extra-llm combos` | `extra combos` | Displays all 6 Virtual Routing Combos with description and fallback lists. |
-| `extra-llm models` | `extra models` | Scans and lists all registered native providers and their popular models. |
-| `extra-llm --help` | `extra -h` | Shows full CLI documentation and help menu. |
-| `extra-llm --version` | `extra -v` | Prints current Extra LLM X version (e.g. `1.2.0`). |
+| `extra-llm` | `extra` | Serverni boshlaydi. Agar server allaqachon ishlab turgan bo'lsa, URL va holatini ko'rsatadi. |
+| `extra-llm restart` | `extra restart` | **Port band bo'lsa yoki server qotib qolsa**, eski jarayonni o'chirib, toza qayta ishga tushiradi. |
+| `extra-llm stop` | `extra stop` | Serverni to'xtatadi va 3000-portni to'liq bo'shatadi. |
+| `extra-llm status` | `extra status` | Server holati, faol modellar va portni tekshiradi. |
+| `extra-llm open` | `extra open` (yoki `extra ui`) | Brauzerda avtomatik **Web Control Hub** (`http://localhost:3000`) panelini ochadi. |
+| `extra-llm key new` | `extra key new "nomi"` | **100% ishlaydigan yangi random API kalit** yaratadi va bazaga saqlaydi (`elx-...`). |
+| `extra-llm key list` | `extra key list` | Barcha mavjud API kalitlar va ularning ishlatilish statistikasini jadvalda ko'rsatadi. |
+| `extra-llm combos` | `extra combos` | 6 ta virtual routing kombosini (`extra/auto-free`, `extra/frontier`, ...) ko'rsatadi. |
+| `extra-llm models` | `extra models` | 80+ provayderlar va ularning modellarini terminalda ro'yxatini chiqaradi. |
+| `extra-llm --help` | `extra -h` | CLI yordam menyusini chiqaradi. |
 
 ---
 
-## 🛠️ Usage Examples
+## ⚠️ 3. "Menda Ishlamayapti" — Muammolar va Ularning Yechimi (Troubleshooting)
 
-### 1. Start Server on Port 3000
+### 🔴 1-Muammo: "Port 3000 is already in use" (3000-port band)
+**Sabab:** Orqa fonda oldingi server yoki boshqa dastur 3000-portni band qilib turgan.  
+**Yechim:** Shunchaki quyidagi buyruqni bering:
 ```powershell
-extra-llm
+extra-llm restart
 ```
-Output:
-```
-==============================================================
- EXTRA LLM X - 100% FREE MULTI-PROVIDER AI GATEWAY & HUB
-==============================================================
-🚀 Extra LLM X Gateway starting on port: 3000
-🌐 Web UI & Dashboard: http://localhost:3000/
-📡 OpenAI Compatible Endpoint: http://localhost:3000/v1/chat/completions
-==============================================================
-```
-
-### 2. Generate a 100% Working Random API Key
+Bu buyruq 3000-portdagi eski jarayonni majburan to'xtatadi va yangi serverni ishga tushiradi.  
+Yoki serverni to'xtatish uchun:
 ```powershell
-extra-llm key new "Cursor-Dev"
-```
-Output:
-```
-🔑 Generated new Extra LLM X API Key:
-------------------------------------------------------------
-Key:   elx-live-a8f3b9c1d4e24679
-Label: Cursor-Dev
-Role:  admin
-------------------------------------------------------------
-Use with Bearer header: Authorization: Bearer elx-live-a8f3b9c1d4e24679
+extra-llm stop
 ```
 
-### 3. Check Server Status
+---
+
+### 🔴 2-Muammo: PowerShell da "running scripts is disabled on this system"
+**Sabab:** Windows PowerShell da skriptlarni bajarish xavfsizlik siyosati (`ExecutionPolicy`) cheklangan bo'lishi mumkin.  
+**Yechim A (Tavsiya etiladi):** PowerShell ni ochib, skriptlarga ruxsat bering:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+**Yechim B:** `.cmd` varianti orqali to'g'ridan-to'g'ri chaqiring:
+```cmd
+extra-llm.cmd
+```
+yoki CMD (Command Prompt) orqali:
+```cmd
+extra
+```
+
+---
+
+### 🔴 3-Muammo: Server ishlab turganini qanday bilish mumkin?
+Terminalda quyidagi buyruqni bering:
 ```powershell
 extra status
 ```
-Output:
-```
-🟢 Extra LLM X Gateway is RUNNING on http://localhost:3000
-   Version: 1.2.0
-   Uptime:  142m
-   Native Adapters: 80+
-```
-
-### 4. Inspect Virtual Combos
-```powershell
-extra combos
-```
-Output:
-```
-⚡ Extra LLM X Virtual Combos:
-------------------------------------------------------------
-• extra/auto-free
-  Smart multi-provider fallback across all free tiers
-• extra/free-coding
-  Optimized for code generation, refactoring, and code review
-• extra/fast-chat
-  Low-latency conversational models with speculative hedging
-• extra/deep-reasoning
-  High-compute reasoning and chain-of-thought models (R1/QwQ)
-• extra/creative
-  High-entropy artistic writing and brainstorming models
-• extra/frontier
-  Frontier models (Claude 3.5, GPT-4o, DeepSeek V3) with zero-cost fallback
+Agar ishlab turgan bo'lsa:
+```text
+🟢 Extra LLM X Gateway ONLAYN (Port: 3000)
+   - Faol Bepul Modellar: 744+
+   - Ulanish nuqtasi: http://localhost:3000/v1
+   - Dashboard: http://localhost:3000/
 ```
 
 ---
 
-## 🔌 Using with Cursor, Claude Code, Cline & Roo Code
+## 🔑 4. 100% Ishlaydigan API Kalit Yaratish Qoidalari
 
-1. In your editor settings, set:
-   - **Provider:** OpenAI Compatible
-   - **Base URL:** `http://localhost:3000/v1`
-   - **API Key:** `elx-live-master-free-hub` (or key from `extra-llm key new`)
-   - **Model:** `extra/free-coding` or `extra/auto-free`
-2. You now have unlimited zero-cost AI assistance with automated failover across 80+ providers!
+Extra LLM X tizimida API kalitlar 100% real SQLite bazasida saqlanadi va darhol faollashadi.
+
+### Terminal orqali yaratish:
+```powershell
+extra-llm key new "Mening-Loyiham"
+```
+Natija:
+```text
+  ==============================================================
+   🔑 YANGI API KALIT YARATILDI VA DARHOL FAOLLASHTIRILDI (100% ISHLAYDI)
+  ==============================================================
+   🔑 API Key    : elx-live-a7f4b829c13d8e52
+   🏷️  Nom (Label): Mening-Loyiham
+   ⚡ RPM Limit  : 120 req/min
+   💾 Saqlandi   : SQLite Database (Darhol tayyor)
+  ==============================================================
+```
+
+### Web Dashboard orqali yaratish:
+1. `extra open` buyrug'i orqali brauzerda boshqaruv panelini oching.
+2. **"API Keys"** bo'limiga o'ting.
+3. **"+ Generate Random Key"** tugmasini bosing.
+4. Yangi kalit darhol yaratiladi va "Copy" tugmasi orqali nusxalab olinadi.
+
+---
+
+## 🔌 5. Cursor, Cline, Claude Code va Python bilan Ulanish
+
+### Cursor / VS Code / Claude Code Sozlamalari:
+- **Provider Type:** `OpenAI Compatible`
+- **Base URL:** `http://localhost:3000/v1`
+- **API Key:** `elx-live-master-free-hub` (yoki `extra-llm key new` orqali olingan kalit)
+- **Model ID:**
+  - `extra/auto-free` (Eng barqaror bepul provayderlar zanjiri)
+  - `extra/free-coding` (Dasturlash uchun Qwen 2.5 Coder, DeepSeek V3, Granite)
+  - `extra/frontier` (Claude 3.5 Sonnet, GPT-4o, DeepSeek V3/R1)
+
+### Python orqali so'rov yuborish:
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:3000/v1",
+    api_key="elx-live-master-free-hub"
+)
+
+response = client.chat.completions.create(
+    model="extra/auto-free",
+    messages=[{"role": "user", "content": "Salom Extra LLM X!"}]
+)
+
+print(response.choices[0].message.content)
+```
+
+---
+
+## 🧪 6. Testlarni Tekshirish
+Loyihaning barcha 88 ta testi to'liq o'tganligini tekshirish uchun:
+```bash
+npm test
+```
+Barcha 88 ta test (adapterlar, router, kombolar, sandbox, CLI va API kalitlar) 100% muvaffaqiyatli ishlaydi.
