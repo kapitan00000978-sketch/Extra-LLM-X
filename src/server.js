@@ -58,22 +58,22 @@ app.get('*', (req, res) => {
 });
 
 // Launch Server
-app.listen(config.port, config.host, async () => {
+﻿const server = app.listen(config.port, config.host, async () => {
   console.log(`
   ==============================================================
-   в–€в–€в–€в–€в–€в–€в–€в•—в–€в–€в•—  в–€в–€в•—в–€в–€в–€в–€в–€в–€в–€в–€в•—в–€в–€в–€в–€в–€в–€в•—  в–€в–€в–€в–€в–€в•—     в–€в–€в•—     в–€в–€в•—     в–€в–€в–€в•—   в–€в–€в–€в•—    в–€в–€в•—  в–€в–€в•—
-   в–€в–€в•”в•ђв•ђв•ђв•ђв•ќв•љв–€в–€в•—в–€в–€в•”в•ќв•љв•ђв•ђв–€в–€в•”в•ђв•ђв•ќв–€в–€в•”в•ђв•ђв–€в–€в•—в–€в–€в•”в•ђв•ђв–€в–€в•—    в–€в–€в•‘     в–€в–€в•‘     в–€в–€в–€в–€в•— в–€в–€в–€в–€в•‘    в•љв–€в–€в•—в–€в–€в•”в•ќ
-   в–€в–€в–€в–€в–€в•—   в•љв–€в–€в–€в•”в•ќ    в–€в–€в•‘   в–€в–€в–€в–€в–€в–€в•”в•ќв–€в–€в–€в–€в–€в–€в–€в•‘    в–€в–€в•‘     в–€в–€в•‘     в–€в–€в•”в–€в–€в–€в–€в•”в–€в–€в•‘     в•љв–€в–€в–€в•”в•ќ 
-   в–€в–€в•”в•ђв•ђв•ќ   в–€в–€в•”в–€в–€в•—    в–€в–€в•‘   в–€в–€в•”в•ђв•ђв–€в–€в•—в–€в–€в•”в•ђв•ђв–€в–€в•‘    в–€в–€в•‘     в–€в–€в•‘     в–€в–€в•‘в•љв–€в–€в•”в•ќв–€в–€в•‘     в–€в–€в•”в–€в–€в•— 
-   в–€в–€в–€в–€в–€в–€в–€в•—в–€в–€в•”в•ќ в–€в–€в•—   в–€в–€в•‘   в–€в–€в•‘  в–€в–€в•‘в–€в–€в•‘  в–€в–€в•‘    в–€в–€в–€в–€в–€в–€в–€в•—в–€в–€в–€в–€в–€в–€в–€в•—в–€в–€в•‘ в•љв•ђв•ќ в–€в–€в•‘    в–€в–€в•”в•ќ в–€в–€в•—
-   в•љв•ђв•ђв•ђв•ђв•ђв•ђв•ќв•љв•ђв•ќ  в•љв•ђв•ќ   в•љв•ђв•ќ   в•љв•ђв•ќ  в•љв•ђв•ќв•љв•ђв•ќ  в•љв•ђв•ќ    в•љв•ђв•ђв•ђв•ђв•ђв•ђв•ќв•љв•ђв•ђв•ђв•ђв•ђв•ђв•ќв•љв•ђв•ќ     в•љв•ђв•ќ    в•љв•ђв•ќ  в•љв•ђв•ќ
+   ███████╗██╗  ██╗████████╗██████╗  █████╗     ██╗     ██╗     ████╗   ████╗    ██╗  ██╗
+   ██╔════╝╚██╗██╔╝╚══██╔══╝██╔══██╗██╔══██╗    ██║     ██║     ████║   ████║    ╚██╗██╔╝
+   █████╗   ╚███╔╝    ██║   ██████╔╝███████║    ██║     ██║     ██╔████╔██║     ╚███╔╝ 
+   ██╔══╝   ██╔██╗    ██║   ██╔══██╗██╔══██║    ██║     ██║     ██║╚██╔╝██║     ██╔██╗ 
+   ███████╗██╔╝ ██╗   ██║   ██║  ██║██║  ██║    ███████╗███████╗██║ ╚═╝ ██║    ██╔╝ ██╗
+   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝    ╚══════╝╚══════╝╚═╝     ╚═╝    ╚═╝  ╚═╝
   ==============================================================
-   вљЎ EXTRA LLM X вЂ” 100% FREE AI GATEWAY HIGH-PERFORMANCE ZERO-COST AI GATEWAY вљЎ
+   ⚡ EXTRA LLM X — 100% FREE AI GATEWAY HIGH-PERFORMANCE ZERO-COST AI GATEWAY ⚡
   ==============================================================
-   рџљЂ Dashboard UI       : http://localhost:${config.port}
-   рџ”Њ OpenAI API BaseURL : http://localhost:${config.port}/v1
-   рџ”‘ Default Client Key : elx-live-master-free-hub
-   рџ¤– Multi-Provider Engine: Ready out-of-the-box!
+   🚀 Dashboard UI       : http://localhost:${config.port}
+   🔌 OpenAI API BaseURL : http://localhost:${config.port}/v1
+   🔑 Default Client Key : elx-live-master-free-hub
+   🤖 Multi-Provider Engine: Ready out-of-the-box!
   ==============================================================
   `);
 
@@ -85,3 +85,15 @@ app.listen(config.port, config.host, async () => {
   }
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[Extra LLM X] ❌ Error: Port ${config.port} is already in use by another running instance or process.`);
+    console.error(`[Extra LLM X] 👉 To stop whatever is using port ${config.port} on Windows PowerShell, run:`);
+    console.error(`   Get-NetTCPConnection -LocalPort ${config.port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`);
+    console.error(`[Extra LLM X] 👉 Or start on an alternate port:`);
+    console.error(`   $env:PORT="3001"; npm start\n`);
+    process.exit(1);
+  } else {
+    throw err;
+  }
+});
