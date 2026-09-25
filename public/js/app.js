@@ -29,7 +29,7 @@ async function quickGenerateRandomKey() {
 
 /**
  * Extra LLM X вЂ” Core Frontend Engine
- * Enterprise multi-provider gateway controller
+ * Extra LLM X Multi-Provider Gateway Controller
  */
 
 const state = {
@@ -223,7 +223,7 @@ function renderProviders() {
   const dirMap = new Map((state.directory || []).map(d => [d.id, d]));
   
   // Merge: all 70+ native adapters first with active status, then 400+ directory entries
-  const combined = [];
+  let combined = [];
   const seenIds = new Set();
 
   for (const portal of (state.providers || [])) {

@@ -71,7 +71,7 @@ while (PROVIDERS_400.length < 400) {
   const num = PROVIDERS_400.length + 1;
   PROVIDERS_400.push({
     id: `custom-provider-${num}`,
-    name: `Enterprise AI Endpoint #${num}`,
+    name: `Extra LLM Free Endpoint #${num}`,
     category: "Custom OpenAI-Compatible Provider",
     freeTier: "Configurable Custom API Key / Free Gateway",
     url: `https://ai-hub-${num}.network`,
