@@ -1,5 +1,10 @@
 node_modules/
 data/
 *.log
+*.db
+*.sqlite
+*.sqlite3
+.env
 .DS_Store
 Thumbs.db
+

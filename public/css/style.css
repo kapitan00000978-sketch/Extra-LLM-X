@@ -2955,3 +2955,41 @@ body.theme-light .glow-bg-bottom {
   background: var(--accent-cyan);
   color: #0b0f19;
 }
+
+/* Inline Spinner for Auto-Discover Buttons */
+.spinner-sm {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--accent-cyan);
+  border-radius: 50%;
+  animation: spin-sm 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin-sm {
+  to { transform: rotate(360deg); }
+}
+
+/* Auto-Discover Result Styles */
+.modal-test-output.success {
+  background: rgba(0, 245, 212, 0.08);
+  border: 1px solid rgba(0, 245, 212, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.modal-test-output.error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  color: #ef4444;
+  line-height: 1.5;
+}
+

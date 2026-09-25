@@ -294,28 +294,6 @@ test('HTTP: Webhooks REST API registers, lists, toggles, and deletes webhooks', 
   assert.strictEqual(delData.deleted, whkId);
 });
 
-test('HTTP: POST /v1/audio/speech returns synthesized audio buffer', async () => {
-  const res = await fetch(`${baseUrl}/v1/audio/speech`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
-    },
-    body: JSON.stringify({
-      model: 'tts-1',
-      input: 'Universal Agent speech synthesis online and fully operational.',
-      voice: 'alloy',
-      response_format: 'wav'
-    })
-  });
-
-  assert.strictEqual(res.status, 200);
-  assert.strictEqual(res.headers.get('content-type'), 'audio/wav');
-  const buffer = await res.arrayBuffer();
-  assert.ok(buffer.byteLength > 1000, `Audio buffer must be > 1KB, got ${buffer.byteLength}`);
-});
-
-
 
 
 

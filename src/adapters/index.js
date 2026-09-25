@@ -1,3 +1,5 @@
+import { PuterAdapter } from './puter.js';
+import { KiloAdapter } from './kilo.js';
 import { OpenRouterAdapter } from './openrouter.js';
 import { GroqAdapter } from './groq.js';
 import { GeminiAdapter } from './gemini.js';
@@ -21,8 +23,6 @@ import { AimlApiAdapter } from './aimlapi.js';
 import { ChutesAdapter } from './chutes.js';
 import { OpenCodeAdapter } from './opencode.js';
 import { PollinationsAdapter } from './pollinations.js';
-import { KiloAdapter } from './kilo.js';
-import { PuterAdapter } from './puter.js';
 import { OllamaAdapter } from './ollama.js';
 import { LMStudioAdapter } from './lmstudio.js';
 import { MockDemoAdapter } from './mock.js';
@@ -36,9 +36,9 @@ class AdapterRegistry {
 
   initDefaultAdapters() {
     this.register(new OpenCodeAdapter());
-    this.register(new PollinationsAdapter());
-    this.register(new KiloAdapter());
     this.register(new PuterAdapter());
+    this.register(new KiloAdapter());
+    this.register(new PollinationsAdapter());
     this.register(new OpenRouterAdapter());
     this.register(new GroqAdapter());
     this.register(new GeminiAdapter());
@@ -82,7 +82,7 @@ class AdapterRegistry {
     return this.getAll().map(a => {
       const providerKeys = keys.filter(k => k.provider === a.id);
       const activeKeys = providerKeys.filter(k => k.active === 1);
-      const isNoAuth = Boolean(a.isNoAuth) || a.id === 'ollama' || a.id === 'lmstudio' || a.id === 'mock' || a.id === 'opencode' || a.id === 'pollinations' || a.id === 'kilo' || a.id === 'puter';
+      const isNoAuth = a.id === 'ollama' || a.id === 'lmstudio' || a.id === 'mock' || a.id === 'opencode' || a.id === 'pollinations' || a.id === 'puter' || a.id === 'kilo';
 
       return {
         id: a.id,

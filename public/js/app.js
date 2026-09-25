@@ -1481,7 +1481,7 @@ async function loadRankings() {
       if (elTotal) elTotal.textContent = summary.totalCuratedFreeModels ? `${summary.totalCuratedFreeModels}+` : '523+';
       if (elActive) elActive.textContent = summary.activeFreeModels ? `${summary.activeFreeModels}+` : '600+';
       if (elZero) elZero.textContent = summary.zeroKeyProviders ?? '5';
-      if (elCap) elCap.textContent = summary.monthlyCapacityPool || '1.5B+';
+      if (elCap) elCap.textContent = summary.monthlyCapacityPool || '5B+';
     }
 
     if (rankRes.ok) {
@@ -1736,24 +1736,65 @@ async function saveModalProviderKey() {
     return;
   }
 
+  const saveBtn = document.getElementById('btn-modal-save-key');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span class="spinner-sm"></span> Auto-Discovering...';
+  }
+
   try {
-    const res = await fetch(`${API_BASE}/api/providers/keys`, {
+    // Use auto-discover for the full pipeline
+    const res = await fetch(`${API_BASE}/api/providers/auto-discover`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, apiKey, label })
+      body: JSON.stringify({ provider, apiKey, label: label || `${provider} Key` })
     });
 
-    if (res.ok) {
-      showToast(`Key saved for ${provider.toUpperCase()}!`, 'success');
-      document.getElementById('modal-add-key').classList.remove('active');
+    const data = await res.json();
+
+    if (data.success) {
+      // Show detailed success in the test output area
+      const outputEl = document.getElementById('modal-test-output');
+      if (outputEl) {
+        outputEl.classList.remove('hidden');
+        outputEl.className = 'modal-test-output success';
+        const modelList = (data.modelsRegistered || []).slice(0, 5).map(m => m.display_name || m.model_id).join(', ');
+        const moreCount = (data.modelsDiscovered || 0) > 5 ? ` +${data.modelsDiscovered - 5} more` : '';
+        outputEl.innerHTML = `
+          <div style="margin-bottom:0.5rem;font-weight:600;">✅ ${provider.toUpperCase()} Activated!</div>
+          <div>🧪 Test: <strong>${data.testedModel || 'OK'}</strong> (${data.testLatencyMs || 0}ms)</div>
+          <div>📦 Models Discovered: <strong>${data.modelsDiscovered || 0}</strong></div>
+          <div style="font-size:0.8rem;opacity:0.8;margin-top:0.3rem;">${modelList}${moreCount}</div>
+          <div>💾 Key Saved: <strong>${data.keySaved ? 'Yes' : 'No'}</strong></div>
+        `;
+      }
+
+      showToast(`${provider.toUpperCase()}: ${data.modelsDiscovered} free model activated!`, 'success');
+      
+      // Refresh providers and models
       loadProviders();
       loadModels();
+
+      // Close modal after a short delay so user sees the results
+      setTimeout(() => {
+        document.getElementById('modal-add-key').classList.remove('active');
+      }, 2500);
     } else {
-      const err = await res.json();
-      showToast('Error: ' + err.error, 'error');
+      const outputEl = document.getElementById('modal-test-output');
+      if (outputEl) {
+        outputEl.classList.remove('hidden');
+        outputEl.className = 'modal-test-output error';
+        outputEl.textContent = `❌ ${data.message || data.error || 'Activation failed'}`;
+      }
+      showToast('Error: ' + (data.message || data.error), 'error');
     }
   } catch (err) {
     showToast('Failed to save key: ' + err.message, 'error');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '💾 Auto-Discover & Save';
+    }
   }
 }
 
@@ -1767,28 +1808,85 @@ async function testModalProviderKey() {
     return;
   }
 
+  const testBtn = document.getElementById('btn-modal-test-key');
+  if (testBtn) {
+    testBtn.disabled = true;
+    testBtn.innerHTML = '<span class="spinner-sm"></span> Testing & Discovering...';
+  }
+
   outputEl.classList.remove('hidden');
   outputEl.className = 'modal-test-output';
-  outputEl.textContent = 'Testing connection with live inference...';
+  outputEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      <span class="spinner-sm"></span>
+      <span>Phase 1/3: Validating API key...</span>
+    </div>
+  `;
 
   try {
-    const res = await fetch(`${API_BASE}/api/providers/test`, {
+    const res = await fetch(`${API_BASE}/api/providers/auto-discover`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, apiKey })
+      body: JSON.stringify({
+        provider,
+        apiKey,
+        label: document.getElementById('modal-input-label').value.trim() || `${provider} Free Key`
+      })
     });
 
     const data = await res.json();
+
     if (data.success) {
+      const modelList = (data.modelsRegistered || []).slice(0, 8).map(m => {
+        const name = m.display_name || m.model_id;
+        const ctx = m.context_window ? ` (${Math.round(m.context_window / 1024)}K ctx)` : '';
+        return `<div style="padding:0.15rem 0;font-size:0.78rem;">  • ${name}${ctx}</div>`;
+      }).join('');
+      const moreCount = (data.modelsDiscovered || 0) > 8 ? `<div style="font-size:0.75rem;opacity:0.7;">  ... +${data.modelsDiscovered - 8} more models</div>` : '';
+
       outputEl.className = 'modal-test-output success';
-      outputEl.textContent = `✅ Connection OK! Model: ${data.testedModel} (${data.latencyMs}ms). Reply: "${data.reply}"`;
+      outputEl.innerHTML = `
+        <div style="margin-bottom:0.4rem;font-weight:700;font-size:1.05rem;">
+          ✅ ${provider.toUpperCase()} — Fully Activated!
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3rem 1rem;margin:0.4rem 0;">
+          <div>🧪 Inference Test:</div><div style="font-weight:600;">${data.testPassed ? 'PASSED' : 'SKIPPED'} (${data.testLatencyMs || 0}ms)</div>
+          <div>📦 Free Models Found:</div><div style="font-weight:600;">${data.modelsDiscovered || 0}</div>
+          <div>💾 Key Saved:</div><div style="font-weight:600;">${data.keySaved ? '✅ Yes' : '❌ No'}</div>
+          <div>⏱️ Total Time:</div><div style="font-weight:600;">${data.totalLatencyMs || 0}ms</div>
+        </div>
+        ${data.testReply ? `<div style="margin:0.3rem 0;font-size:0.8rem;opacity:0.85;">💬 Reply: "${data.testReply}"</div>` : ''}
+        <div style="margin-top:0.5rem;font-weight:600;font-size:0.85rem;">📋 Registered Models:</div>
+        ${modelList}${moreCount}
+      `;
+
+      showToast(`🚀 ${provider.toUpperCase()}: ${data.modelsDiscovered} free models auto-discovered and activated!`, 'success');
+      
+      // Refresh data
+      loadProviders();
+      loadModels();
+
+      // Close modal after user has time to read results
+      setTimeout(() => {
+        document.getElementById('modal-add-key').classList.remove('active');
+      }, 4000);
     } else {
       outputEl.className = 'modal-test-output error';
-      outputEl.textContent = `❌ Test Failed: ${data.error}`;
+      outputEl.innerHTML = `
+        <div style="font-weight:600;">❌ Activation Failed</div>
+        <div style="margin-top:0.3rem;font-size:0.85rem;">${data.message || data.error || 'Unknown error'}</div>
+        ${data.errors ? `<div style="margin-top:0.3rem;font-size:0.78rem;opacity:0.8;">${data.errors.join('<br>')}</div>` : ''}
+      `;
+      showToast(`${provider.toUpperCase()}: Test failed`, 'error');
     }
   } catch (err) {
     outputEl.className = 'modal-test-output error';
     outputEl.textContent = `❌ Error: ${err.message}`;
+  } finally {
+    if (testBtn) {
+      testBtn.disabled = false;
+      testBtn.innerHTML = '🧪 Test & Auto-Discover';
+    }
   }
 }
 

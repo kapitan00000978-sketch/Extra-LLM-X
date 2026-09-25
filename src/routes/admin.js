@@ -62,7 +62,7 @@ adminRouter.get('/free-tier/summary', (req, res) => {
       totalFreeProviders: portals.length,
       activeProviders: readyPortals.length,
       zeroKeyProviders: portals.filter(p => p.isNoAuth).length,
-      monthlyCapacityPool: '1.5B+ Free Tokens/Month ($0.00)',
+      monthlyCapacityPool: '5B+ Free Tokens/Month ($0.00)',
       architecture: 'OmniRoute-Compatible Free Autopilot'
     });
   } catch (err) {
@@ -251,6 +251,60 @@ adminRouter.post('/providers/test', async (req, res) => {
       success: false,
       error: err.message,
       latencyMs: Date.now() - startTime
+    });
+  }
+});
+
+/**
+ * POST /api/providers/auto-discover
+ * 
+ * Full automated pipeline:
+ *   1. Validate the API key with a live inference test
+ *   2. Discover all available free models from the provider
+ *   3. Save the key to the database
+ *   4. Register all discovered models in the model store
+ *   5. Return comprehensive results
+ *
+ * Body: { provider: string, apiKey: string, label?: string }
+ * 
+ * This is the core "paste key → everything works" endpoint.
+ */
+adminRouter.post('/providers/auto-discover', async (req, res) => {
+  const { provider, apiKey, label } = req.body;
+  if (!provider || !apiKey) {
+    return res.status(400).json({ error: 'Provider and apiKey are required.' });
+  }
+
+  try {
+    const result = await discoveryEngine.testAndActivateKey(provider, apiKey, label);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        provider: result.provider,
+        testPassed: result.testPassed,
+        testedModel: result.testedModel,
+        testReply: result.testReply,
+        testLatencyMs: result.testLatencyMs,
+        totalLatencyMs: result.totalLatencyMs,
+        modelsDiscovered: result.modelsDiscovered,
+        modelsRegistered: result.modelsRegistered,
+        keySaved: result.keySaved,
+        keyRecord: result.keyRecord,
+        message: `✅ ${result.provider.toUpperCase()} activated! ${result.modelsDiscovered} free models discovered and registered.`
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        provider: result.provider,
+        errors: result.errors,
+        message: `❌ Failed to activate ${result.provider}: ${result.errors.join('; ')}`
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });

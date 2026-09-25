@@ -41,6 +41,8 @@ export const VirtualCombos = {
       { provider: 'nvidia', model: 'meta/llama-3.3-70b-instruct' },
       { provider: 'aimlapi', model: 'Qwen/Qwen2.5-72B-Instruct' },
       { provider: 'openrouter', model: 'qwen/qwen-2.5-coder-32b-instruct:free' },
+      { provider: 'kilo', model: 'qwen-2.5-coder-32b' },
+      { provider: 'puter', model: 'claude-3-5-sonnet' },
       { provider: 'groq', model: 'qwen-2.5-32b' },
       { provider: 'gemini', model: 'gemini-2.0-flash' },
       { provider: 'github', model: 'gpt-4o' },
