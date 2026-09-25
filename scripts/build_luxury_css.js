@@ -1,4 +1,12 @@
-/* ==========================================================================
+﻿import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+const cssContent = `/* ==========================================================================
    EXTRA LLM X — ENTERPRISE DEVELOPER DESIGN SYSTEM
    Standard: Linear / Vercel / Supabase Dark Mode Architecture
    ========================================================================== */
@@ -1164,3 +1172,7 @@ body {
     justify-content: space-between;
   }
 }
+`;
+
+fs.writeFileSync(path.join(rootDir, 'public', 'css', 'style.css'), cssContent, 'utf8');
+console.log('Silicon Valley grade style.css created!');

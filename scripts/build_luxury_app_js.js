@@ -1,4 +1,12 @@
-/**
+﻿import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+const appJs = `/**
  * Extra LLM X — Core Frontend Engine
  * Enterprise multi-provider gateway controller
  */
@@ -83,10 +91,10 @@ async function loadStats() {
     const data = await res.json();
     
     if (document.getElementById('stat-total-savings')) {
-      document.getElementById('stat-total-savings').textContent = `$${(data.estimatedSavingsUsd || 0).toFixed(2)}`;
+      document.getElementById('stat-total-savings').textContent = \`$\${(data.estimatedSavingsUsd || 0).toFixed(2)}\`;
     }
     if (document.getElementById('stat-active-models')) {
-      document.getElementById('stat-active-models').textContent = `${data.activeFreeModels || 725}+`;
+      document.getElementById('stat-active-models').textContent = \`\${data.activeFreeModels || 725}+\`;
     }
   } catch (err) {
     console.warn('[Stats] Load error:', err);
@@ -116,20 +124,20 @@ function renderCombos() {
     { name: 'extra/free-vision', title: 'Multimodal Vision', desc: 'Image analysis, diagram inspection, and visual reasoning (Gemini 2.0 Flash, Grok 2 Vision, GPT-4o Mini).', badge: 'Vision' }
   ];
 
-  container.innerHTML = defaultCombos.map(c => `
-    <div class="combo-card">
-      <div class="combo-header">
-        <span class="combo-name">${c.name}</span>
-        <span class="badge-neon">${c.badge}</span>
+  container.innerHTML = defaultCombos.map(c => \`
+    <div class=\"combo-card\">
+      <div class=\"combo-header\">
+        <span class=\"combo-name\">\${c.name}</span>
+        <span class=\"badge-neon\">\${c.badge}</span>
       </div>
-      <h4>${c.title}</h4>
-      <p>${c.desc}</p>
-      <div class="combo-actions">
-        <button class="btn-copy-sm" onclick="copyToClipboard('${c.name}', 'Model identifier copied!')">Copy ID</button>
-        <button class="btn-test-sm" onclick="testComboInPlayground('${c.name}')">Test in Studio</button>
+      <h4>\${c.title}</h4>
+      <p>\${c.desc}</p>
+      <div class=\"combo-actions\">
+        <button class=\"btn-copy-sm\" onclick=\"copyToClipboard('\${c.name}', 'Model identifier copied!')\">Copy ID</button>
+        <button class=\"btn-test-sm\" onclick=\"testComboInPlayground('\${c.name}')\">Test in Studio</button>
       </div>
     </div>
-  `).join('');
+  \`).join('');
 }
 
 async function loadProviders() {
@@ -154,7 +162,7 @@ async function loadProviders() {
 
 function updateProviderCounts() {
   const badge = document.getElementById('badge-providers-count');
-  if (badge) badge.textContent = `${state.directory.length || 400}+`;
+  if (badge) badge.textContent = \`\${state.directory.length || 400}+\`;
 }
 
 function renderProviders() {
@@ -191,7 +199,7 @@ function renderProviders() {
   }
 
   if (combined.length === 0) {
-    grid.innerHTML = `<div class="empty-state">No providers found matching "${filterText}".</div>`;
+    grid.innerHTML = \`<div class=\"empty-state\">No providers found matching \"\${filterText}\".</div>\`;
     return;
   }
 
@@ -200,32 +208,32 @@ function renderProviders() {
     const isNoAuth = p.isNoAuth || p.id === 'puter' || p.id === 'pollinations' || p.id === 'opencode' || p.id === 'kilo' || p.id === 'ollama' || p.id === 'lmstudio';
 
     let statusBadge = isConfigured 
-      ? `<span class="status-pill status-online">● Connected (${p.keyCount || p.keys?.length || 1})</span>`
+      ? \`<span class=\"status-pill status-online\">● Connected (\${p.keyCount || p.keys?.length || 1})</span>\`
       : isNoAuth
-      ? `<span class="status-pill status-zero">● Zero-Key (Public)</span>`
-      : `<span class="status-pill status-offline">○ Ready</span>`;
+      ? \`<span class=\"status-pill status-zero\">● Zero-Key (Public)</span>\`
+      : \`<span class=\"status-pill status-offline\">○ Ready</span>\`;
 
-    return `
-      <div class="provider-card">
-        <div class="provider-header">
-          <div class="provider-title-wrap">
-            <h4 class="provider-title">${p.name}</h4>
-            <span class="badge-cyan">${p.category || p.badge || 'Cloud AI'}</span>
+    return \`
+      <div class=\"provider-card\">
+        <div class=\"provider-header\">
+          <div class=\"provider-title-wrap\">
+            <h4 class=\"provider-title\">\${p.name}</h4>
+            <span class=\"badge-cyan\">\${p.category || p.badge || 'Cloud AI'}</span>
           </div>
-          ${statusBadge}
+          \${statusBadge}
         </div>
-        <p class="provider-desc">${p.freeTierInfo || p.freeTier || 'Free Developer Access'}</p>
-        <div class="provider-models-preview">
-          ${(p.popularModels || []).slice(0, 3).map(m => `<span class="model-tag">${m}</span>`).join('')}
+        <p class=\"provider-desc\">\${p.freeTierInfo || p.freeTier || 'Free Developer Access'}</p>
+        <div class=\"provider-models-preview\">
+          \${(p.popularModels || []).slice(0, 3).map(m => \`<span class=\"model-tag\">\${m}</span>\`).join('')}
         </div>
-        <div class="provider-actions">
-          ${p.getKeyUrl ? `<a href="${p.getKeyUrl}" target="_blank" class="btn-portal">Official Portal ↗</a>` : ''}
-          <button class="btn-add-key" onclick="openKeyModal('${p.id}', '${p.name}', '${p.getKeyUrl || ''}', '${p.guide || ''}')">
-            ${isConfigured ? 'Manage Key' : '+ Connect Key'}
+        <div class=\"provider-actions\">
+          \${p.getKeyUrl ? \`<a href=\"\${p.getKeyUrl}\" target=\"_blank\" class=\"btn-portal\">Official Portal ↗</a>\` : ''}
+          <button class=\"btn-add-key\" onclick=\"openKeyModal('\${p.id}', '\${p.name}', '\${p.getKeyUrl || ''}', '\${p.guide || ''}')\">
+            \${isConfigured ? 'Manage Key' : '+ Connect Key'}
           </button>
         </div>
       </div>
-    `;
+    \`;
   }).join('');
 }
 
@@ -254,15 +262,15 @@ async function loadModels() {
     state.models = await res.json();
     
     const countBadge = document.getElementById('badge-models-count');
-    if (countBadge) countBadge.textContent = `${state.models.length}+`;
+    if (countBadge) countBadge.textContent = \`\${state.models.length}+\`;
     const statModels = document.getElementById('stat-active-models');
-    if (statModels) statModels.textContent = `${state.models.length}+`;
+    if (statModels) statModels.textContent = \`\${state.models.length}+\`;
     
     const select = document.getElementById('select-model-provider-filter');
     if (select) {
       const providers = Array.from(new Set(state.models.map(m => m.provider))).sort();
-      select.innerHTML = '<option value="all">All Providers</option>' + 
-        providers.map(p => `<option value="${p}">${p.toUpperCase()}</option>`).join('');
+      select.innerHTML = '<option value=\"all\">All Providers</option>' + 
+        providers.map(p => \`<option value=\"\${p}\">\${p.toUpperCase()}</option>\`).join('');
     }
 
     renderModels();
@@ -291,23 +299,23 @@ function renderModels() {
   }
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No models found matching your search.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan=\"7\" class=\"text-center py-4 text-muted\">No models found matching your search.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = filtered.slice(0, 100).map(m => `
+  tbody.innerHTML = filtered.slice(0, 100).map(m => \`
     <tr>
-      <td><strong>${m.display_name || m.model_id}</strong></td>
-      <td><span class="badge-cyan">${m.provider}</span></td>
-      <td><code>${m.model_id}</code></td>
-      <td>${m.context_window ? m.context_window.toLocaleString() + ' tokens' : '8,192 tokens'}</td>
-      <td><span class="badge-purple">${m.capabilities || 'chat'}</span></td>
-      <td><span class="badge-neon">$0.00 Free</span></td>
+      <td><strong>\${m.display_name || m.model_id}</strong></td>
+      <td><span class=\"badge-cyan\">\${m.provider}</span></td>
+      <td><code>\${m.model_id}</code></td>
+      <td>\${m.context_window ? m.context_window.toLocaleString() + ' tokens' : '8,192 tokens'}</td>
+      <td><span class=\"badge-purple\">\${m.capabilities || 'chat'}</span></td>
+      <td><span class=\"badge-neon\">$0.00 Free</span></td>
       <td>
-        <button class="btn-copy-sm" onclick="testModelInPlayground('${m.provider}/${m.model_id}')">Test</button>
+        <button class=\"btn-copy-sm\" onclick=\"testModelInPlayground('\${m.provider}/\${m.model_id}')\">Test</button>
       </td>
     </tr>
-  `).join('');
+  \`).join('');
 }
 
 async function triggerFullScan() {
@@ -315,7 +323,7 @@ async function triggerFullScan() {
   try {
     const res = await fetch('/api/providers/scan', { method: 'POST' });
     const data = await res.json();
-    showToast(`Scan complete! Discovered ${data.totalDiscovered || 0} models.`, 'success');
+    showToast(\`Scan complete! Discovered \${data.totalDiscovered || 0} models.\`, 'success');
     await loadModels();
   } catch (err) {
     showToast('Scan failed: ' + err.message, 'error');
@@ -341,28 +349,28 @@ function renderSystemKeys() {
   if (!tbody) return;
 
   if (state.systemKeys.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No client keys created yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan=\"5\" class=\"text-center py-4 text-muted\">No client keys created yet.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = state.systemKeys.map(k => `
+  tbody.innerHTML = state.systemKeys.map(k => \`
     <tr>
-      <td><strong>${k.name}</strong></td>
-      <td><code>${k.key.slice(0, 10)}...</code></td>
-      <td>${k.rate_limit_rpm} RPM</td>
-      <td>${k.request_count || 0} requests</td>
+      <td><strong>\${k.name}</strong></td>
+      <td><code>\${k.key.slice(0, 10)}...</code></td>
+      <td>\${k.rate_limit_rpm} RPM</td>
+      <td>\${k.request_count || 0} requests</td>
       <td>
-        <button class="btn-copy-sm" onclick="copyToClipboard('${k.key}', 'API Key copied to clipboard!')">Copy</button>
-        <button class="btn-delete-sm" onclick="deleteSystemKey('${k.key}')">Revoke</button>
+        <button class=\"btn-copy-sm\" onclick=\"copyToClipboard('\${k.key}', 'API Key copied to clipboard!')\">Copy</button>
+        <button class=\"btn-delete-sm\" onclick=\"deleteSystemKey('\${k.key}')\">Revoke</button>
       </td>
     </tr>
-  `).join('');
+  \`).join('');
 }
 
 async function deleteSystemKey(key) {
   if (!confirm('Are you sure you want to revoke this API key?')) return;
   try {
-    const res = await fetch(`/api/system-keys/${encodeURIComponent(key)}`, { method: 'DELETE' });
+    const res = await fetch(\`/api/system-keys/\${encodeURIComponent(key)}\`, { method: 'DELETE' });
     if (res.ok) {
       showToast('API Key revoked successfully', 'success');
       loadSystemKeys();
@@ -406,8 +414,8 @@ function initModals() {
 
 window.openKeyModal = function(id, name, getUrl, guide) {
   state.selectedProviderForModal = id;
-  document.getElementById('modal-provider-title').textContent = `Connect ${name} Key`;
-  document.getElementById('modal-provider-guide').textContent = guide || `Enter your ${name} API key. Extra LLM X will validate it live and auto-discover models.`;
+  document.getElementById('modal-provider-title').textContent = \`Connect \${name} Key\`;
+  document.getElementById('modal-provider-guide').textContent = guide || \`Enter your \${name} API key. Extra LLM X will validate it live and auto-discover models.\`;
   
   const link = document.getElementById('link-get-free-key');
   if (link && getUrl) {
@@ -444,7 +452,7 @@ async function saveProviderKey() {
     if (!res.ok) throw new Error(data.error || 'Failed to save key');
 
     document.getElementById('modal-provider-key').classList.remove('active');
-    showToast(`Key saved! Discovered ${data.modelsDiscovered || 0} models.`, 'success');
+    showToast(\`Key saved! Discovered \${data.modelsDiscovered || 0} models.\`, 'success');
     
     await loadProviders();
     await loadModels();
@@ -475,7 +483,7 @@ async function saveCustomProvider() {
     if (!res.ok) throw new Error(data.error || 'Failed to add custom provider');
 
     document.getElementById('modal-custom-provider').classList.remove('active');
-    showToast(`Custom provider '${name}' added successfully!`, 'success');
+    showToast(\`Custom provider '\${name}' added successfully!\`, 'success');
     
     await loadProviders();
     await loadModels();
@@ -530,14 +538,14 @@ function initPlayground() {
   document.getElementById('btn-clear-playground')?.addEventListener('click', () => {
     const container = document.getElementById('playground-messages');
     if (container) {
-      container.innerHTML = `
-        <div class="message-row assistant">
-          <div class="message-avatar">AI</div>
-          <div class="message-bubble">
+      container.innerHTML = \`
+        <div class=\"message-row assistant\">
+          <div class=\"message-avatar\">AI</div>
+          <div class=\"message-bubble\">
             <p>Session cleared. Ready for your prompt.</p>
           </div>
         </div>
-      `;
+      \`;
     }
   });
 }
@@ -552,7 +560,7 @@ window.testModelInPlayground = function(modelId) {
   switchTab('tab-playground');
   const select = document.getElementById('select-playground-model');
   if (select) {
-    let opt = select.querySelector(`option[value="${modelId}"]`);
+    let opt = select.querySelector(\`option[value=\"\${modelId}\"]\`);
     if (!opt) {
       opt = document.createElement('option');
       opt.value = modelId;
@@ -574,14 +582,14 @@ async function sendPlaygroundMessage() {
 
   const userRow = document.createElement('div');
   userRow.className = 'message-row user';
-  userRow.innerHTML = `<div class="message-bubble"><p>${escapeHtml(text)}</p></div>`;
+  userRow.innerHTML = \`<div class=\"message-bubble\"><p>\${escapeHtml(text)}</p></div>\`;
   container.appendChild(userRow);
   input.value = '';
   container.scrollTop = container.scrollHeight;
 
   const assistantRow = document.createElement('div');
   assistantRow.className = 'message-row assistant';
-  assistantRow.innerHTML = `<div class="message-avatar">AI</div><div class="message-bubble"><p class="text-tertiary">Thinking...</p></div>`;
+  assistantRow.innerHTML = \`<div class=\"message-avatar\">AI</div><div class=\"message-bubble\"><p class=\"text-tertiary\">Thinking...</p></div>\`;
   container.appendChild(assistantRow);
   container.scrollTop = container.scrollHeight;
 
@@ -617,7 +625,7 @@ async function sendPlaygroundMessage() {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
+        const lines = buffer.split('\\n');
         buffer = lines.pop() || '';
 
         for (const line of lines) {
@@ -640,7 +648,7 @@ async function sendPlaygroundMessage() {
       bubbleP.textContent = data.choices?.[0]?.message?.content || 'No response content.';
     }
   } catch (err) {
-    bubbleP.innerHTML = `<span style="color: var(--accent-rose)">Error: ${escapeHtml(err.message)}</span>`;
+    bubbleP.innerHTML = \`<span style=\"color: var(--accent-rose)\">Error: \${escapeHtml(err.message)}</span>\`;
   }
 }
 
@@ -663,27 +671,27 @@ function renderBenchmarks(rankings) {
   const tableBody = document.getElementById('rankings-table-body');
 
   if (podiumContainer && rankings.length > 0) {
-    podiumContainer.innerHTML = rankings.slice(0, 4).map((p, idx) => `
-      <div class="stat-card">
-        <div class="stat-label">#${idx + 1} ${p.provider.toUpperCase()}</div>
-        <div class="stat-value">${Math.round(p.speed_tok_per_sec || 500)} <span class="stat-unit">tok/s</span></div>
-        <div class="stat-meta text-muted">TTFT: ${Math.round(p.ttft_ms || 120)}ms</div>
+    podiumContainer.innerHTML = rankings.slice(0, 4).map((p, idx) => \`
+      <div class=\"stat-card\">
+        <div class=\"stat-label\">#\${idx + 1} \${p.provider.toUpperCase()}</div>
+        <div class=\"stat-value\">\${Math.round(p.speed_tok_per_sec || 500)} <span class=\"stat-unit\">tok/s</span></div>
+        <div class=\"stat-meta text-muted\">TTFT: \${Math.round(p.ttft_ms || 120)}ms</div>
       </div>
-    `).join('');
+    \`).join('');
   }
 
   if (tableBody) {
-    tableBody.innerHTML = rankings.map((p, idx) => `
+    tableBody.innerHTML = rankings.map((p, idx) => \`
       <tr>
-        <td><strong>#${idx + 1}</strong></td>
-        <td><strong>${p.provider.toUpperCase()}</strong></td>
-        <td>${Math.round(p.speed_tok_per_sec || 450)} tok/s</td>
-        <td>${Math.round(p.ttft_ms || 150)}ms</td>
-        <td><span class="status-pill status-online">99.9%</span></td>
-        <td><span class="badge-neon">Free Tier</span></td>
-        <td><span class="status-pill status-online">Operational</span></td>
+        <td><strong>#\${idx + 1}</strong></td>
+        <td><strong>\${p.provider.toUpperCase()}</strong></td>
+        <td>\${Math.round(p.speed_tok_per_sec || 450)} tok/s</td>
+        <td>\${Math.round(p.ttft_ms || 150)}ms</td>
+        <td><span class=\"status-pill status-online\">99.9%</span></td>
+        <td><span class=\"badge-neon\">Free Tier</span></td>
+        <td><span class=\"status-pill status-online\">Operational</span></td>
       </tr>
-    `).join('');
+    \`).join('');
   }
 }
 
@@ -715,21 +723,21 @@ function renderLogs() {
   if (!tbody) return;
 
   if (state.logs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No telemetry recorded yet. Send a request to see live logs.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan=\"7\" class=\"text-center py-4 text-muted\">No telemetry recorded yet. Send a request to see live logs.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = state.logs.slice(0, 50).map(l => `
+  tbody.innerHTML = state.logs.slice(0, 50).map(l => \`
     <tr>
-      <td>${new Date(l.timestamp).toLocaleTimeString()}</td>
-      <td><code>${l.requested_model}</code></td>
-      <td><span class="badge-cyan">${l.provider || 'router'}</span></td>
-      <td>${l.prompt_tokens} / ${l.completion_tokens}</td>
-      <td>${l.latency_ms}ms</td>
-      <td><span class="status-pill ${l.status_code === 200 ? 'status-online' : 'status-offline'}">${l.status_code}</span></td>
-      <td><span class="text-emerald">$${((l.prompt_tokens + l.completion_tokens) * 0.000005).toFixed(4)}</span></td>
+      <td>\${new Date(l.timestamp).toLocaleTimeString()}</td>
+      <td><code>\${l.requested_model}</code></td>
+      <td><span class=\"badge-cyan\">\${l.provider || 'router'}</span></td>
+      <td>\${l.prompt_tokens} / \${l.completion_tokens}</td>
+      <td>\${l.latency_ms}ms</td>
+      <td><span class=\"status-pill \${l.status_code === 200 ? 'status-online' : 'status-offline'}\">\${l.status_code}</span></td>
+      <td><span class=\"text-emerald\">$\${((l.prompt_tokens + l.completion_tokens) * 0.000005).toFixed(4)}</span></td>
     </tr>
-  `).join('');
+  \`).join('');
 }
 
 async function loadWebhooks() {
@@ -748,22 +756,22 @@ function renderWebhooks() {
   if (!container) return;
 
   if (state.webhooks.length === 0) {
-    container.innerHTML = '<div class="text-muted text-sm">No webhook endpoints configured.</div>';
+    container.innerHTML = '<div class=\"text-muted text-sm\">No webhook endpoints configured.</div>';
     return;
   }
 
-  container.innerHTML = state.webhooks.map(w => `
-    <div class="content-panel">
-      <div class="panel-header">
-        <h4>${w.url}</h4>
-        <span class="status-pill ${w.active ? 'status-online' : 'status-offline'}">${w.active ? 'Active' : 'Paused'}</span>
+  container.innerHTML = state.webhooks.map(w => \`
+    <div class=\"content-panel\">
+      <div class=\"panel-header\">
+        <h4>\${w.url}</h4>
+        <span class=\"status-pill \${w.active ? 'status-online' : 'status-offline'}\">\${w.active ? 'Active' : 'Paused'}</span>
       </div>
-      <p class="text-secondary text-sm">Events: <code>${w.events}</code></p>
-      <div class="mt-1">
-        <button class="btn-delete-sm" onclick="deleteWebhook('${w.id}')">Delete Endpoint</button>
+      <p class=\"text-secondary text-sm\">Events: <code>\${w.events}</code></p>
+      <div class=\"mt-1\">
+        <button class=\"btn-delete-sm\" onclick=\"deleteWebhook('\${w.id}')\">Delete Endpoint</button>
       </div>
     </div>
-  `).join('');
+  \`).join('');
 }
 
 function loadTelemetryAndStats() {
@@ -792,8 +800,8 @@ function showToast(message, type = 'info') {
   if (!container) return;
 
   const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  toast.innerHTML = `<span>${message}</span>`;
+  toast.className = \`toast toast-\${type}\`;
+  toast.innerHTML = \`<span>\${message}</span>\`;
   container.appendChild(toast);
 
   setTimeout(() => {
@@ -803,7 +811,7 @@ function showToast(message, type = 'info') {
 }
 
 function escapeHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');
 }
 
 function initShortcuts() {
@@ -815,3 +823,7 @@ function initShortcuts() {
     }
   });
 }
+`;
+
+fs.writeFileSync(path.join(rootDir, 'public', 'js', 'app.js'), appJs, 'utf8');
+console.log('Silicon Valley grade app.js created!');

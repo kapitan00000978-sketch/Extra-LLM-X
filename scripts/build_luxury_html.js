@@ -1,4 +1,12 @@
-<!DOCTYPE html>
+﻿import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+const indexHtml = `<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
@@ -330,7 +338,10 @@ Fallback Model  : extra/auto-free</code></pre>
           </div>
           <p class="text-secondary text-sm">Standard OpenAI-compliant chat completions endpoint.</p>
           <div class="code-box-display">
-            <pre><code>curl http://localhost:3000/v1/chat/completions   -H "Content-Type: application/json"   -H "Authorization: Bearer elx-live-master-free-hub"   -d '{
+            <pre><code>curl http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer elx-live-master-free-hub" \
+  -d '{
     "model": "extra/auto-free",
     "messages": [{"role": "user", "content": "Explain async queues in 2 lines."}]
   }'</code></pre>
@@ -569,4 +580,7 @@ Fallback Model  : extra/auto-free</code></pre>
 
   <script src="/js/app.js"></script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(path.join(rootDir, 'public', 'index.html'), indexHtml, 'utf8');
+console.log('Silicon Valley grade index.html created!');
