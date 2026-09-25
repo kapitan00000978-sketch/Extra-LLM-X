@@ -8,6 +8,7 @@ import { responseCache } from '../engine/cache.js';
 import { routerEngine } from '../engine/router.js';
 import { benchmarkEngine } from '../engine/benchmarking.js';
 import { OMNIROUTE_FREE_MODELS } from '../catalog/omniroute_catalog.js';
+import { PROVIDERS_400 } from '../catalog/providers_400.js';
 
 export const adminRouter = express.Router();
 
@@ -145,6 +146,63 @@ adminRouter.post('/health-check/provider/:id', async (req, res) => {
   try {
     const result = await healthCheckEngine.checkProvider(req.params.id);
     res.json({ success: true, result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.get('/providers/directory', (req, res) => {
+  try {
+    const keys = KeyStore.getAllProviderKeys();
+    const activeProviderIds = new Set(keys.filter(k => k.active === 1).map(k => k.provider));
+    const result = PROVIDERS_400.map(p => ({
+      ...p,
+      hasKey: activeProviderIds.has(p.id),
+      keyCount: keys.filter(k => k.provider === p.id).length
+    }));
+    res.json({ total: result.length, providers: result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.post('/providers/custom', async (req, res) => {
+  try {
+    const { name, baseUrl, apiKey, id } = req.body;
+    if (!name || !apiKey) {
+      return res.status(400).json({ error: 'Provider name and apiKey are required.' });
+    }
+    const providerId = id || name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const savedKey = KeyStore.addProviderKey(providerId, apiKey, name);
+    
+    let discovered = 0;
+    if (baseUrl) {
+      try {
+        const resp = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` },
+          signal: AbortSignal.timeout(5000)
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const list = data.data || data.models || [];
+          for (const m of list) {
+            const mId = m.id || m.name;
+            if (mId) {
+              ModelStore.saveModel({
+                provider: providerId,
+                model_id: mId,
+                display_name: `${name} ${mId}`,
+                description: `Discovered from custom endpoint ${baseUrl}`,
+                is_free: 1
+              });
+              discovered++;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    
+    res.json({ success: true, providerId, keyId: savedKey.id, modelsDiscovered: discovered });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -565,6 +623,7 @@ adminRouter.post('/agent/simulate', async (req, res) => {
     });
   }
 });
+
 
 
 

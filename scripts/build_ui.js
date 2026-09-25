@@ -1,4 +1,12 @@
-<!DOCTYPE html>
+﻿import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+
+const indexHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -351,7 +359,10 @@ Fallback Model  : extra/auto-free</code></pre>
             <h3>Direct HTTP Request</h3>
             <p>Execute standard OpenAI-compatible completions:</p>
             <div class="code-snippet-box">
-              <pre><code id="code-curl">curl http://localhost:3000/v1/chat/completions   -H "Content-Type: application/json"   -H "Authorization: Bearer elx-live-master-free-hub"   -d '{
+              <pre><code id="code-curl">curl http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer elx-live-master-free-hub" \
+  -d '{
     "model": "extra/auto-free",
     "messages": [{"role": "user", "content": "Explain quantum computing in 2 lines."}]
   }'</code></pre>
@@ -622,4 +633,7 @@ POST /v1/audio/transcriptions</code></pre>
 
   <script src="/js/app.js"></script>
 </body>
-</html>
+</html>`;
+
+fs.writeFileSync(path.join(rootDir, 'public', 'index.html'), indexHtml, 'utf8');
+console.log('index.html written successfully in UTF-8');
