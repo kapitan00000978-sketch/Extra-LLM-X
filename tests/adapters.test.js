@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import { adapterRegistry } from '../src/adapters/index.js';
 
@@ -83,3 +83,4 @@ test('BaseAdapter: parses Retry-After and x-ratelimit-reset headers accurately',
   const cd3 = base.parseCooldownSeconds({}, 60);
   assert.strictEqual(cd3, 60);
 });
+

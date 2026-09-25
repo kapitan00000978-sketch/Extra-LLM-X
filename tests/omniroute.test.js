@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import { OMNIROUTE_FREE_MODELS as omnirouteCatalog } from '../src/catalog/omniroute_catalog.js';
 import { PromptCompressionEngine } from '../src/engine/compression.js';
@@ -192,7 +192,7 @@ test('HTTP OmniRoute Endpoints: free-models, summary, rankings, and combos respo
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
     body: JSON.stringify({
       model: 'mock/extra-demo-model',
@@ -206,3 +206,4 @@ test('HTTP OmniRoute Endpoints: free-models, summary, rankings, and combos respo
   assert.ok(resChat.headers.has('x-omniroute-actual-model'), 'Should emit x-omniroute-actual-model header');
   assert.ok(resChat.headers.has('x-omniroute-latency-ms'), 'Should emit x-omniroute-latency-ms header');
 });
+

@@ -1,4 +1,4 @@
-// Extra LLM X — Next-Gen Frontend Controller & Telemetry Engine (OmniRoute Parity)
+﻿// Extra LLM X вЂ” Next-Gen Frontend Controller & Telemetry Engine (OmniRoute Parity)
 
 const API_BASE = window.location.origin;
 
@@ -83,7 +83,7 @@ function initTabs() {
     switchTab('tab-keys');
     openSysKeyModal();
   });
-  document.getElementById('btn-hero-open-universal')?.addEventListener('click', () => switchTab('tab-universal'));
+  document.getElementById('btn-hero-open-gateway')?.addEventListener('click', () => switchTab('tab-gateway'));
 }
 
 function switchTab(tabId) {
@@ -191,13 +191,13 @@ function renderProvidersGrid() {
   container.innerHTML = filtered.map(p => {
     const isReady = p.status === 'ready';
     const isActive = p.status === 'active';
-    let statusBadge = '<span class="tag-status standby">⚪ Key Needed</span>';
+    let statusBadge = '<span class="tag-status standby">вљЄ Key Needed</span>';
     if (p.isNoAuth) {
-      statusBadge = '<span class="tag-status live" style="background:rgba(0,245,212,0.15);color:var(--accent-cyan);border-color:var(--accent-cyan);">⚡ Zero-Key Live</span>';
+      statusBadge = '<span class="tag-status live" style="background:rgba(0,245,212,0.15);color:var(--accent-cyan);border-color:var(--accent-cyan);">вљЎ Zero-Key Live</span>';
     } else if (isActive) {
-      statusBadge = `<span class="tag-status live">🟢 ${p.activeKeysCount} Key(s) Active</span>`;
+      statusBadge = `<span class="tag-status live">рџџў ${p.activeKeysCount} Key(s) Active</span>`;
     } else if (isReady) {
-      statusBadge = '<span class="tag-status live">🟢 Ready</span>';
+      statusBadge = '<span class="tag-status live">рџџў Ready</span>';
     }
 
     const isLocalOrMock = p.id === 'ollama' || p.id === 'lmstudio' || p.id === 'mock';
@@ -209,7 +209,7 @@ function renderProvidersGrid() {
             <h3 class="provider-name">${escapeHtml(p.name)}</h3>
             <span class="provider-badge-pill">${escapeHtml(p.badge)}</span>
           </div>
-          <div class="provider-limits">⚡ ${escapeHtml(p.freeTierInfo)}</div>
+          <div class="provider-limits">вљЎ ${escapeHtml(p.freeTierInfo)}</div>
           <div class="provider-popular">Models: <code>${escapeHtml(p.popularModels)}</code></div>
         </div>
 
@@ -222,17 +222,17 @@ function renderProvidersGrid() {
           <div class="provider-card-actions">
             ${!isLocalOrMock && !p.isNoAuth ? `
               <button class="btn-action-signup" onclick="openAutoRegistration('${p.id}', '${escapeHtml(p.name)}', '${p.getKeyUrl}', '${escapeHtml(p.guide)}')">
-                🚀 Ro'yxatdan O'tish ↗
+                рџљЂ Ro'yxatdan O'tish в†—
               </button>
               <button class="btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" onclick="openAddKeyModal('${p.id}', '${escapeHtml(p.name)}', '${escapeHtml(p.guide)}')">
                 + Kalit Qo'shish
               </button>
             ` : `
               <button class="btn-secondary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem;" onclick="testProviderPing('${p.id}', this)">
-                🧪 Ping
+                рџ§Є Ping
               </button>
               <button class="btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.8rem; background: linear-gradient(135deg, #00f5d4, #7b2cbf);" onclick="switchPlaygroundModel('${p.id}')">
-                💬 Sinash (Zero-Key)
+                рџ’¬ Sinash (Zero-Key)
               </button>
             `}
           </div>
@@ -245,7 +245,7 @@ function renderProvidersGrid() {
 window.testProviderPing = async function(providerId, btn) {
   if (btn) {
     btn.disabled = true;
-    btn.textContent = '⏳ ...';
+    btn.textContent = 'вЏі ...';
   }
   try {
     const res = await fetch(`${API_BASE}/api/health-check/provider/${providerId}`, { method: 'POST' });
@@ -261,7 +261,7 @@ window.testProviderPing = async function(providerId, btn) {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = '🧪 Ping';
+      btn.textContent = 'рџ§Є Ping';
     }
   }
 };
@@ -283,7 +283,7 @@ function renderProviderKeysTable(keys) {
 
   tbody.innerHTML = keys.map(k => {
     const isCool = k.cooldown_until && k.cooldown_until > Date.now();
-    const coolText = isCool ? `⏳ Cooldown (${Math.ceil((k.cooldown_until - Date.now()) / 1000)}s)` : '🟢 Ready';
+    const coolText = isCool ? `вЏі Cooldown (${Math.ceil((k.cooldown_until - Date.now()) / 1000)}s)` : 'рџџў Ready';
 
     return `
       <tr>
@@ -390,7 +390,7 @@ function renderCombos(combos) {
           <div class="chain-steps">
             ${c.targets.slice(0, 5).map((t, idx) => `
               <span class="chain-step">${escapeHtml(t.provider)}/${escapeHtml(t.model.split('/').pop())}</span>
-              ${idx < Math.min(4, c.targets.length - 1) ? '<span class="chain-arrow">→</span>' : ''}
+              ${idx < Math.min(4, c.targets.length - 1) ? '<span class="chain-arrow">в†’</span>' : ''}
             `).join('')}
           </div>
         </div>
@@ -448,7 +448,7 @@ function renderFilteredModels() {
   const metaEl = document.getElementById('models-results-count');
   if (metaEl) {
     metaEl.textContent = totalFiltered > 0
-      ? `Showing ${startIdx + 1}–${endIdx} of ${totalFiltered} free models`
+      ? `Showing ${startIdx + 1}вЂ“${endIdx} of ${totalFiltered} free models`
       : '0 models found';
   }
 
@@ -490,7 +490,7 @@ function renderFilteredModels() {
 
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
           <button class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.78rem;" onclick="useModelInPlayground('${escapeHtml(m.id)}')">
-            Playground 💬
+            Playground рџ’¬
           </button>
           <button class="btn-secondary" style="padding: 0.4rem 0.65rem; font-size: 0.78rem;" onclick="copyText('${escapeHtml(m.id)}')">
             Copy
@@ -632,7 +632,7 @@ function initFilters() {
 
 async function scanProviders() {
   const btn = document.getElementById('btn-scan-all-providers');
-  if (btn) btn.innerHTML = '🔄 Scanning...';
+  if (btn) btn.innerHTML = 'рџ”„ Scanning...';
 
   try {
     const res = await fetch(`${API_BASE}/api/models/scan`, { method: 'POST' });
@@ -643,7 +643,7 @@ async function scanProviders() {
   } catch (err) {
     showToast('Scan error: ' + err.message, 'error');
   } finally {
-    if (btn) btn.innerHTML = '🔄 Scan & Refresh Models';
+    if (btn) btn.innerHTML = 'рџ”„ Scan & Refresh Models';
   }
 }
 
@@ -668,7 +668,7 @@ function renderSystemKeysTable(keys) {
       <td>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <code style="font-family: var(--font-mono); color: var(--accent-cyan);">${escapeHtml(k.key)}</code>
-          <button class="btn-copy-small" onclick="copyText('${escapeHtml(k.key)}')" title="Copy Key">📋</button>
+          <button class="btn-copy-small" onclick="copyText('${escapeHtml(k.key)}')" title="Copy Key">рџ“‹</button>
         </div>
       </td>
       <td>${k.rate_limit_rpm} req/min</td>
@@ -689,7 +689,7 @@ function renderSystemKeysTable(keys) {
 }
 
 window.deleteSystemKey = async function(key) {
-  if (!confirm(`Revoke key ${key}? Universal Agent using this key will lose access.`)) return;
+  if (!confirm(`Revoke key ${key}? AI Agent & Developer Hub using this key will lose access.`)) return;
   try {
     const res = await fetch(`${API_BASE}/api/system-keys/${encodeURIComponent(key)}`, { method: 'DELETE' });
     if (res.ok) {
@@ -701,7 +701,7 @@ window.deleteSystemKey = async function(key) {
   }
 };
 
-// Universal Agent Handshake Tester
+// AI Agent & Developer Hub Handshake Tester
 function initHandshakeTester() {
   document.getElementById('btn-test-handshake')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-test-handshake');
@@ -710,11 +710,11 @@ function initHandshakeTester() {
 
     if (btn) {
       btn.disabled = true;
-      btn.textContent = '⏳ Testing...';
+      btn.textContent = 'вЏі Testing...';
     }
     if (badge) {
       badge.className = 'handshake-badge testing';
-      badge.textContent = '● Probing Gateway...';
+      badge.textContent = 'в—Џ Probing Gateway...';
     }
 
     try {
@@ -724,26 +724,26 @@ function initHandshakeTester() {
       if (data.success) {
         if (badge) {
           badge.className = 'handshake-badge live';
-          badge.textContent = `🟢 Connected & Ready (${data.latencyMs || 1}ms)`;
+          badge.textContent = `рџџў Connected & Ready (${data.latencyMs || 1}ms)`;
         }
         if (meta) {
           meta.innerHTML = `<strong>Handshake OK!</strong> Active Free Models: <code>${data.activeFreeModels}</code> | Client Keys: <code>${data.clientKeysActive}</code> | Endpoint: <code>${data.endpoint}</code>`;
         }
-        showToast('Universal Agent HP Handshake Successful!', 'success');
+        showToast('AI Applications & IDEs Handshake Successful!', 'success');
       } else {
         throw new Error(data.error || 'Handshake failed');
       }
     } catch (err) {
       if (badge) {
         badge.className = 'handshake-badge error';
-        badge.textContent = '🔴 Connection Error';
+        badge.textContent = 'рџ”ґ Connection Error';
       }
       if (meta) meta.textContent = 'Error: ' + err.message;
       showToast('Handshake failed: ' + err.message, 'error');
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = '🧪 Test Handshake';
+        btn.textContent = 'рџ§Є Test Handshake';
       }
     }
   });
@@ -755,41 +755,41 @@ function initHandshakeTester() {
 
     if (btn) {
       btn.disabled = true;
-      btn.textContent = '⏳ Simulating DAG...';
+      btn.textContent = 'вЏі Simulating DAG...';
     }
     if (badge) {
       badge.className = 'handshake-badge testing';
-      badge.textContent = '● Executing Universal Agent DAG Wave...';
+      badge.textContent = 'в—Џ Executing AI Agent & Developer Hub DAG Wave...';
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/universal-agent/simulate`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/integrations/simulate`, { method: 'POST' });
       const data = await res.json();
 
       if (data.success) {
         if (badge) {
           badge.className = 'handshake-badge live';
-          badge.textContent = `🟢 DAG Simulation PASSED (${data.totalLatencyMs}ms)`;
+          badge.textContent = `рџџў DAG Simulation PASSED (${data.totalLatencyMs}ms)`;
         }
         if (meta) {
-          const stepSummary = data.steps.map(s => `✓ ${s.step}: <strong>${s.provider}</strong> (${s.model})`).join(' | ');
+          const stepSummary = data.steps.map(s => `вњ“ ${s.step}: <strong>${s.provider}</strong> (${s.model})`).join(' | ');
           meta.innerHTML = `<strong>Autonomous Pipeline Execution Success!</strong> ${stepSummary}`;
         }
-        showToast('Universal Agent HP DAG Simulation Succeeded!', 'success');
+        showToast('AI Applications & IDEs DAG Simulation Succeeded!', 'success');
       } else {
         throw new Error(data.error || 'Simulation failed');
       }
     } catch (err) {
       if (badge) {
         badge.className = 'handshake-badge error';
-        badge.textContent = '🔴 Simulation Failed';
+        badge.textContent = 'рџ”ґ Simulation Failed';
       }
       if (meta) meta.textContent = 'Error: ' + err.message;
       showToast('Simulation error: ' + err.message, 'error');
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = '🚀 Simulate 2-Step DAG';
+        btn.textContent = 'рџљЂ Simulate 2-Step DAG';
       }
     }
   });
@@ -816,7 +816,7 @@ function initPlayground() {
 
   modelSelect?.addEventListener('change', () => {
     const pill = document.getElementById('play-active-model-pill');
-    if (pill) pill.textContent = `⚡ ${modelSelect.value}`;
+    if (pill) pill.textContent = `вљЎ ${modelSelect.value}`;
   });
 
   presetSelect?.addEventListener('change', () => {
@@ -847,7 +847,7 @@ function initPlayground() {
     if (container) {
       container.innerHTML = `
         <div class="chat-bubble assistant">
-          <div class="bubble-header">⚡ Extra LLM X System</div>
+          <div class="bubble-header">вљЎ Extra LLM X System</div>
           <div class="bubble-content">
             Conversation cleared. Ready for your next query!
           </div>
@@ -946,7 +946,7 @@ function populatePlaygroundModels(combos, models) {
   }
 }
 
-// ⚔️ Model Arena (Battle Side-by-Side) Controller
+// вљ”пёЏ Model Arena (Battle Side-by-Side) Controller
 let arenaAbortController = null;
 let isArenaBattling = false;
 
@@ -1025,7 +1025,7 @@ async function startArenaBattle() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+          'Authorization': 'Bearer elx-live-master-free-hub'
         },
         body: JSON.stringify({
           model,
@@ -1065,7 +1065,7 @@ async function startArenaBattle() {
       const latency = Date.now() - start;
       const tokEst = Math.max(1, Math.round(text.length / 4));
       const tokPerSec = Math.round((tokEst / (latency / 1000)));
-      statsEl.textContent = `${latency}ms • ${tokPerSec} tok/s`;
+      statsEl.textContent = `${latency}ms вЂў ${tokPerSec} tok/s`;
       onDone(latency, tokPerSec);
     } catch (err) {
       if (err.name === 'AbortError') {
@@ -1088,10 +1088,10 @@ async function startArenaBattle() {
 
       if (timeA < timeB && timeA < 900000) {
         statsA.classList.add('winner');
-        statsA.innerHTML = `👑 FASTEST (${timeA}ms • ${tokA} tok/s)`;
+        statsA.innerHTML = `рџ‘‘ FASTEST (${timeA}ms вЂў ${tokA} tok/s)`;
       } else if (timeB < timeA && timeB < 900000) {
         statsB.classList.add('winner');
-        statsB.innerHTML = `👑 FASTEST (${timeB}ms • ${tokB} tok/s)`;
+        statsB.innerHTML = `рџ‘‘ FASTEST (${timeB}ms вЂў ${tokB} tok/s)`;
       }
     }
   };
@@ -1111,7 +1111,7 @@ async function startArenaBattle() {
   });
 }
 
-// 🎨 Flux Image Studio Controller
+// рџЋЁ Flux Image Studio Controller
 function initImageStudio() {
   const genBtn = document.getElementById('btn-generate-image');
   const promptInput = document.getElementById('input-image-prompt');
@@ -1133,7 +1133,7 @@ function initImageStudio() {
     }
 
     genBtn.disabled = true;
-    genBtn.innerHTML = '🎨 Generating via Pollinations Flux...';
+    genBtn.innerHTML = 'рџЋЁ Generating via Pollinations Flux...';
     placeholder?.classList.remove('hidden');
     resultBox?.classList.add('hidden');
 
@@ -1142,7 +1142,7 @@ function initImageStudio() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+          'Authorization': 'Bearer elx-live-master-free-hub'
         },
         body: JSON.stringify({
           prompt,
@@ -1175,7 +1175,7 @@ function initImageStudio() {
       showToast('Image generation failed: ' + err.message, 'error');
     } finally {
       genBtn.disabled = false;
-      genBtn.innerHTML = '<span>🎨 Generate Free Image ($0)</span>';
+      genBtn.innerHTML = '<span>рџЋЁ Generate Free Image ($0)</span>';
     }
   });
 
@@ -1186,7 +1186,7 @@ function initImageStudio() {
   });
 }
 
-// 🧬 Embeddings Studio Controller
+// рџ§¬ Embeddings Studio Controller
 function initEmbeddingsStudio() {
   const computeBtn = document.getElementById('btn-compute-embeddings');
   const text1El = document.getElementById('input-emb-text1');
@@ -1205,14 +1205,14 @@ function initEmbeddingsStudio() {
     }
 
     computeBtn.disabled = true;
-    computeBtn.innerHTML = '🧬 Computing 1536-dim embeddings...';
+    computeBtn.innerHTML = 'рџ§¬ Computing 1536-dim embeddings...';
 
     try {
       const res = await fetch(`${API_BASE}/v1/embeddings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+          'Authorization': 'Bearer elx-live-master-free-hub'
         },
         body: JSON.stringify({
           input: [text1, text2],
@@ -1251,7 +1251,7 @@ function initEmbeddingsStudio() {
       showToast('Embedding calculation failed: ' + err.message, 'error');
     } finally {
       computeBtn.disabled = false;
-      computeBtn.innerHTML = '<span>🧬 Calculate Embeddings & Cosine Similarity</span>';
+      computeBtn.innerHTML = '<span>рџ§¬ Calculate Embeddings & Cosine Similarity</span>';
     }
   });
 }
@@ -1296,7 +1296,7 @@ async function sendPlaygroundMessage() {
   if (stopBtn) stopBtn.classList.remove('hidden');
   if (statusPill) statusPill.textContent = 'Streaming...';
 
-  const assistantBubble = appendChatBubble('assistant', `⚡ Extra LLM X (${model})`, '');
+  const assistantBubble = appendChatBubble('assistant', `вљЎ Extra LLM X (${model})`, '');
   const contentEl = assistantBubble.querySelector('.bubble-content');
   contentEl.innerHTML = '<span class="streaming-cursor"></span>';
 
@@ -1309,7 +1309,7 @@ async function sendPlaygroundMessage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+        'Authorization': 'Bearer elx-live-master-free-hub'
       },
       body: JSON.stringify({
         model,
@@ -1387,7 +1387,7 @@ async function sendPlaygroundMessage() {
     if (err.name === 'AbortError') {
       contentEl.innerHTML += '<div style="color: var(--accent-amber); font-size: 0.8rem; margin-top: 0.5rem;">[Generation Stopped]</div>';
     } else {
-      contentEl.innerHTML = `<span style="color: #ef4444;">❌ Error: ${escapeHtml(err.message)}</span>`;
+      contentEl.innerHTML = `<span style="color: #ef4444;">вќЊ Error: ${escapeHtml(err.message)}</span>`;
     }
     if (statusPill) statusPill.textContent = 'Stopped';
   } finally {
@@ -1405,7 +1405,7 @@ function appendChatBubble(role, sender, text) {
   bubble.innerHTML = `
     <div class="bubble-header flex-between">
       <span>${escapeHtml(sender)}</span>
-      <button class="btn-copy-small" onclick="copyBubbleText(this)" title="Copy Message">📋</button>
+      <button class="btn-copy-small" onclick="copyBubbleText(this)" title="Copy Message">рџ“‹</button>
     </div>
     <div class="bubble-content">${text ? formatMarkdown(text) : ''}</div>
   `;
@@ -1504,12 +1504,12 @@ function renderRankingsTable() {
   });
 
   tbody.innerHTML = filtered.map(r => {
-    const rankMedal = r.rank === 1 ? '🥇 #1' : r.rank === 2 ? '🥈 #2' : r.rank === 3 ? '🥉 #3' : `#${r.rank}`;
+    const rankMedal = r.rank === 1 ? 'рџҐ‡ #1' : r.rank === 2 ? 'рџҐ€ #2' : r.rank === 3 ? 'рџҐ‰ #3' : `#${r.rank}`;
     const statusBadge = r.isConfigured
-      ? `<span class="tag-status live">● Active</span>`
+      ? `<span class="tag-status live">в—Џ Active</span>`
       : r.isNoAuth
-        ? `<span class="tag-status live" style="background:rgba(0,245,212,0.15);color:var(--accent-cyan);border-color:var(--accent-cyan);">⚡ Zero-Key Live</span>`
-        : `<span class="tag-status standby">○ Key Needed</span>`;
+        ? `<span class="tag-status live" style="background:rgba(0,245,212,0.15);color:var(--accent-cyan);border-color:var(--accent-cyan);">вљЎ Zero-Key Live</span>`
+        : `<span class="tag-status standby">в—‹ Key Needed</span>`;
 
     const topModels = (r.topFreeModels || []).map(m => `<span class="model-tag">${escapeHtml(m)}</span>`).join(' ');
 
@@ -1560,7 +1560,7 @@ function renderLogsTable() {
     tbody.innerHTML = `
       <tr>
         <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-          No telemetry requests recorded. Send queries from Universal Agent HP or the Playground!
+          No telemetry requests recorded. Send queries from AI Applications & IDEs or the Playground!
         </td>
       </tr>
     `;
@@ -1585,11 +1585,11 @@ function renderLogsTable() {
           </span>
         </td>
         <td>
-          ${l.fallback_occurred ? '<span style="color: var(--accent-amber); font-weight: 700;">⚡ Failover</span>' : '<span style="color: var(--text-muted);">Direct</span>'}
+          ${l.fallback_occurred ? '<span style="color: var(--accent-amber); font-weight: 700;">вљЎ Failover</span>' : '<span style="color: var(--text-muted);">Direct</span>'}
         </td>
         <td>
           <button class="btn-secondary btn-sm" onclick="inspectTelemetryLog('${escapeHtml(l.id)}')">
-            🔍 Inspect
+            рџ”Ќ Inspect
           </button>
         </td>
       </tr>
@@ -1761,11 +1761,11 @@ async function saveModalProviderKey() {
         const modelList = (data.modelsRegistered || []).slice(0, 5).map(m => m.display_name || m.model_id).join(', ');
         const moreCount = (data.modelsDiscovered || 0) > 5 ? ` +${data.modelsDiscovered - 5} more` : '';
         outputEl.innerHTML = `
-          <div style="margin-bottom:0.5rem;font-weight:600;">✅ ${provider.toUpperCase()} Activated!</div>
-          <div>🧪 Test: <strong>${data.testedModel || 'OK'}</strong> (${data.testLatencyMs || 0}ms)</div>
-          <div>📦 Models Discovered: <strong>${data.modelsDiscovered || 0}</strong></div>
+          <div style="margin-bottom:0.5rem;font-weight:600;">вњ… ${provider.toUpperCase()} Activated!</div>
+          <div>рџ§Є Test: <strong>${data.testedModel || 'OK'}</strong> (${data.testLatencyMs || 0}ms)</div>
+          <div>рџ“¦ Models Discovered: <strong>${data.modelsDiscovered || 0}</strong></div>
           <div style="font-size:0.8rem;opacity:0.8;margin-top:0.3rem;">${modelList}${moreCount}</div>
-          <div>💾 Key Saved: <strong>${data.keySaved ? 'Yes' : 'No'}</strong></div>
+          <div>рџ’ѕ Key Saved: <strong>${data.keySaved ? 'Yes' : 'No'}</strong></div>
         `;
       }
 
@@ -1784,7 +1784,7 @@ async function saveModalProviderKey() {
       if (outputEl) {
         outputEl.classList.remove('hidden');
         outputEl.className = 'modal-test-output error';
-        outputEl.textContent = `❌ ${data.message || data.error || 'Activation failed'}`;
+        outputEl.textContent = `вќЊ ${data.message || data.error || 'Activation failed'}`;
       }
       showToast('Error: ' + (data.message || data.error), 'error');
     }
@@ -1793,7 +1793,7 @@ async function saveModalProviderKey() {
   } finally {
     if (saveBtn) {
       saveBtn.disabled = false;
-      saveBtn.innerHTML = '💾 Auto-Discover & Save';
+      saveBtn.innerHTML = 'рџ’ѕ Auto-Discover & Save';
     }
   }
 }
@@ -1840,27 +1840,27 @@ async function testModalProviderKey() {
       const modelList = (data.modelsRegistered || []).slice(0, 8).map(m => {
         const name = m.display_name || m.model_id;
         const ctx = m.context_window ? ` (${Math.round(m.context_window / 1024)}K ctx)` : '';
-        return `<div style="padding:0.15rem 0;font-size:0.78rem;">  • ${name}${ctx}</div>`;
+        return `<div style="padding:0.15rem 0;font-size:0.78rem;">  вЂў ${name}${ctx}</div>`;
       }).join('');
       const moreCount = (data.modelsDiscovered || 0) > 8 ? `<div style="font-size:0.75rem;opacity:0.7;">  ... +${data.modelsDiscovered - 8} more models</div>` : '';
 
       outputEl.className = 'modal-test-output success';
       outputEl.innerHTML = `
         <div style="margin-bottom:0.4rem;font-weight:700;font-size:1.05rem;">
-          ✅ ${provider.toUpperCase()} — Fully Activated!
+          вњ… ${provider.toUpperCase()} вЂ” Fully Activated!
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3rem 1rem;margin:0.4rem 0;">
-          <div>🧪 Inference Test:</div><div style="font-weight:600;">${data.testPassed ? 'PASSED' : 'SKIPPED'} (${data.testLatencyMs || 0}ms)</div>
-          <div>📦 Free Models Found:</div><div style="font-weight:600;">${data.modelsDiscovered || 0}</div>
-          <div>💾 Key Saved:</div><div style="font-weight:600;">${data.keySaved ? '✅ Yes' : '❌ No'}</div>
-          <div>⏱️ Total Time:</div><div style="font-weight:600;">${data.totalLatencyMs || 0}ms</div>
+          <div>рџ§Є Inference Test:</div><div style="font-weight:600;">${data.testPassed ? 'PASSED' : 'SKIPPED'} (${data.testLatencyMs || 0}ms)</div>
+          <div>рџ“¦ Free Models Found:</div><div style="font-weight:600;">${data.modelsDiscovered || 0}</div>
+          <div>рџ’ѕ Key Saved:</div><div style="font-weight:600;">${data.keySaved ? 'вњ… Yes' : 'вќЊ No'}</div>
+          <div>вЏ±пёЏ Total Time:</div><div style="font-weight:600;">${data.totalLatencyMs || 0}ms</div>
         </div>
-        ${data.testReply ? `<div style="margin:0.3rem 0;font-size:0.8rem;opacity:0.85;">💬 Reply: "${data.testReply}"</div>` : ''}
-        <div style="margin-top:0.5rem;font-weight:600;font-size:0.85rem;">📋 Registered Models:</div>
+        ${data.testReply ? `<div style="margin:0.3rem 0;font-size:0.8rem;opacity:0.85;">рџ’¬ Reply: "${data.testReply}"</div>` : ''}
+        <div style="margin-top:0.5rem;font-weight:600;font-size:0.85rem;">рџ“‹ Registered Models:</div>
         ${modelList}${moreCount}
       `;
 
-      showToast(`🚀 ${provider.toUpperCase()}: ${data.modelsDiscovered} free models auto-discovered and activated!`, 'success');
+      showToast(`рџљЂ ${provider.toUpperCase()}: ${data.modelsDiscovered} free models auto-discovered and activated!`, 'success');
       
       // Refresh data
       loadProviders();
@@ -1873,7 +1873,7 @@ async function testModalProviderKey() {
     } else {
       outputEl.className = 'modal-test-output error';
       outputEl.innerHTML = `
-        <div style="font-weight:600;">❌ Activation Failed</div>
+        <div style="font-weight:600;">вќЊ Activation Failed</div>
         <div style="margin-top:0.3rem;font-size:0.85rem;">${data.message || data.error || 'Unknown error'}</div>
         ${data.errors ? `<div style="margin-top:0.3rem;font-size:0.78rem;opacity:0.8;">${data.errors.join('<br>')}</div>` : ''}
       `;
@@ -1881,11 +1881,11 @@ async function testModalProviderKey() {
     }
   } catch (err) {
     outputEl.className = 'modal-test-output error';
-    outputEl.textContent = `❌ Error: ${err.message}`;
+    outputEl.textContent = `вќЊ Error: ${err.message}`;
   } finally {
     if (testBtn) {
       testBtn.disabled = false;
-      testBtn.innerHTML = '🧪 Test & Auto-Discover';
+      testBtn.innerHTML = 'рџ§Є Test & Auto-Discover';
     }
   }
 }
@@ -1898,7 +1898,7 @@ async function createSystemKey() {
     const res = await fetch(`${API_BASE}/api/system-keys`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name || 'Universal Agent Key', rateLimit })
+      body: JSON.stringify({ name: name || 'AI Agent & Developer Hub Key', rateLimit })
     });
 
     if (res.ok) {
@@ -1934,12 +1934,12 @@ function initCopyButtons() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'Universal-Agent-HP.env';
+    link.download = 'integrations-HP.env';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast('Downloaded Universal-Agent-HP.env file', 'success');
+    showToast('Downloaded integrations-HP.env file', 'success');
   });
 }
 
@@ -1950,7 +1950,7 @@ window.copyText = function(text, btnElement) {
     if (btnElement && btnElement.tagName) {
       const originalHtml = btnElement.innerHTML;
       btnElement.classList.add('btn-copied');
-      btnElement.innerHTML = '✓ Copied!';
+      btnElement.innerHTML = 'вњ“ Copied!';
       setTimeout(() => {
         btnElement.classList.remove('btn-copied');
         btnElement.innerHTML = originalHtml;
@@ -1965,10 +1965,10 @@ function showToast(message, type = 'success') {
   if (!toastContainer) return;
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  let icon = '⚡';
-  if (type === 'error') icon = '❌';
-  else if (type === 'warning') icon = '⚠️';
-  else if (type === 'info') icon = 'ℹ️';
+  let icon = 'вљЎ';
+  if (type === 'error') icon = 'вќЊ';
+  else if (type === 'warning') icon = 'вљ пёЏ';
+  else if (type === 'info') icon = 'в„№пёЏ';
 
   toast.innerHTML = `
     <span class="toast-icon">${icon}</span>
@@ -2025,7 +2025,7 @@ function initKeyboardShortcuts() {
         'tab-providers',
         'tab-models',
         'tab-keys',
-        'tab-universal',
+        'tab-gateway',
         'tab-playground',
         'tab-rankings',
         'tab-logs',
@@ -2086,12 +2086,12 @@ function applyTheme(theme) {
 
   if (theme === 'midnight') {
     document.body.classList.add('theme-midnight');
-    if (btn) btn.innerHTML = '🌙 Midnight';
+    if (btn) btn.innerHTML = 'рџЊ™ Midnight';
   } else if (theme === 'light') {
     document.body.classList.add('theme-light');
-    if (btn) btn.innerHTML = '☀️ Light';
+    if (btn) btn.innerHTML = 'вЂпёЏ Light';
   } else {
-    if (btn) btn.innerHTML = '⚡ Neon';
+    if (btn) btn.innerHTML = 'вљЎ Neon';
   }
   localStorage.setItem('elx_theme', theme);
 }
@@ -2183,7 +2183,7 @@ function initHealthCheck() {
     const btn = document.getElementById('btn-run-health-check');
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '⏳ Probing endpoints...';
+      btn.innerHTML = 'вЏі Probing endpoints...';
     }
     showToast('Probing connected AI providers...', 'success');
     try {
@@ -2195,7 +2195,7 @@ function initHealthCheck() {
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '<span class="btn-icon">⚡</span> Run Full Diagnostics';
+        btn.innerHTML = '<span class="btn-icon">вљЎ</span> Run Full Diagnostics';
       }
     }
   });
@@ -2305,7 +2305,7 @@ function renderModelsMatrix(modelsToRender) {
   }).join('');
 }
 
-// 💰 Interactive ROI & Savings Calculator
+// рџ’° Interactive ROI & Savings Calculator
 function initRoiCalculator() {
   const slider = document.getElementById('roi-token-slider');
   const tokenDisplay = document.getElementById('roi-token-display');
@@ -2360,7 +2360,7 @@ function initRoiCalculator() {
   updateCalculations(parseInt(slider.value || '5000000', 10));
 }
 
-// 🔔 Webhooks & Alert Subscriptions Controller
+// рџ”” Webhooks & Alert Subscriptions Controller
 async function loadWebhooks() {
   try {
     const res = await fetch(`${API_BASE}/api/webhooks`);
@@ -2381,7 +2381,7 @@ function renderWebhooksTable() {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
-          No alert webhooks registered yet. Click <strong>"+ Add Webhook"</strong> to stream real-time events to Discord, Slack, or Universal Agent!
+          No alert webhooks registered yet. Click <strong>"+ Add Webhook"</strong> to stream real-time events to Discord, Slack, or AI Agent & Developer Hub!
         </td>
       </tr>
     `;
@@ -2408,7 +2408,7 @@ function renderWebhooksTable() {
         <td><div style="display: flex; gap: 4px; flex-wrap: wrap;">${eventsBadges}</div></td>
         <td>
           <span class="tag-status ${w.active ? 'live' : 'standby'}">
-            ${w.active ? '● Active' : '○ Paused'}
+            ${w.active ? 'в—Џ Active' : 'в—‹ Paused'}
           </span>
         </td>
         <td>
@@ -2419,13 +2419,13 @@ function renderWebhooksTable() {
         <td>
           <div style="display: flex; gap: 6px;">
             <button class="btn-secondary btn-sm" onclick="testSingleWebhook('${escapeHtml(w.url)}')" title="Send test ping">
-              🧪 Ping
+              рџ§Є Ping
             </button>
             <button class="btn-secondary btn-sm" onclick="toggleWebhookActive('${escapeHtml(w.id)}', ${w.active ? 0 : 1})">
-              ${w.active ? '⏸ Pause' : '▶ Resume'}
+              ${w.active ? 'вЏё Pause' : 'в–¶ Resume'}
             </button>
             <button class="btn-danger-outline btn-sm" onclick="deleteWebhook('${escapeHtml(w.id)}')" title="Delete webhook">
-              🗑️
+              рџ—‘пёЏ
             </button>
           </div>
         </td>
@@ -2491,20 +2491,20 @@ async function testModalWebhook() {
     if (data.success) {
       if (outputEl) {
         outputEl.className = 'modal-test-output success';
-        outputEl.textContent = `✅ Webhook ping delivered! Target HTTP status: ${data.result?.status}`;
+        outputEl.textContent = `вњ… Webhook ping delivered! Target HTTP status: ${data.result?.status}`;
       }
       showToast('Webhook ping delivered successfully!', 'success');
     } else {
       if (outputEl) {
         outputEl.className = 'modal-test-output error';
-        outputEl.textContent = `❌ Ping failed: ${data.result?.error || 'HTTP ' + data.result?.status}`;
+        outputEl.textContent = `вќЊ Ping failed: ${data.result?.error || 'HTTP ' + data.result?.status}`;
       }
       showToast('Ping failed: ' + (data.result?.error || 'Server error'), 'error');
     }
   } catch (err) {
     if (outputEl) {
       outputEl.className = 'modal-test-output error';
-      outputEl.textContent = `❌ Error: ${err.message}`;
+      outputEl.textContent = `вќЊ Error: ${err.message}`;
     }
   }
 }
@@ -2587,7 +2587,7 @@ function initWebSearchStudio() {
 
     const limit = parseInt(limitSelect?.value || '5', 10);
     searchBtn.disabled = true;
-    searchBtn.innerHTML = '<span>⏳ Searching DuckDuckGo...</span>';
+    searchBtn.innerHTML = '<span>вЏі Searching DuckDuckGo...</span>';
     resultsContainer.innerHTML = '<div class="empty-state-card">Fetching live results from DuckDuckGo...</div>';
 
     try {
@@ -2595,7 +2595,7 @@ function initWebSearchStudio() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+          'Authorization': 'Bearer elx-live-master-free-hub'
         },
         body: JSON.stringify({ query: q, limit })
       });
@@ -2623,7 +2623,7 @@ function initWebSearchStudio() {
       showToast(err.message, 'error');
     } finally {
       searchBtn.disabled = false;
-      searchBtn.innerHTML = '<span>🔍 Search Live Web</span>';
+      searchBtn.innerHTML = '<span>рџ”Ќ Search Live Web</span>';
     }
   });
 }
@@ -2702,7 +2702,7 @@ print("Status: 100% Operational")`
 
     const language = langSelect?.value || 'javascript';
     runBtn.disabled = true;
-    runBtn.innerHTML = '<span>⏳ Running code...</span>';
+    runBtn.innerHTML = '<span>вЏі Running code...</span>';
     statusBadge.textContent = 'Running...';
     statusBadge.className = 'badge badge-warning';
     stdoutEl.textContent = '// Running...';
@@ -2713,7 +2713,7 @@ print("Status: 100% Operational")`
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+          'Authorization': 'Bearer elx-live-master-free-hub'
         },
         body: JSON.stringify({ language, code, timeoutMs: 5000 })
       });
@@ -2745,7 +2745,7 @@ print("Status: 100% Operational")`
       showToast(err.message, 'error');
     } finally {
       runBtn.disabled = false;
-      runBtn.innerHTML = '<span>⚡ Run Code in Sandbox</span>';
+      runBtn.innerHTML = '<span>вљЎ Run Code in Sandbox</span>';
     }
   });
 }
@@ -2771,7 +2771,7 @@ function initCompactorStudio() {
     { role: 'assistant', content: 'I recommend creating adapter abstractions for each vendor (Groq, Cerebras, SambaNova, OpenRouter, Mistral, HuggingFace, etc.) with unified response parsing and failover combos.' },
     { role: 'user', content: 'What about caching and rate limit mitigation? We need to ensure free tier keys do not get overwhelmed.' },
     { role: 'assistant', content: 'We can implement a dual-tier L1 in-memory LRU cache with L2 SQLite WAL persistence for 0ms repeat requests, along with exponential lockout circuit breakers and multi-key rotation.' },
-    { role: 'user', content: 'How should Universal Agent HP connect to this server seamlessly?' },
+    { role: 'user', content: 'How should AI Applications & IDEs connect to this server seamlessly?' },
     { role: 'assistant', content: 'We can configure EXTRA_LLM_X_BASE_URL to point to http://localhost:3000/v1 and generate cryptographic elx-... system keys with instant OpenAI SDK drop-in compatibility.' },
     { role: 'user', content: 'Can we add live web search grounding without paying for external search APIs?' },
     { role: 'assistant', content: 'Yes! We built FreeSearchEngine using direct DuckDuckGo HTML and instant answer parsers with automated citation prompt grounding.' },
@@ -2792,14 +2792,14 @@ function initCompactorStudio() {
 
     const maxTokens = parseInt(maxInput?.value || '150', 10);
     runBtn.disabled = true;
-    runBtn.innerHTML = '<span>⏳ Compacting...</span>';
+    runBtn.innerHTML = '<span>вЏі Compacting...</span>';
 
     try {
       const res = await fetch(`${API_BASE}/v1/compactor/compact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+          'Authorization': 'Bearer elx-live-master-free-hub'
         },
         body: JSON.stringify({
           messages: currentMessages,
@@ -2825,7 +2825,7 @@ function initCompactorStudio() {
       showToast(err.message, 'error');
     } finally {
       runBtn.disabled = false;
-      runBtn.innerHTML = '<span>🗜️ Run Smart Compaction</span>';
+      runBtn.innerHTML = '<span>рџ—њпёЏ Run Smart Compaction</span>';
     }
   });
 }
@@ -2876,3 +2876,4 @@ window.switchPlaygroundModel = function(providerId) {
 
   showToast(`${providerId.toUpperCase()} modeli tanlandi! Savol yozib sinab ko'ring.`, 'success');
 };
+

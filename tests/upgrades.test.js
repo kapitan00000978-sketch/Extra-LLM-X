@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
 import express from 'express';
@@ -11,7 +11,7 @@ import { initDatabase, KeyStore } from '../src/db/database.js';
 
 initDatabase();
 
-const sysKey = 'elx-live-universal-agent-free-hub';
+const sysKey = 'elx-live-master-free-hub';
 
 // 1. Free Search Engine Tests
 test('FreeSearchEngine: handles empty or blank query safely', async () => {
@@ -232,3 +232,4 @@ test('PuterAdapter & KiloAdapter: discovery and no-auth registration', async () 
   assert.strictEqual(puterPortal.status, 'ready');
   assert.strictEqual(kiloPortal.status, 'ready');
 });
+

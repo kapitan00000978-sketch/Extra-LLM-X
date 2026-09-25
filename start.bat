@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 title Extra LLM X - 100%% Free AI Provider Gateway
 color 0B
 cls
@@ -27,3 +27,4 @@ echo.
 start http://localhost:3000
 call npm start
 pause
+

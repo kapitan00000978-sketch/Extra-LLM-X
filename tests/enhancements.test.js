@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { responseCache } from '../src/engine/cache.js';
 import { freeEmbeddings } from '../src/engine/embeddings.js';
@@ -9,7 +9,7 @@ test('ResponseCache: saves, hits, tracks tokens and purges cleanly', (t) => {
 
   const reqObj = {
     requestedModel: 'extra/auto-free',
-    messages: [{ role: 'user', content: 'What is Universal Agent HP?' }],
+    messages: [{ role: 'user', content: 'What is AI Applications?' }],
     temperature: 0.7
   };
 
@@ -24,7 +24,7 @@ test('ResponseCache: saves, hits, tracks tokens and purges cleanly', (t) => {
   const dummyResponse = {
     id: 'chatcmpl-test-cache',
     object: 'chat.completion',
-    choices: [{ message: { role: 'assistant', content: 'Universal Agent HP is an autonomous AI agent.' } }],
+    choices: [{ message: { role: 'assistant', content: 'AI Applications is an autonomous AI agent.' } }],
     usage: { prompt_tokens: 15, completion_tokens: 20, total_tokens: 35 }
   };
 
@@ -35,7 +35,7 @@ test('ResponseCache: saves, hits, tracks tokens and purges cleanly', (t) => {
   assert.ok(hit, 'Cache hit succeeded');
   assert.strictEqual(hit.promptTokens, 15);
   assert.strictEqual(hit.completionTokens, 20);
-  assert.strictEqual(hit.data.choices[0].message.content, 'Universal Agent HP is an autonomous AI agent.');
+  assert.strictEqual(hit.data.choices[0].message.content, 'AI Applications is an autonomous AI agent.');
 
   // Check stats
   const stats = responseCache.getStats();
@@ -78,7 +78,7 @@ test('FreeEmbeddingsEngine: generates normalized 1536-dim vectors with semantic 
   assert.ok(simRelated > simUnrelated, `Related concepts (${simRelated.toFixed(3)}) have higher similarity than unrelated (${simUnrelated.toFixed(3)})`);
 
   // Test full engine output
-  const res = await freeEmbeddings.getEmbeddings({ input: ['Hello world', 'Universal Agent'] });
+  const res = await freeEmbeddings.getEmbeddings({ input: ['Hello world', 'AI Applications'] });
   assert.strictEqual(res.data.length, 2);
   assert.strictEqual(res.data[0].object, 'embedding');
   assert.ok(Array.isArray(res.data[0].embedding));
@@ -261,6 +261,7 @@ test('PromptCompressionEngine: estimateTokens and pruneMessagesForBudget', async
   // Final question must be preserved
   assert.strictEqual(result.messages[result.messages.length - 1].content.startsWith('Final question:'), true);
 });
+
 
 
 

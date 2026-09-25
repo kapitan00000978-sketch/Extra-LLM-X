@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { KeyStore, ModelStore, LogStore, HealthStore } from '../db/database.js';
 import { adapterRegistry } from '../adapters/index.js';
 import { discoveryEngine } from '../engine/discovery.js';
@@ -267,7 +267,7 @@ adminRouter.post('/providers/test', async (req, res) => {
  *
  * Body: { provider: string, apiKey: string, label?: string }
  * 
- * This is the core "paste key → everything works" endpoint.
+ * This is the core "paste key в†’ everything works" endpoint.
  */
 adminRouter.post('/providers/auto-discover', async (req, res) => {
   const { provider, apiKey, label } = req.body;
@@ -291,14 +291,14 @@ adminRouter.post('/providers/auto-discover', async (req, res) => {
         modelsRegistered: result.modelsRegistered,
         keySaved: result.keySaved,
         keyRecord: result.keyRecord,
-        message: `✅ ${result.provider.toUpperCase()} activated! ${result.modelsDiscovered} free models discovered and registered.`
+        message: `вњ… ${result.provider.toUpperCase()} activated! ${result.modelsDiscovered} free models discovered and registered.`
       });
     } else {
       res.status(400).json({
         success: false,
         provider: result.provider,
         errors: result.errors,
-        message: `❌ Failed to activate ${result.provider}: ${result.errors.join('; ')}`
+        message: `вќЊ Failed to activate ${result.provider}: ${result.errors.join('; ')}`
       });
     }
   } catch (err) {
@@ -349,7 +349,7 @@ adminRouter.get('/system-keys', (req, res) => {
 adminRouter.post('/system-keys', (req, res) => {
   try {
     const { name, rateLimit } = req.body;
-    const newKey = KeyStore.createSystemKey(name || 'Universal Agent Key', parseInt(rateLimit || 120, 10));
+    const newKey = KeyStore.createSystemKey(name || 'Master Gateway Key', parseInt(rateLimit || 120, 10));
     res.json({ success: true, key: newKey });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -407,7 +407,7 @@ adminRouter.get('/handshake', (req, res) => {
       clientKeysActive: systemKeys.filter(k => k.active === 1).length,
       ping: 'pong',
       latencyMs: 1,
-      compatibleWith: ['Universal Agent HP', 'Cursor', 'Cline', 'Roo Code', 'Aider', 'OpenAI Python SDK']
+      compatibleWith: ['AI Applications & Agents', 'Cursor', 'Cline', 'Roo Code', 'Aider', 'OpenAI Python SDK']
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -432,12 +432,12 @@ adminRouter.post('/cache/clear', (req, res) => {
   }
 });
 
-adminRouter.get('/universal-agent/config', (req, res) => {
+adminRouter.get('/integrations/config', (req, res) => {
   try {
     const keys = KeyStore.getAllSystemKeys();
-    const activeKey = keys.find(k => k.active === 1)?.key || 'elx-live-universal-agent-free-hub';
+    const activeKey = keys.find(k => k.active === 1)?.key || 'elx-live-master-free-hub';
 
-    const envContent = `# Universal Agent HP — Extra LLM X Free Gateway Environment
+    const envContent = `# AI Applications & Agents вЂ” Extra LLM X Free Gateway Environment
 OPENAI_API_BASE=http://localhost:3000/v1
 OPENAI_API_KEY=${activeKey}
 
@@ -467,7 +467,7 @@ client = openai.OpenAI(
 # 1. Chat Completion with 100% Free Auto-Routing
 response = client.chat.completions.create(
     model="extra/auto-free",
-    messages=[{"role": "user", "content": "Hello from Universal Agent HP!"}]
+    messages=[{"role": "user", "content": "Hello from AI Applications & Agents!"}]
 )
 print("Assistant:", response.choices[0].message.content)
 
@@ -516,7 +516,7 @@ main();
   }
 });
 
-adminRouter.post('/universal-agent/simulate', async (req, res) => {
+adminRouter.post('/agent/simulate', async (req, res) => {
   const startTime = Date.now();
   const logs = [];
 
@@ -524,9 +524,9 @@ adminRouter.post('/universal-agent/simulate', async (req, res) => {
     // Step 1: Simulate Planner
     logs.push({ step: '1. Task Decomposition & Planning', model: 'extra/free-reasoning', status: 'started' });
     const planResult = await routerEngine.dispatch({
-      clientKey: 'elx-live-universal-agent-free-hub',
+      clientKey: 'elx-live-master-free-hub',
       requestedModel: 'extra/free-reasoning',
-      messages: [{ role: 'user', content: 'Universal Agent HP Simulation: Create a 2-step pipeline plan' }],
+      messages: [{ role: 'user', content: 'AI Applications & Agents Simulation: Create a 2-step pipeline plan' }],
       stream: false
     });
     logs[0].status = 'completed';
@@ -537,7 +537,7 @@ adminRouter.post('/universal-agent/simulate', async (req, res) => {
     // Step 2: Simulate Coding Specialist
     logs.push({ step: '2. Code Generation & Tool Synthesis', model: 'extra/free-coding', status: 'started' });
     const codeResult = await routerEngine.dispatch({
-      clientKey: 'elx-live-universal-agent-free-hub',
+      clientKey: 'elx-live-master-free-hub',
       requestedModel: 'extra/free-coding',
       messages: [{ role: 'user', content: 'Generate a short fibonacci function in python' }],
       stream: false
@@ -554,7 +554,7 @@ adminRouter.post('/universal-agent/simulate', async (req, res) => {
       simulation: 'PASS',
       totalLatencyMs: totalDuration,
       steps: logs,
-      summary: 'Universal Agent HP multi-step autonomous execution completed with 0 errors via 100% free routes.'
+      summary: 'AI Applications & Agents multi-step autonomous execution completed with 0 errors via 100% free routes.'
     });
   } catch (err) {
     res.status(500).json({
@@ -565,5 +565,6 @@ adminRouter.post('/universal-agent/simulate', async (req, res) => {
     });
   }
 });
+
 
 

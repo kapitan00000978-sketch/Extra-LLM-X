@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "extra-llm-x",
   "version": "1.0.0",
   "description": "Next-Gen 100% Free LLM Gateway, Dynamic Discovery Engine, and API Key Provider for Universal Agent HP",
@@ -14,7 +14,7 @@
     "ai",
     "gateway",
     "free-models",
-    "universal-agent",
+    "ai-gateway",
     "groq",
     "gemini",
     "openrouter",
@@ -29,3 +29,4 @@
     "express": "^4.21.2"
   }
 }
+

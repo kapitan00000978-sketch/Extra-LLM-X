@@ -1,11 +1,11 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import { initDatabase, KeyStore, ModelStore, LogStore } from '../src/db/database.js';
 
 initDatabase();
 
 test('KeyStore: creates, verifies and revokes system API keys', () => {
-  const defaultKey = KeyStore.verifySystemKey('elx-live-universal-agent-free-hub');
+  const defaultKey = KeyStore.verifySystemKey('elx-live-master-free-hub');
   assert.ok(defaultKey, 'Default key must be verified');
   assert.strictEqual(defaultKey.active, 1);
 
@@ -53,3 +53,4 @@ test('LogStore: records telemetry and computes savings accurately', () => {
   assert.ok(stats.totalRequests >= 1);
   assert.ok(stats.totalTokens >= 300);
 });
+

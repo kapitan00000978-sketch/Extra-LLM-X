@@ -22,17 +22,17 @@
   ==============================================================
 ```
 
-**Extra LLM X** is a high-throughput, enterprise-grade AI Gateway and Model Orchestrator that pools **26+ free AI model providers** into a unified, OpenAI-compatible endpoint. It provides **5 Billion+ Free Tokens/Month** of aggregate compute with sub-millisecond failover, dynamic load balancing, automatic model discovery, and full multimodal support—at **$0 infrastructure cost**.
+**Extra LLM X** is a high-throughput, standalone AI Gateway and Model Orchestrator that pools **26+ free AI model providers** into a single unified, OpenAI-compatible endpoint. It provides **5 Billion+ Free Tokens/Month** of aggregate compute with sub-millisecond failover, dynamic load balancing, automated model discovery, and full multimodal support—at **$0 infrastructure cost**.
 
 ---
 
 ## 🏗 System Architecture & Workflow
 
-The following Mermaid diagram illustrates how **Extra LLM X** intercepts client requests, applies rate-limiting, semantic caching, speculative hedging, and failover routing across 26+ providers:
+The following Mermaid diagram illustrates how **Extra LLM X** processes client requests, applies rate-limiting, semantic caching, speculative hedging, and intelligent failover routing across 26+ providers:
 
 ```mermaid
 flowchart TD
-    Client["Client Request\n(Universal Agent HP / Cursor / Python SDK / Web UI)"] --> Gateway["Extra LLM X Gateway (Port 3000)"]
+    Client["Client Request\n(Cursor / Claude Code / Python SDK / Web UI / LangChain)"] --> Gateway["Extra LLM X Gateway (Port 3000)"]
     
     Gateway --> Auth["Authentication & Key Validation\n(Bearer System Token)"]
     Auth --> Guard["Capability Guard & Moderation\n(Model Router & Safety Check)"]
@@ -71,7 +71,7 @@ flowchart TD
     
     RateLimitCheck -- "No (Success 200 OK)" --> ResponseHandler["Response Stream Processor\n(Token Counter & L1/L2 Cache Store)"]
     ResponseHandler --> Response
-    
+
     subgraph AuxiliaryServices ["Multimodal & Utility Micro-Services"]
         E1["Vector Embeddings (1536-dim)"]
         E2["Image Generation (Flux / SDXL)"]
@@ -87,22 +87,22 @@ flowchart TD
 ## 🌟 Key Features
 
 1. **Auto-Discovery & Live Key Validation Pipeline:**
-   - Paste any API key into the Web UI or send via API.
-   - Extra LLM X sends a real-time validation probe to the provider.
-   - Automatically queries and registers all compatible free models without manual configuration.
+   - Input any provider API key into the dashboard or API.
+   - Extra LLM X sends a real-time validation probe to verify validity.
+   - Automatically queries and registers all compatible free models without manual setup.
 
 2. **5 Billion+ Free Tokens/Month Aggregate Pool:**
-   - Unites official free tiers from Google Gemini, Groq, Cerebras, SambaNova, DeepSeek, GitHub Models, SiliconFlow, Zhipu, and 15+ others.
-   - Intelligent key rotation handles multi-key pooling across developer tiers.
+   - Aggregates free tiers from Google Gemini, Groq, Cerebras, SambaNova, DeepSeek, GitHub Models, SiliconFlow, Zhipu, and 15+ others.
+   - Key rotation handles multi-key pooling across developer quotas.
 
 3. **Autonomous Sub-Millisecond Failover:**
    - If a provider hits a rate limit (HTTP 429) or latency spike, Extra LLM X instantly switches to the next equivalent model in under 15ms.
 
 4. **Zero-Key Out-Of-The-Box Mode:**
-   - Fully functional without configuring any keys! Uses Puter.js, Pollinations.ai, OpenCode Free, and built-in simulation adapters.
+   - Fully functional without any keys! Powered by Puter.js, Pollinations.ai, OpenCode Free, and built-in simulation adapters.
 
 5. **Full OpenAI Specification Parity:**
-   - Drop-in replacement for OpenAI SDK, Cursor, Claude Code, Cline, Roo Code, and LangChain.
+   - 100% drop-in replacement for OpenAI SDK, Cursor, Claude Code, Cline, Roo Code, and LangChain.
 
 6. **Cyberpunk Web Operations Dashboard:**
    - Real-time token savings counter, live model health diagnostics, interactive streaming playground, and benchmark charts.
@@ -115,7 +115,7 @@ flowchart TD
 Double-click **`start.bat`**. It will:
 - Check and install dependencies (`npm install`).
 - Start the gateway on `http://localhost:3000`.
-- Automatically open the dashboard in your default browser.
+- Open the dashboard in your default browser.
 
 ### 2. Manual Start (Linux / macOS / Windows)
 ```bash
@@ -131,13 +131,13 @@ Open `http://localhost:3000` to access the Control Center.
 
 ## 🤖 Virtual Model Combos
 
-Instead of hardcoding a specific vendor, route to smart virtual combos:
+Route to smart virtual combos for automatic fallback and maximum availability:
 
 | Combo Name | Target Specialization | Fallback Chain |
 | :--- | :--- | :--- |
 | **`extra/auto-free`** | General Purpose & High Quality | DeepSeek $\to$ Groq $\to$ SambaNova $\to$ Gemini Flash $\to$ Cerebras $\to$ Pollinations |
 | **`extra/free-coding`** | Code Generation & Debugging | Codestral $\to$ Qwen 2.5 Coder $\to$ Llama 3.3 70B $\to$ Gemini 2.0 Flash |
-| **`extra/free-fast`** | Sub-Second / Fast Agent Operations | Cerebras Llama 8B $\to$ Groq Llama 8B $\to$ Gemini Flash Lite |
+| **`extra/free-fast`** | Sub-Second / Fast Operations | Cerebras Llama 8B $\to$ Groq Llama 8B $\to$ Gemini Flash Lite |
 | **`extra/free-reasoning`** | Deep Reasoning, Logic & Math | DeepSeek-R1 $\to$ SambaNova R1 $\to$ Groq R1 $\to$ Gemini Thinking |
 | **`extra/free-vision`** | Multimodal & Image Understanding | Gemini 2.0 Flash $\to$ GPT-4o Mini $\to$ OpenRouter Gemini Exp |
 | **`extra/free-embedding`**| Semantic Search & Vector Memory | 1536-dimensional normalized cosine vectors |
@@ -159,7 +159,7 @@ Instead of hardcoding a specific vendor, route to smart virtual combos:
 | **OpenRouter** | 30+ Free models (`:free` suffix) | Zero-cost community routing |
 | **Mistral AI** | `codestral-latest`, `mistral-small-latest` | Free developer quota |
 | **Hugging Face** | `Qwen2.5-Coder-32B`, `DeepSeek-R1-Qwen-32B` | Free serverless inference |
-| **Puter.js** | `gpt-4o-mini`, `claude-3-5-sonnet` | Zero-Key open browser/cloud runtime |
+| **Puter.js** | `gpt-4o-mini`, `claude-3-5-sonnet` | Zero-Key open cloud runtime |
 | **Pollinations AI** | `openai` (GPT-4o), `qwen`, `mistral` | Zero-Key public API |
 | **OpenCode Free** | `deepseek-v3`, `glm-4`, `qwen-2.5-72b` | Zero-Key direct backend |
 | **Ollama & LM Studio**| Any local model | 100% Offline, private and unlimited |
@@ -174,13 +174,13 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="http://localhost:3000/v1",
-    api_key="elx-live-universal-agent-free-hub"
+    api_key="elx-live-master-free-hub"
 )
 
 # Chat Completion with Streaming
 response = client.chat.completions.create(
     model="extra/auto-free",
-    messages=[{"role": "user", "content": "Explain quantum computing in 3 bullets."}],
+    messages=[{"role": "user", "content": "Explain asynchronous programming in Python."}],
     stream=True
 )
 
@@ -189,23 +189,26 @@ for chunk in response:
     print(content, end="", flush=True)
 ```
 
-### 2. Universal Agent HP Integration
-Add the following to your `.env` in Universal Agent HP:
-```env
-OPENAI_API_BASE=http://localhost:3000/v1
-OPENAI_API_KEY=elx-live-universal-agent-free-hub
-TITAN_PROVIDER=omni
-TITAN_MODEL=extra/auto-free
-```
-
-### 3. Cursor IDE / Cline / Claude Code / Roo Code
+### 2. Cursor IDE / Cline / Claude Code / Roo Code / Aider
+Configure OpenAI compatible provider:
 - **Base URL:** `http://localhost:3000/v1`
-- **API Key:** `elx-live-universal-agent-free-hub`
+- **API Key:** `elx-live-master-free-hub`
 - **Model ID:** `extra/free-coding` or `extra/auto-free`
+
+### 3. cURL Request
+```bash
+curl http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer elx-live-master-free-hub" \
+  -d '{
+    "model": "extra/auto-free",
+    "messages": [{"role": "user", "content": "Hello Extra LLM X!"}]
+  }'
+```
 
 ---
 
-## 🧪 Testing & Health Diagnostics
+## 🧪 Testing & Diagnostics
 
 Run the full automated test suite:
 ```bash
@@ -219,7 +222,7 @@ npm test
 ✔ 72/72 tests passing (0 failures)
 ```
 
-Check live provider health via CLI:
+Live provider health check:
 ```bash
 npm run health
 ```

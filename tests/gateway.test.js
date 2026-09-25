@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import express from 'express';
 import cors from 'cors';
@@ -53,7 +53,7 @@ test('HTTP: GET /v1/models rejects unauthenticated calls', async () => {
 
 test('HTTP: GET /v1/models succeeds with client token', async () => {
   const res = await fetch(`${baseUrl}/v1/models`, {
-    headers: { 'Authorization': 'Bearer elx-live-universal-agent-free-hub' }
+    headers: { 'Authorization': 'Bearer elx-live-master-free-hub' }
   });
   assert.strictEqual(res.status, 200);
   const data = await res.json();
@@ -66,7 +66,7 @@ test('HTTP: POST /v1/chat/completions executes non-streaming completion', async 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
     body: JSON.stringify({
       model: 'extra/auto-free',
@@ -86,7 +86,7 @@ test('HTTP: POST /v1/chat/completions handles streaming SSE properly', async () 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
     body: JSON.stringify({
       model: 'extra/auto-free',
@@ -102,3 +102,4 @@ test('HTTP: POST /v1/chat/completions handles streaming SSE properly', async () 
   assert.ok(text.includes('data: '));
   assert.ok(text.includes('[DONE]'));
 });
+

@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import { routerEngine } from '../src/engine/router.js';
 import { getAllCombos, getCombo } from '../src/engine/combos.js';
@@ -47,3 +47,4 @@ test('RouterEngine: executes demo fallback when no external keys are present', a
   assert.ok(data.choices[0].message && typeof data.choices[0].message.content === 'string');
   assert.ok(data.choices[0].message.content.length > 0);
 });
+

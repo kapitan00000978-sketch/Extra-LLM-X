@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import { MockDemoAdapter } from '../src/adapters/mock.js';
 
@@ -48,3 +48,4 @@ test('Non-Streaming: MockDemoAdapter produces OpenAI-compliant completion schema
   assert.ok(data.usage);
   assert.ok(data.usage.total_tokens > 0);
 });
+

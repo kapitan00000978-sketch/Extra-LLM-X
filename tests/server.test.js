@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import http from 'http';
 import { db, initDatabase, KeyStore, ModelStore, LogStore } from '../src/db/database.js';
@@ -12,13 +12,13 @@ test('Database & KeyStore: creates and verifies default system API key', () => {
   const keys = KeyStore.getAllSystemKeys();
   assert.ok(keys.length >= 1, 'Should have at least 1 system key');
 
-  const defaultKey = keys.find(k => k.key === 'elx-live-universal-agent-free-hub');
-  assert.ok(defaultKey, 'Default Universal Agent key must exist');
+  const defaultKey = keys.find(k => k.key === 'elx-live-master-free-hub');
+  assert.ok(defaultKey, 'Default AI Applications key must exist');
 
-  const verified = KeyStore.verifySystemKey('elx-live-universal-agent-free-hub');
+  const verified = KeyStore.verifySystemKey('elx-live-master-free-hub');
   assert.strictEqual(verified.active, 1);
 
-  const verifiedBearer = KeyStore.verifySystemKey('Bearer elx-live-universal-agent-free-hub');
+  const verifiedBearer = KeyStore.verifySystemKey('Bearer elx-live-master-free-hub');
   assert.strictEqual(verifiedBearer.active, 1);
 });
 
@@ -94,3 +94,4 @@ test('Adapter Registry: contains all 24+ free providers', () => {
   assert.ok(providerIds.includes('huggingface'));
   assert.ok(portals.length >= 20);
 });
+

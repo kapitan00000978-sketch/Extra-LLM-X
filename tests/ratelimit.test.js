@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import { KeyStore } from '../src/db/database.js';
 import { adapterRegistry } from '../src/adapters/index.js';
@@ -56,3 +56,4 @@ test('RateLimit: classifyError flags various vendor rate limit messages', () => 
   const err3 = adapter.classifyError(new Error('Tokens Per Day (TPD) limit exhausted'), 429);
   assert.strictEqual(err3.isRateLimit, true);
 });
+

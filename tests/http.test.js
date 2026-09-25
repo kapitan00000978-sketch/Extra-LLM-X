@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import express from 'express';
 import cors from 'cors';
@@ -64,7 +64,7 @@ test('HTTP: GET /v1/models fails without auth token', async () => {
 
 test('HTTP: GET /v1/models succeeds with valid system token', async () => {
   const res = await fetch(`${baseUrl}/v1/models`, {
-    headers: { 'Authorization': 'Bearer elx-live-universal-agent-free-hub' }
+    headers: { 'Authorization': 'Bearer elx-live-master-free-hub' }
   });
   assert.strictEqual(res.status, 200);
   const data = await res.json();
@@ -81,7 +81,7 @@ test('HTTP: POST /v1/chat/completions validates empty messages', async () => {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
     body: JSON.stringify({ model: 'extra/auto-free', messages: [] })
   });
@@ -111,9 +111,9 @@ test('HTTP: POST /v1/embeddings returns valid OpenAI embedding format', async ()
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
-    body: JSON.stringify({ input: ['Universal Agent HP vector memory'] })
+    body: JSON.stringify({ input: ['AI Applications vector memory'] })
   });
   assert.strictEqual(res.status, 200);
   const data = await res.json();
@@ -129,7 +129,7 @@ test('HTTP: POST /v1/images/generations returns valid image generation url', asy
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
     body: JSON.stringify({ prompt: 'A futuristic cybernetic agent', model: 'flux' })
   });
@@ -160,9 +160,9 @@ test('HTTP: POST /v1/audio/transcriptions returns valid Whisper transcription', 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
-    body: JSON.stringify({ prompt: 'Universal Agent audio stream transcription test' })
+    body: JSON.stringify({ prompt: 'AI Applications audio stream transcription test' })
   });
   assert.strictEqual(res.status, 200);
   const data = await res.json();
@@ -170,8 +170,8 @@ test('HTTP: POST /v1/audio/transcriptions returns valid Whisper transcription', 
   assert.ok(data.text.length > 0);
 });
 
-test('HTTP: GET /api/universal-agent/config returns complete env and SDK config', async () => {
-  const res = await fetch(`${baseUrl}/api/universal-agent/config`);
+test('HTTP: GET /api/integrations/config returns complete env and SDK config', async () => {
+  const res = await fetch(`${baseUrl}/api/integrations/config`);
   assert.strictEqual(res.status, 200);
   const data = await res.json();
   assert.strictEqual(data.success, true);
@@ -181,8 +181,8 @@ test('HTTP: GET /api/universal-agent/config returns complete env and SDK config'
   assert.ok(Array.isArray(data.combos));
 });
 
-test('HTTP: POST /api/universal-agent/simulate executes multi-step DAG planning simulation', async () => {
-  const res = await fetch(`${baseUrl}/api/universal-agent/simulate`, { method: 'POST' });
+test('HTTP: POST /api/agent/simulate executes multi-step DAG planning simulation', async () => {
+  const res = await fetch(`${baseUrl}/api/agent/simulate`, { method: 'POST' });
   assert.strictEqual(res.status, 200);
   const data = await res.json();
   assert.strictEqual(data.success, true);
@@ -235,7 +235,7 @@ test('HTTP: POST /v1/batches and GET /v1/batches/:id process asynchronous reques
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer elx-live-universal-agent-free-hub'
+      'Authorization': 'Bearer elx-live-master-free-hub'
     },
     body: JSON.stringify(batchBody)
   });
@@ -248,7 +248,7 @@ test('HTTP: POST /v1/batches and GET /v1/batches/:id process asynchronous reques
 
   // Poll status
   const getRes = await fetch(`${baseUrl}/v1/batches/${createData.id}`, {
-    headers: { 'Authorization': 'Bearer elx-live-universal-agent-free-hub' }
+    headers: { 'Authorization': 'Bearer elx-live-master-free-hub' }
   });
   assert.strictEqual(getRes.status, 200);
   const getData = await getRes.json();
@@ -293,6 +293,7 @@ test('HTTP: Webhooks REST API registers, lists, toggles, and deletes webhooks', 
   const delData = await delRes.json();
   assert.strictEqual(delData.deleted, whkId);
 });
+
 
 
 

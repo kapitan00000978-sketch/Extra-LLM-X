@@ -1,6 +1,6 @@
-# Extra LLM X — REST & OpenAI API Reference
+﻿# Extra LLM X вЂ” REST & OpenAI API Reference
 
-Extra LLM X exposes an OpenAI-compatible API on port `3000`. Any SDK, tool, or library designed for OpenAI (`openai-python`, `openai-node`, LangChain, LlamaIndex, Cursor, Cline, Claude Code, Universal Agent HP) can interact with Extra LLM X by pointing `base_url` to `http://localhost:3000/v1`.
+Extra LLM X exposes an OpenAI-compatible API on port `3000`. Any SDK, tool, or library designed for OpenAI (`openai-python`, `openai-node`, LangChain, LlamaIndex, Cursor, Cline, Claude Code, AI Agents) can interact with Extra LLM X by pointing `base_url` to `http://localhost:3000/v1`.
 
 ---
 
@@ -9,7 +9,7 @@ Extra LLM X exposes an OpenAI-compatible API on port `3000`. Any SDK, tool, or l
 Every request to `/v1/*` must include a Bearer API Key generated in the Extra LLM X dashboard or the default out-of-the-box key:
 
 ```http
-Authorization: Bearer elx-live-universal-agent-free-hub
+Authorization: Bearer elx-live-master-free-hub
 ```
 
 Admin endpoints (`/api/*`) are accessible locally for dashboard operation.
@@ -53,7 +53,7 @@ Extra LLM X appends live telemetry metadata to every response:
 ```bash
 curl -N http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer elx-live-universal-agent-free-hub" \
+  -H "Authorization: Bearer elx-live-master-free-hub" \
   -d '{
     "model": "extra/auto-free",
     "messages": [{"role": "user", "content": "Explain quantum computing in 2 sentences."}],
@@ -67,7 +67,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="http://localhost:3000/v1",
-    api_key="elx-live-universal-agent-free-hub"
+    api_key="elx-live-master-free-hub"
 )
 
 # 1. High-Speed Auto-Fallback Chat
@@ -96,7 +96,7 @@ import OpenAI from 'openai';
 
 const client = new OpenAI({
   baseURL: 'http://localhost:3000/v1',
-  apiKey: 'elx-live-universal-agent-free-hub',
+  apiKey: 'elx-live-master-free-hub',
 });
 
 async function main() {
@@ -122,7 +122,7 @@ main();
 Returns all active 100% free models and virtual combos in OpenAI standard list format:
 ```bash
 curl http://localhost:3000/v1/models \
-  -H "Authorization: Bearer elx-live-universal-agent-free-hub"
+  -H "Authorization: Bearer elx-live-master-free-hub"
 ```
 
 ### `GET /health`
@@ -136,3 +136,4 @@ Triggers an immediate diagnostic ping across all 24 connected AI providers and r
 
 ### `GET /api/analytics/charts`
 Returns aggregated time-series telemetry (requests per hour, token volume, provider share distribution).
+

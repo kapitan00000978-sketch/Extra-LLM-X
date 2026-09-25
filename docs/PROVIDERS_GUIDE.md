@@ -1,4 +1,4 @@
-# Extra LLM X — Complete 24+ Free Provider Guide
+﻿# Extra LLM X вЂ” Complete 24+ Free Provider Guide
 
 This guide provides step-by-step instructions on how to obtain 100% free API keys from all supported AI providers. Extra LLM X requires **$0 expenditure**. Every provider listed below offers either a permanent free tier or substantial free developer starter credits.
 
@@ -121,3 +121,4 @@ This guide provides step-by-step instructions on how to obtain 100% free API key
 Extra LLM X supports adding **multiple keys per provider**. If you have 3 Groq keys or 4 Gemini keys:
 1. Extra LLM X will automatically rotate through them using least-recently-used (LRU) scheduling.
 2. If Key #1 hits a rate limit (HTTP 429), it automatically cools down Key #1 and routes the next call to Key #2 with zero downtime.
+

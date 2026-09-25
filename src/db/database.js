@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+﻿import { DatabaseSync } from 'node:sqlite';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -129,16 +129,15 @@ export function initDatabase() {
     );
   `);
 
-  // Ensure default key exists for immediate out-of-the-box use
-  const existingKey = db.prepare('SELECT key FROM system_api_keys LIMIT 1').get();
-  if (!existingKey) {
-    const defaultKey = 'elx-live-universal-agent-free-hub';
+    // Ensure default master key exists for immediate out-of-the-box use
+  const masterKey = 'elx-live-master-free-hub';
+  const hasMasterKey = db.prepare('SELECT key FROM system_api_keys WHERE key = ?').get(masterKey);
+  if (!hasMasterKey) {
     const now = Date.now();
     db.prepare(`
-      INSERT INTO system_api_keys (key, name, active, rate_limit_rpm, request_count, total_tokens, created_at, last_used_at)
+      INSERT OR REPLACE INTO system_api_keys (key, name, active, rate_limit_rpm, request_count, total_tokens, created_at, last_used_at)
       VALUES (?, ?, 1, 120, 0, 0, ?, ?)
-    `).run(defaultKey, 'Universal Agent Default Key', now, now);
-    console.log(`[DB] Created default client API Key: ${defaultKey}`);
+    `).run(masterKey, 'Master Gateway Key', now, now);
   }
 }
 
@@ -624,5 +623,7 @@ export const BatchStore = {
     db.prepare(`UPDATE batch_jobs SET status = 'cancelled', completed_at = ? WHERE id = ? AND status = 'in_progress'`).run(Date.now(), id);
   }
 };
+
+
 
 

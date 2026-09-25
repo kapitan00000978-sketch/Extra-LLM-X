@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert';
 import { HealthStore } from '../src/db/database.js';
 import { healthCheckEngine } from '../src/engine/health_check.js';
@@ -35,3 +35,4 @@ test('HealthCheckEngine: checkAll returns an array of provider health checks', a
   assert.ok(results.length >= 24, `Expected at least 24 results, got ${results.length}`);
   assert.ok(results.some(r => r.provider === 'mock' && r.status === 'healthy'));
 });
+
