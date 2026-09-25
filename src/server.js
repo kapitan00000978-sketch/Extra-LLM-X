@@ -59,6 +59,9 @@ app.get('*', (req, res) => {
 
 // Launch Server
 ﻿const server = app.listen(config.port, config.host, async () => {
+  const readyKeys = KeyStore.getAllSystemKeys().filter(k => k.active === 1);
+  const activeKey = readyKeys[0]?.key || KeyStore.createSystemKey('Master Gateway Key', 120).key;
+
   console.log(`
   ==============================================================
    ███████╗██╗  ██╗████████╗██████╗  █████╗     ██╗     ██╗     ████╗   ████╗    ██╗  ██╗
@@ -72,8 +75,8 @@ app.get('*', (req, res) => {
   ==============================================================
    🚀 Dashboard UI       : http://localhost:${config.port}
    🔌 OpenAI API BaseURL : http://localhost:${config.port}/v1
-   🔑 Default Client Key : elx-live-master-free-hub
-   🤖 Multi-Provider Engine: Ready out-of-the-box!
+   🔑 100% Active API Key: ${activeKey}
+   🤖 Auto-Key Generator : ENABLED (Bearer auto / GET /v1/keys/auto)
   ==============================================================
   `);
 

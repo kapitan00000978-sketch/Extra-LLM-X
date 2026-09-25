@@ -404,6 +404,38 @@ adminRouter.get('/system-keys', (req, res) => {
   }
 });
 
+// Autonomous Key Generation (supports both GET and POST)
+adminRouter.all(['/keys/auto', '/keys/random', '/system-keys/auto'], (req, res) => {
+  try {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const name = (req.body && req.body.name) || req.query.name || ('Auto Agent #' + randomSuffix);
+    const rateLimit = parseInt((req.body && req.body.rateLimit) || req.query.rateLimit || 120, 10);
+    const newKey = KeyStore.createSystemKey(name, rateLimit);
+    res.json({
+      success: true,
+      key: newKey.key,
+      name: newKey.name,
+      rate_limit_rpm: newKey.rate_limit_rpm,
+      base_url: `http://${req.headers.host || 'localhost:3000'}/v1`,
+      details: newKey
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+adminRouter.get('/system-keys/random', (req, res) => {
+  try {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const name = req.query.name || ('Agent Key #' + randomSuffix);
+    const rateLimit = parseInt(req.query.rateLimit || 120, 10);
+    const newKey = KeyStore.createSystemKey(name, rateLimit);
+    res.json({ success: true, key: newKey.key, details: newKey });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 adminRouter.post('/system-keys/random', (req, res) => {
   try {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);

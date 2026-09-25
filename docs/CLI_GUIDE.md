@@ -91,6 +91,39 @@ Agar ishlab turgan bo'lsa:
 
 ---
 
+## ⚡ 3.5. Avtomatik (O'zi) API Kalit Yaratish Qoidalari (Autonomous Keying)
+
+Extra LLM X sizdan ortiqcha harakat talab qilmasdan **o'zi avtomatik API kalit yarata oladi**:
+
+1. **Terminalda bitta so'z bilan:**
+   ```powershell
+   extra auto
+   # yoki
+   extra key
+   ```
+   *Hech qanday nom yoki parametr kiritmasangiz ham, tizim o'zi darhol yangi, 100% ishlaydigan kalit yaratib beradi.*
+
+2. **So'rov paytida avtomatik yaratish (`Bearer auto`):**
+   Cursor, Claude Code yoki Python skriptingizda kalit o'rniga `auto` deb yozsangiz kifoya:
+   ```python
+   client = OpenAI(
+       base_url="http://localhost:3000/v1",
+       api_key="auto"  # <-- Gateway o'zi avtomatik kalit yaratadi va 200 OK qaytaradi!
+   )
+   ```
+   Gateway ushbu so'rov uchun avtomatik yangi kalit ro'yxatdan o'tkazadi va javob sarlavhasida `X-ExtraLLM-Auto-Key` orqali qaytaradi.
+
+3. **HTTP API orqali avtomatik olish:**
+   ```bash
+   curl http://localhost:3000/v1/keys/auto
+   ```
+   Darhol JSON formatida faollashgan kalitni qaytaradi.
+
+4. **Web Hub panelida:**
+   Brauzerda ochishingiz bilan yuqori qismda **"Tayyor Faol API Kalit"** vidjeti turadi va **"⚡ O'zi yangi kalit yaratsin"** tugmasi orqali 1 marta bosishda yangi kalit yaratiladi.
+
+---
+
 ## 🔑 4. 100% Ishlaydigan API Kalit Yaratish Qoidalari
 
 Extra LLM X tizimida API kalitlar 100% real SQLite bazasida saqlanadi va darhol faollashadi.

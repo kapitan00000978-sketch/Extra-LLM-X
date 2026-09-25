@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { routerEngine } from '../engine/router.js';
 import { getAllCombos } from '../engine/combos.js';
 import { responseCache } from '../engine/cache.js';
@@ -28,16 +28,56 @@ openaiRouter.use('/moderations', moderationsRouter);
 // Mount OpenAI Batch API
 openaiRouter.use(batchRouter);
 
+/**
+ * GET/POST /v1/keys/auto
+ * Autonomous key generation endpoint: yields an instantly active, verified system API key.
+ */
+openaiRouter.all('/keys/auto', (req, res) => {
+  try {
+    const name = (req.body && req.body.name) || req.query.name || `Auto Key #${Math.floor(1000 + Math.random() * 9000)}`;
+    const rpm = parseInt((req.body && req.body.rate_limit_rpm) || req.query.rate_limit_rpm || 120, 10);
+    const keyObj = KeyStore.createSystemKey(name, rpm);
+    res.json({
+      success: true,
+      key: keyObj.key,
+      name: keyObj.name,
+      rate_limit_rpm: keyObj.rate_limit_rpm,
+      base_url: `http://${req.headers.host || 'localhost:3000'}/v1`,
+      recommended_model: 'extra/auto-free',
+      instructions: 'Use Authorization: Bearer ' + keyObj.key
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 function authMiddleware(req, res, next) {
   if (!config.enableAuth) {
     return next();
   }
 
   const authHeader = req.headers.authorization;
+  const autoKeyHeader = req.headers['x-auto-key'];
+  const queryKey = req.query.key || req.query.api_key;
+
+  // Auto-key Provisioning: If client requests auto key or sends Bearer auto / elx-auto / default / self
+  if (
+    autoKeyHeader === 'true' ||
+    queryKey === 'auto' ||
+    (authHeader && /^Bearer\s+(auto|elx-auto|default|self)$/i.test(authHeader.trim()))
+  ) {
+    const autoKey = KeyStore.createSystemKey(`Autonomous Client #${Math.floor(1000 + Math.random() * 9000)}`, 120);
+    req.clientKey = autoKey.key;
+    req.keyInfo = autoKey;
+    res.setHeader('X-ExtraLLM-Auto-Key', autoKey.key);
+    res.setHeader('X-ExtraLLM-Key', autoKey.key);
+    return next();
+  }
+
   if (!authHeader) {
     return res.status(401).json({
       error: {
-        message: 'Missing Authorization header. Extra LLM X requires Bearer API key (e.g. elx-live-...). Obtain one from http://localhost:3000',
+        message: 'Missing Authorization header. Extra LLM X requires Bearer API key (e.g. elx-live-...). Tip: Send Authorization: Bearer auto to auto-generate one on the fly, or visit http://localhost:3000',
         type: 'invalid_request_error',
         code: 401
       }
@@ -50,7 +90,7 @@ function authMiddleware(req, res, next) {
   if (!validKey) {
     return res.status(401).json({
       error: {
-        message: 'Invalid Extra LLM X API Key. Generate or manage keys at http://localhost:3000',
+        message: 'Invalid Extra LLM X API Key. Tip: Send Authorization: Bearer auto to auto-generate a valid key, or manage keys at http://localhost:3000',
         type: 'invalid_request_error',
         code: 401
       }
@@ -59,6 +99,7 @@ function authMiddleware(req, res, next) {
 
   req.clientKey = token;
   req.keyInfo = validKey;
+  res.setHeader('X-ExtraLLM-Key', token);
   next();
 }
 

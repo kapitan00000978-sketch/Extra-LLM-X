@@ -1,4 +1,4 @@
-
+﻿
 function openCreateKeyModal() {
   const modal = document.getElementById('modal-create-client-key');
   if (!modal) return;
@@ -28,7 +28,7 @@ async function quickGenerateRandomKey() {
 }
 
 /**
- * Extra LLM X — Core Frontend Engine
+ * Extra LLM X вЂ” Core Frontend Engine
  * Enterprise multi-provider gateway controller
  */
 
@@ -76,6 +76,30 @@ function initNavigation() {
   });
   document.getElementById('btn-done-create-client-key')?.addEventListener('click', () => {
     document.getElementById('modal-create-client-key').classList.remove('active');
+  });
+
+  document.getElementById('btn-copy-banner-key')?.addEventListener('click', async () => {
+    const key = document.getElementById('banner-active-key')?.textContent?.trim();
+    if (key) {
+      await navigator.clipboard?.writeText(key);
+      showToast('API kalit nusxalandi: ' + key, 'success');
+    }
+  });
+
+  document.getElementById('btn-auto-new-key')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/keys/auto', { method: 'POST' });
+      const data = await res.json();
+      if (data && data.key) {
+        const el = document.getElementById('banner-active-key');
+        if (el) el.textContent = data.key;
+        await navigator.clipboard?.writeText(data.key);
+        showToast('Yangi API kalit yaratildi va nusxalandi: ' + data.key, 'success');
+        loadSystemKeys();
+      }
+    } catch (e) {
+      showToast('Xatolik: ' + e.message, 'error');
+    }
   });
 
   document.getElementById('btn-overview-open-playground')?.addEventListener('click', () => switchTab('tab-playground'));
@@ -249,10 +273,10 @@ function renderProviders() {
     const isNoAuth = p.isNoAuth || p.id === 'puter' || p.id === 'pollinations' || p.id === 'opencode' || p.id === 'kilo' || p.id === 'ollama' || p.id === 'lmstudio';
 
     let statusBadge = isConfigured 
-      ? `<span class="status-pill status-online">● Connected (${p.keyCount || p.keys?.length || 1})</span>`
+      ? `<span class="status-pill status-online">в—Џ Connected (${p.keyCount || p.keys?.length || 1})</span>`
       : isNoAuth
-      ? `<span class="status-pill status-zero">● Zero-Key (Public)</span>`
-      : `<span class="status-pill status-offline">○ Ready</span>`;
+      ? `<span class="status-pill status-zero">в—Џ Zero-Key (Public)</span>`
+      : `<span class="status-pill status-offline">в—‹ Ready</span>`;
 
     return `
       <div class="provider-card">
@@ -268,7 +292,7 @@ function renderProviders() {
           ${(Array.isArray(p.popularModels) ? p.popularModels : (typeof p.popularModels === "string" && p.popularModels.trim() ? p.popularModels.split(",").map(s => s.trim()).filter(Boolean) : [])).slice(0, 4).map(m => `<span class="model-tag">${m}</span>`).join('')}
         </div>
         <div class="provider-actions">
-          ${p.getKeyUrl ? `<a href="${p.getKeyUrl}" target="_blank" class="btn-portal">Official Portal ↗</a>` : ''}
+          ${p.getKeyUrl ? `<a href="${p.getKeyUrl}" target="_blank" class="btn-portal">Official Portal в†—</a>` : ''}
           <button class="btn-add-key" onclick="openKeyModal('${p.id}', '${p.name}', '${p.getKeyUrl || ''}', '${p.guide || ''}')">
             ${isConfigured ? 'Manage Key' : '+ Connect Key'}
           </button>
@@ -381,6 +405,13 @@ async function loadSystemKeys() {
     if (!res.ok) return;
     state.systemKeys = await res.json();
     renderSystemKeys();
+    
+    // Auto-update banner with active ready-to-use key
+    const activeOne = state.systemKeys.find(k => k.active === 1) || state.systemKeys[0];
+    if (activeOne) {
+      const el = document.getElementById('banner-active-key');
+      if (el) el.textContent = activeOne.key;
+    }
   } catch (err) {
     console.warn('[Keys] Load error:', err);
   }
@@ -577,7 +608,7 @@ async function createClientKey() {
   } catch (err) {
     showToast('Error: ' + err.message, 'error');
   } finally {
-    if (confirmBtn) confirmBtn.textContent = '⚡ Generate Random Key Now';
+    if (confirmBtn) confirmBtn.textContent = 'вљЎ Generate Random Key Now';
   }
 }
 

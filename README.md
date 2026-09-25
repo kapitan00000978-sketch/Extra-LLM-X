@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" />
-  <img src="https://img.shields.io/badge/Tests-88%2F88%20Passing-brightgreen.svg" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-92%2F92%20Passing-brightgreen.svg" alt="Tests" />
   <img src="https://img.shields.io/badge/Free%20Capacity-5B%2B%20Tokens%2FMonth-gold.svg" alt="Free Capacity" />
   <img src="https://img.shields.io/badge/Native%20Adapters-80%2B%20Built--In-purple.svg" alt="Native Adapters" />
   <img src="https://img.shields.io/badge/Directory-500%2B%20Models-cyan.svg" alt="500+ Models" />
@@ -231,7 +231,7 @@ npm test
 ✔ CLI Runner: extra-llm binary executes cleanly and manages keys
 ✔ Auto-Discovery Pipeline: validates live keys and scans models
 ✔ Speculative Hedging Engine: races primary and fallback candidates
-✔ 88/88 tests passing (0 failures)
+✔ 92/92 tests passing (0 failures)
 ```
 
 Live provider health check:

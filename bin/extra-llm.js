@@ -21,6 +21,12 @@ if (command === 'llm' || command === 'run' || command === 'up' || command === 's
   command = 'start';
 }
 
+// Support auto-key aliases: "extra auto", "extra auto-key", "extra autokey"
+if (command === 'auto' || command === 'auto-key' || command === 'autokey') {
+  command = 'key';
+  args[1] = 'new';
+}
+
 // Helper for Windows ESM dynamic import
 function getModuleUrl(relPath) {
   return pathToFileURL(path.join(rootDir, relPath)).href;
@@ -146,7 +152,7 @@ async function main() {
     const { initDatabase, KeyStore } = await import(getModuleUrl('src/db/database.js'));
     initDatabase();
 
-    if (subCmd === 'new' || subCmd === 'generate' || subCmd === 'create') {
+    if (subCmd === 'new' || subCmd === 'generate' || subCmd === 'create' || subCmd === 'auto') {
       const name = args[2] || `Agent #${Math.floor(1000 + Math.random() * 9000)}`;
       const keyObj = KeyStore.createSystemKey(name, 120);
 
