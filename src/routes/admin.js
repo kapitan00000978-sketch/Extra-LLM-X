@@ -233,9 +233,20 @@ adminRouter.get('/providers/keys', (req, res) => {
 });
 
 adminRouter.post('/providers/keys', async (req, res) => {
-  const { provider, apiKey, label } = req.body;
-  if (!provider || !apiKey) {
-    return res.status(400).json({ error: 'Provider and apiKey are required.' });
+  let { provider, apiKey, label } = req.body;
+  if (!apiKey) {
+    return res.status(400).json({ error: 'apiKey is required.' });
+  }
+
+  if (!provider) {
+    if (apiKey.startsWith('gsk_')) provider = 'groq';
+    else if (apiKey.startsWith('sk-ant-')) provider = 'anthropic';
+    else if (apiKey.startsWith('AIzaSy')) provider = 'gemini';
+    else if (apiKey.startsWith('nvapi-')) provider = 'nvidia';
+    else if (apiKey.startsWith('pplx-')) provider = 'perplexity';
+    else if (apiKey.startsWith('xai-')) provider = 'xai';
+    else if (apiKey.startsWith('sk-')) provider = 'openai';
+    else provider = 'custom';
   }
 
   try {

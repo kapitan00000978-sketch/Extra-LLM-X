@@ -504,8 +504,26 @@ window.openKeyModal = function(id, name, getUrl, guide) {
 };
 
 async function saveProviderKey() {
-  const provider = state.selectedProviderForModal;
+  let provider = state.selectedProviderForModal;
   const apiKey = document.getElementById('input-provider-key').value.trim();
+  const label = document.getElementById('input-provider-label').value.trim();
+
+  if (!apiKey) {
+    showToast('Iltimos, haqiqiy API kalitni kiriting.', 'error');
+    return;
+  }
+
+  // Auto-detect provider if none selected
+  if (!provider) {
+    if (apiKey.startsWith('gsk_')) provider = 'groq';
+    else if (apiKey.startsWith('sk-ant-')) provider = 'anthropic';
+    else if (apiKey.startsWith('AIzaSy')) provider = 'gemini';
+    else if (apiKey.startsWith('nvapi-')) provider = 'nvidia';
+    else if (apiKey.startsWith('pplx-')) provider = 'perplexity';
+    else if (apiKey.startsWith('xai-')) provider = 'xai';
+    else if (apiKey.startsWith('sk-')) provider = 'openai';
+    else provider = 'custom';
+  }
   const label = document.getElementById('input-provider-label').value.trim();
 
   if (!apiKey) {
