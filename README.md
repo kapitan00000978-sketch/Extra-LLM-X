@@ -1,4 +1,4 @@
-﻿# ⚡ Extra LLM X — Zero-Cost AI Gateway & Provider Orchestrator
+# ? Extra LLM X � Zero-Cost AI Gateway & Provider Orchestrator
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License" />
@@ -12,24 +12,24 @@
 
 ```
   ==============================================================
-   ███████╗██╗  ██╗████████╗██████╗  █████╗     ██╗     ██╗     ███╗   ███╗    ██╗  ██╗
-   ██╔════╝╚██╗██╔╝╚══██╔══╝██╔══██╗██╔══██╗    ██║     ██║     ████╗ ████║    ╚██╗██╔╝
-   █████╗   ╚███╔╝    ██║   ██████╔╝███████║    ██║     ██║     ██╔████╔██║     ╚███╔╝ 
-   ██╔══╝   ██╔██╗    ██║   ██╔══██╗██╔══██║    ██║     ██║     ██║╚██╔╝██║     ██╔██╗ 
-   ███████╗██╔╝ ██╗   ██║   ██║  ██║██║  ██║    ███████╗███████╗██║ ╚═╝ ██║    ██╔╝ ██╗
-   ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝    ╚══════╝╚══════╝╚═╝     ╚═╝    ╚═╝  ╚═╝
+   -------�--�  --�--------�------�  -----�     --�     --�     ---�   ---�    --�  --�
+   --�====-L--�--�-L==--�==---�==--�--�==--�    --�     --�     ----� ----�    L--�--�-
+   -----�   L---�-    --�   ------�--------�    --�     --�     --�----�--�     L---�- 
+   --�==-   --�--�    --�   --�==--�--�==--�    --�     --�     --�L--�---�     --�--� 
+   -------�--�- --�   --�   --�  --�--�  --�    -------�-------�--� L=- --�    --�- --�
+   L======-L=-  L=-   L=-   L=-  L=-L=-  L=-    L======-L======-L=-     L=-    L=-  L=-
   ==============================================================
-   ⚡ EXTRA LLM X — 100% FREE MULTI-PROVIDER AI GATEWAY & HUB ⚡
+   ? EXTRA LLM X � 100% FREE MULTI-PROVIDER AI GATEWAY & HUB ?
   ==============================================================
 ```
 
-**Extra LLM X** is a high-throughput, standalone AI Gateway and Model Orchestrator that pools **56+ native AI adapters and 400+ directory providers** into a single unified, OpenAI-compatible endpoint. It provides **5 Billion+ Free Tokens/Month** of aggregate compute with sub-millisecond failover, dynamic load balancing, automated model discovery, and full multimodal support—at **$0 infrastructure cost**.
+**Extra LLM X** is a high-throughput, standalone AI Gateway and Model Orchestrator that pools **70+ native AI adapters and 400+ directory providers** into a single unified, OpenAI-compatible endpoint. It provides **5 Billion+ Free Tokens/Month** of aggregate compute with sub-millisecond failover, dynamic load balancing, automated model discovery, and full multimodal support�at **$0 infrastructure cost**.
 
 ---
 
-## 🏗 System Architecture & Workflow
+## ?? System Architecture & Workflow
 
-The following Mermaid diagram illustrates how **Extra LLM X** processes client requests, applies rate-limiting, semantic caching, speculative hedging, and intelligent failover routing across 56+ native providers:
+The following Mermaid diagram illustrates how **Extra LLM X** processes client requests, applies rate-limiting, semantic caching, speculative hedging, and intelligent failover routing across 70+ native providers:
 
 ```mermaid
 flowchart TD
@@ -89,7 +89,7 @@ flowchart TD
 
 ---
 
-## 🌟 Key Features
+## ?? Key Features
 
 1. **56+ Native Production Adapters & 400+ Directory:**
    - Dedicated adapters for xAI (Grok), Perplexity, Moonshot (Kimi), Alibaba DashScope, MiniMax, 01.AI, StepFun, iFlytek, Doubao, ERNIE, Reka, AI21, Writer, Voyage, Jina, watsonx, Vertex, Nebius, Scaleway, OVHcloud, Friendli, Featherless, Replicate, Baseten, Segmind, NLP Cloud, Poe, Inference.net, GMI Cloud, and Lepton.
@@ -112,7 +112,7 @@ flowchart TD
 
 ---
 
-## 🚀 Quick Start
+## ?? Quick Start
 
 ### 1. One-Click Launch (Windows)
 Double-click **`start.bat`**. It will install dependencies, launch the gateway on port `3000`, and open the dashboard in your default browser.
@@ -129,7 +129,7 @@ Open `http://localhost:3000` to access the Control Center.
 
 ---
 
-## 🤖 Virtual Model Combos
+## ?? Virtual Model Combos
 
 Route to smart virtual combos for automatic fallback and maximum availability:
 
@@ -144,7 +144,7 @@ Route to smart virtual combos for automatic fallback and maximum availability:
 
 ---
 
-## 🌐 Supported Free Providers (56+ Native Adapters)
+## ?? Supported Free Providers (70+ Native Adapters)
 
 | Provider | Top Free Models | Monthly Capacity / Limits |
 | :--- | :--- | :--- |
@@ -196,7 +196,7 @@ Route to smart virtual combos for automatic fallback and maximum availability:
 
 ---
 
-## 🔌 Integration Guide
+## ?? Integration Guide
 
 ### 1. Python OpenAI SDK
 ```python
@@ -238,18 +238,18 @@ curl http://localhost:3000/v1/chat/completions \
 
 ---
 
-## 🧪 Testing & Diagnostics
+## ?? Testing & Diagnostics
 
 Run the full automated test suite:
 ```bash
 npm test
 ```
 ```
-✔ AdapterRegistry: registers all 56+ adapters
-✔ New 30 Adapters: discoverModels and executeChat validated
-✔ Auto-Discovery Pipeline: validates live keys and scans models
-✔ Speculative Hedging Engine: races primary and fallback candidates
-✔ 75/75 tests passing (0 failures)
+? AdapterRegistry: registers all 70+ adapters
+? New 30 Adapters: discoverModels and executeChat validated
+? Auto-Discovery Pipeline: validates live keys and scans models
+? Speculative Hedging Engine: races primary and fallback candidates
+? 75/75 tests passing (0 failures)
 ```
 
 Live provider health check:
@@ -259,5 +259,5 @@ npm run health
 
 ---
 
-## 📄 License
+## ?? License
 Released under the [MIT License](LICENSE). Free for personal and commercial use.
